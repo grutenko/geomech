@@ -6,6 +6,10 @@ from typing import (
 import wx
 import wx.adv
 import re
+import time
+import threading
+import sys
+from queue import Queue
 from datetime import datetime
 from ui import (
     Ui_DischargeMeasurement_Editor,
@@ -190,9 +194,34 @@ class _OptionalFieldsMixin(object):
 from database import Base
 
 def _db_error_msg(e):
-    dlg=wx.MessageDialog(None, "Ошибка: " + str(e.orig), str(type(e)), wx.OK|wx.ICON_ERROR)
+    dlg=wx.MessageDialog(None, "Ошибка: " + str(e.orig if hasattr(e, 'orig') else e), str(type(e)), wx.OK|wx.ICON_ERROR)
     dlg.ShowModal()
     dlg.Destroy()
+
+def _commit_changes(parent):
+    def _thread(exc_bucket):
+        time.sleep(1)
+        try:
+            get_session().commit()
+        except Exception as e:
+            get_session().rollback()
+            exc_bucket.put(e)
+
+    exc_bucket = Queue()
+    t = threading.Thread(target=_thread, args=[exc_bucket])
+    t.start()
+    w = wx.ProgressDialog("Обновление", "Идет обновление базы данных...", parent=parent)
+    while True:
+        time.sleep(0.01)
+        if not exc_bucket.empty():
+            w.Update(100)
+            w.Close()
+            raise exc_bucket.get(False)
+        w.Pulse()
+        if not t.is_alive():
+            break;
+    w.Update(100)
+    w.Close()
 
 class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, _OptionalFieldsMixin):
     _entity: DischargeMeasurement | None
@@ -254,15 +283,17 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, _OptionalFields
         if not self.Validate():
             return
         self._entity = self.__write_entity(DischargeMeasurement() if self._entity == None else self._entity)
+        self.Enable(False)
         try:
             get_session().add(self._entity)
-            get_session().commit()
+            _commit_changes(self)
             if not self._on_save is None:
                 self._on_save(self._entity)
             self.Close()
         except sqlalchemy.exc.SQLAlchemyError as e:
-            get_session().rollback()
             _db_error_msg(e)
+        finally:
+            self.Enable(True)
 
     def __init_validator(self):
         def _set(field, validator):
@@ -435,15 +466,17 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, _OptionalFieldsMixin):
         if not self.Validate():
             return
         self._entity = self.__write_entity(DischargeSeries() if self._entity == None else self._entity)
+        self.Enable(False)
         try:
             get_session().add(self._entity)
-            get_session().commit()
+            _commit_changes(self)
             if not self._on_save is None:
                 self._on_save(self._entity)
             self.Close()
         except sqlalchemy.exc.SQLAlchemyError as e:
-            get_session().rollback()
             _db_error_msg(e)
+        finally:
+            self.Enable(True)
 
     def __write_entity(self, e: DischargeSeries) -> DischargeSeries:
         e.Number = self.field_Number.GetValue()
