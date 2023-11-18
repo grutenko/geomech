@@ -1,26 +1,29 @@
-from typing import (
-    List,
-    Type
-)
 from sqlalchemy import (
     ForeignKey,
-    create_engine
+    Engine,
+    create_engine,
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
     mapped_column,
     relationship,
-    sessionmaker,
-    Session
+    Session,
 )
 
-session: Session | None = None
+engine: Engine = None
+session: Session = None
 
-def initDatabase(url):
-    global session
+def init(url: str, *args, **kwds) -> None:
+    global engine, session
     engine = create_engine(url)
-    session = sessionmaker(bind=engine)()
+    kwds['bind'] = engine
+    session = Session(*args, **kwds)
+
+def get_session() -> Session:
+    global session
+    return session
+
 
 class Base(DeclarativeBase):
     pass

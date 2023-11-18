@@ -1,13 +1,17 @@
 import wx
-from MainWindow import MainWindow
-from sqlalchemy import (
-    create_engine,
-)
+from main_window import MainWindow
 from sqlalchemy.orm import sessionmaker
-from database import initDatabase
+from database import init
 import sys, traceback
+import sqlalchemy
+from database import get_session
 
 def my_message(exception_type, exception_value, exception_traceback):
+    if exception_type is sqlalchemy.exc.SQLAlchemyError:
+        session = get_session()
+        if session != None and session.in_transaction():
+            session.rollback()
+
     message = 'Uncaught exception:\n'
     message += ''.join(traceback.format_exception(type, exception_value, exception_traceback))
     print(message)
@@ -18,14 +22,14 @@ def my_message(exception_type, exception_value, exception_traceback):
 
 sys.excepthook = my_message
 
-'''import logging
+import logging
 logging.basicConfig()
-logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
-'''
+logging.getLogger('sqlalchemy.engine').setLevel(logging.ERROR)
+
 app = wx.App(0)
 
 if __name__ == '__main__':
-    initDatabase('postgresql://aleksejfedorenko@localhost/aleksejfedorenko')
+    init('postgresql://aleksejfedorenko@localhost/aleksejfedorenko')
     mainWindow = MainWindow(None)
     mainWindow.Show()
     app.SetTopWindow(mainWindow)
