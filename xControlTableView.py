@@ -7,7 +7,8 @@ from typing import (
     Callable,
     TypeVar,
     Generic,
-    Set
+    Set,
+    Any
 )
 from enum import Enum
 
@@ -23,50 +24,47 @@ from sqlalchemy.orm import Query
 from sqlalchemy import (
     desc, asc
 )
+from dataclasses import dataclass
+import query_dsl
+
+@dataclass
+class Column:
+    name: str
+    label: str|None = None
+    size: int = -1
+    modifier: Callable[[Any], str] | None = None
 
 CAN_CREATE = 0b00001
 CAN_EDIT = 0b00010
 CAN_DELETE = 0b00100
-CAN_ALL = CAN_EDIT | CAN_DELETE | CAN_CREATE
+CAN_SORT = 0b01000
+CAN_FILTER = 0b10000
+CAN_ALL = CAN_EDIT | CAN_DELETE | CAN_CREATE | CAN_SORT | CAN_FILTER
 
 _T = TypeVar('_T', bound=Base)
-'''
-Создает SqlAlchemy запрос из структур:
-1. order_by: [(<field>, <direction>), ...]
-2. filter_by: [(<field>, <eq>, <value>), ...]
-'''
-def _build_query(table_class: Type[_T], order_by: List[Tuple], filter_by: List[Tuple]) -> Query[_T]:
-    q = get_session().query(table_class)
-
-    def _make_order_clause(o):
-        return asc(table_class.__dict__[o[0]]) if o[1] == 'asc' else desc(table_class.__dict__[o[0]])
-    q = q.order_by(*list(map(_make_order_clause, order_by)))
-
-    return q
-        
 
 class _displayColsSelector(Ui_displayColsSelector):
 
-    __cols: List[Tuple]
+    __cols: List[Column]
 
-    def __init__(self, cols: List[Tuple], selected_cols: List[int] = [], *args, **kw):
+    def __init__(self, cols: List[Column], selected_cols: List[int] = [], *args, **kw):
         super().__init__(*args, **kw)
         self.__cols = cols
         self.__set_cols(selected_cols)
 
     def __set_cols(self, selected_cols: List[int]):
-        self.cols_selector.InsertItems(list(map(lambda col: col[1], self.__cols)), 0)
+        self.cols_selector.InsertItems(list(map(lambda col: col.label if not col.label is None else col.name, self.__cols)), 0)
         self.cols_selector.SetCheckedItems(selected_cols)
 
     def get_selected_cols(self):
         return list(map(lambda index: self.__cols[index], self.cols_selector.GetCheckedItems()))
     
 class _orderBySelector(Ui_orderBySelector):
-    __order_by: List[Tuple]
-    __cols: List[Tuple]
+    __order_by: query_dsl.OrderBy
+    __cols: List[Column]
     __props: List[wx.propgrid.PGProperty]
 
-    def __init__(self, cols: List[Tuple], order_by: List[Tuple] = [], *args, **kwds):
+    def __init__(self, cols: List[Column], order_by: query_dsl.OrderBy = query_dsl.OrderBy(), *args, **kwds):
         super().__init__(*args, **kwds)
         self.__order_by = order_by
         self.__cols = cols
@@ -77,19 +75,19 @@ class _orderBySelector(Ui_orderBySelector):
                 'По возрастанию',
                 'По убыванию'
             ]
-            self.__props.append(self.fields.Append(wx.propgrid.EnumProperty(col[1], col[0], choices)))
-            for field, direction in self.__order_by:
-                if field == col[0]:
-                    self.fields.SetPropVal(self.__props[index], 1 if direction == 'asc' else 2)
+            self.__props.append(self.fields.Append(wx.propgrid.EnumProperty(col.label if not col.label is None else col.name, col.name, choices)))
+            for o in self.__order_by.clauses:
+                if o.field == col.name:
+                    self.fields.SetPropVal(self.__props[index], 1 if o.direction == query_dsl.Direction.ASC else 2)
                     break
 
-    def get_order_by(self) -> List[Tuple]:
+    def get_order_by(self) -> query_dsl.OrderBy:
         order_by = []
         for index, col in enumerate(self.__cols):
             v = self.__props[index].GetValue()
             if v > 0:
-                order_by.append((col[0], 'asc' if v == 1 else 'desc'))
-        return order_by
+                order_by.append(query_dsl.OrderClause(col.name, query_dsl.Direction.ASC if v == 1 else query_dsl.Direction.DESC))
+        return query_dsl.OrderBy(order_by)
 
 
 class xControlTableView(Ui_xControlTableView, Generic[_T]):
@@ -99,12 +97,13 @@ class xControlTableView(Ui_xControlTableView, Generic[_T]):
         COMMON = 3
 
     _table_class: Type[_T]
-    _available_cols: List[Tuple]
-    _cols: List[Tuple]
-    _initial_order_by: List[Tuple]
-    _order_by: List[Tuple]
-    _initial_filter_by: List[Tuple]
-    _filter_by: List[Tuple]
+    _available_cols: List[Column]
+    _cols: List[Column]
+    _initial_order_by: query_dsl.OrderBy
+    _order_by: query_dsl.OrderBy
+    _initial_filter_by: query_dsl.FilterBy
+    _filter_by: query_dsl.FilterBy
+    _filter_editor: Type[wx.Window]
     _flags: int
     _on_create: Callable[[], None]
     _on_edit: Callable[[_T], None]
@@ -119,10 +118,11 @@ class xControlTableView(Ui_xControlTableView, Generic[_T]):
 
     def __init__(self, 
                  table_class: Type[_T],
-                 available_cols: List[Tuple] = [],
-                 cols: List[Tuple] = None,
-                 initial_order_by: List[Tuple] = [],
-                 initial_filter_by: List[Tuple] = [],
+                 available_cols: List[Column] = [],
+                 cols: List[str] = [],
+                 initial_order_by: query_dsl.OrderBy = query_dsl.OrderBy(),
+                 initial_filter_by: query_dsl.FilterBy = query_dsl.FilterBy(),
+                 filter_window: Type[wx.Window] = None,
                  flags: int = CAN_ALL,
                  on_create: Callable[[], None] = None,
                  on_edit: Callable[[_T], None] = None,
@@ -135,7 +135,10 @@ class xControlTableView(Ui_xControlTableView, Generic[_T]):
 
         self._table_class = table_class
         self._available_cols = available_cols
-        self._cols = available_cols if cols == None else cols
+        self._cols = []
+        for col in available_cols:
+            if col.name in cols:
+                self._cols.append(col)
         self._initial_order_by = self._order_by = initial_order_by
         self._initial_filter_by = self._filter_by = initial_filter_by
         self._flags = flags
@@ -144,11 +147,13 @@ class xControlTableView(Ui_xControlTableView, Generic[_T]):
         self._on_delete = on_delete
         self._on_dbclick = on_dbclick
         self._on_deselect = on_deselect
+        self._filter_editor = filter_window
 
         self.__init_columns()
         self.__bind()
         self.__state = self.State.INIT
         self.refresh()
+        self.__update_controls_state()
 
     def __bind(self):
         self.list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.__on_item_selected)
@@ -159,6 +164,7 @@ class xControlTableView(Ui_xControlTableView, Generic[_T]):
         self.list.Bind(wx.EVT_LEFT_DCLICK, self.__on_double_click)
         self.btn_edit_cols.Bind(wx.EVT_BUTTON, self.__on_edit_cols_click)
         self.btn_order_by.Bind(wx.EVT_BUTTON, self.__on_order_by_click)
+        self.btn_filter_by.Bind(wx.EVT_BUTTON, self.__on_open_filter_click)
 
     def __on_order_by_click(self, event):
         w = _orderBySelector(self._available_cols, self._order_by, parent=self.GetParent())
@@ -167,8 +173,14 @@ class xControlTableView(Ui_xControlTableView, Generic[_T]):
             self._order_by = w.get_order_by()
             self.refresh()
             self.__update_controls_state()
+            print(self._order_by)
         w.Destroy()
 
+    def __on_open_filter_click(self, event):
+        if self._filter_editor is None:
+            return
+        w = self._filter_editor(filter_by=self._filter_by, parent=super().GetParent())
+        w.ShowModal()
 
     def __on_edit_cols_click(self, event):
         selected_cols = []
@@ -212,29 +224,18 @@ class xControlTableView(Ui_xControlTableView, Generic[_T]):
         self.__update_controls_state()
 
     def __update_controls_state(self):
-        def _eq_orders():
-            _eq = True
-            _eq = _eq and len(self._order_by) == len(self._initial_order_by)
-            for index, clause in enumerate(self._order_by):
-                _eq = _eq and all(x == y for x, y in zip(clause, self._initial_order_by[index]))
-            return _eq
-        self.btn_order_by.SetLabel("Сортировка [+]" if not _eq_orders() else "Сортировка")
         self.sizer_4.Layout()
         self.btn_order_by.Update()
         self.btn_Delete.Enable(len(self._selected_entities) >= 1)
         self.btn_Edit.Enable(len(self._selected_entities) == 1)
+        self.btn_order_by.Enable(self._flags & CAN_SORT > 0)
+        self.btn_filter_by.Enable(self._flags & CAN_FILTER > 0)
 
     def __init_columns(self):
         for col in self._cols:
-            if len(col) > 3 or len(col) < 2:
-                raise Exception('Неверный формат описния столбцов.'
-                                + ' Должен быть: (<field> [, <label> [, <size>]])')
-            colIndx = 0
-            if len(col) == 2:
-                colIndx = self.list.AppendColumn(col[1])
-            elif len(col) == 3:
-                colIndx = self.list.AppendColumn(col[1], wx.LIST_FORMAT_LEFT, col[2])
-            self.list.SetColumnWidth(colIndx, wx.COL_WIDTH_AUTOSIZE)
+            colIndx = self.list.AppendColumn(col.label if not col.label is None else col.name, wx.LIST_FORMAT_LEFT, col.size)
+            if col.size == -1:
+                self.list.SetColumnWidth(colIndx, wx.COL_WIDTH_AUTOSIZE)
 
     def __set_state(self, state: State):
         if state == self.State.LOADING:
@@ -245,8 +246,9 @@ class xControlTableView(Ui_xControlTableView, Generic[_T]):
     def __render(self):
         self.list.DeleteAllItems()
 
-        def _set_col(row_index, index, value):
-            self.list.SetItem(row_index, col_index, str(value))
+        def _set_col(row_index, col_index, col, value):
+            value = col.modifier(value) if not col.modifier is None else str(value)
+            self.list.SetItem(row_index, col_index, value)
 
         if len(self._cols) == 0:
             return
@@ -254,7 +256,7 @@ class xControlTableView(Ui_xControlTableView, Generic[_T]):
         for row_index, e in enumerate(self._entities):
             self.list.InsertItem(row_index, "")
             for col_index, col in enumerate(self._cols):
-                _set_col(row_index, col_index, e.__dict__[col[0]])
+                _set_col(row_index, col_index, col, e.__dict__[col.name])
 
         for e in list(self._selected_entities):
             if e in self._entities:
@@ -262,8 +264,7 @@ class xControlTableView(Ui_xControlTableView, Generic[_T]):
 
     def refresh(self):
         self.__set_state(self.State.LOADING)
-        ''' TODO: Сделать фильтрацию '''
-        self._entities = _build_query(self._table_class, self._order_by, self._filter_by).all()
+        self._entities = query_dsl.build_query(self._table_class, self._order_by, self._filter_by).all()
         self._selected_entities = set()
 
         self.__render()
@@ -273,5 +274,4 @@ class xControlTableView(Ui_xControlTableView, Generic[_T]):
     def select(self, e: _T):
         if e in self._entities:
             self.list.Select(self._entities.index(e))
-
     

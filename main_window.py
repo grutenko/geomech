@@ -1,19 +1,36 @@
 import wx
 from typing import List
-from pubsub import pub
 from database import (
     DischargeMeasurement,
+    DischargeSeries,
     get_session
 )
 from ui import (
     Ui_MainWindow,
-    Ui_DischargeMesurement_Inspect
+    Ui_DischargeMesurement_Inspect,
 )
 from edit_windows import (
     DischargeMeasurementEditor,
+    OrigSampleSets_Editor,
     DischargeSeriesEditor
 )
-from _widgets import xControlTableView
+from filter_windows import DischargeMeasurement_Filter
+from list_windows import (
+    DischargeSeries_List,
+    BoreHoles_List,
+    OrigSampleSets_List
+)
+from xControlTableView import (
+    xControlTableView,
+    Column
+)
+from util import commit_changes
+import query_dsl
+
+def _deletion_dialog(whats: str):
+    msg = "Вы  действительно хотите удалить {0}? Это действие необратимо.".format(str(whats))
+    dial = wx.MessageDialog(None, msg, 'Подтвердите удаление', wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+    return dial.ShowModal()
 
 class _Inspect(Ui_DischargeMesurement_Inspect):
     __entity: DischargeMeasurement
@@ -68,11 +85,6 @@ class _Inspect(Ui_DischargeMesurement_Inspect):
         if not self.__entity.YungStatic is None:
             self.field_PuassonStatic.SetLabel(str(self.__entity.YungStatic))
 
-def _deletion_dialog(whats: str):
-    msg = "Вы  действительно хотите удалить {0}? Это действие необратимо.".format(str(whats))
-    dial = wx.MessageDialog(None, msg, 'Подтвердите удаление', wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
-    return dial.ShowModal()
-
 class MainWindow(Ui_MainWindow):
     __list: xControlTableView
     __detail_entity: DischargeMeasurement = None
@@ -82,60 +94,59 @@ class MainWindow(Ui_MainWindow):
         super().__init__(*args, **kwds)
 
         available_cols = [
-            ('RID', 'Внутренний идентификатор замера'),
-            ('DSID', 'Идентификатор серии замеров'),
-            ('SNumber', 'Порядковый номер замера.'),
-            ('DschNumber', 'Регистрационный номер разгрузки'),
-            ('CoreNumber', 'Регистрационный номер образца керна'),
-            ('Diameter', 'Диаметр образца керна'),
-            ('Length', 'Длина образца керна'),
-            ('Weight', 'Вес образца керна'),
-            ('CartNumber', 'Номер тензопатрона'),
-            ('PartNumber', 'Номер партии тензодатчиков'),
-            ('R1', 'Сопротивление тензорезистора R1'),
-            ('R2', 'Сопротивление тензорезистора R2'),
-            ('R3', 'Сопротивление тензорезистора R3'),
-            ('R4', 'Сопротивление тензорезистора R4'),
-            ('RComp', 'Сопротивление компенсационного резистора'),
-            ('Sensitivity', 'Коэффициент чувствительности тензодатчиков'),
-            ('TP1_1', 'Замер времени прохождения продольных волн (ультразвуковое профилирование или др.) - 1'),
-            ('TP1_2', 'Замер времени прохождения продольных волн (ультразвуковое профилирование или др.) - 2'),
-            ('TP2_1', 'Замер времени прохождения продольных волн (между торцами или др.) - 1'),
-            ('TP2_2', 'Замер времени прохождения продольных волн (между торцами или др.) - 2'),
-            ('TR_1', 'Замер времени прохождения поверхностных волн - 1'),
-            ('TR_2', 'Замер времени прохождения поверхностных волн - 2'),
-            ('TS_1', 'Замер времени прохождения поперечных волн - 1'),
-            ('TS_2', 'Замер времени прохождения поперечных волн - 2'),
-            ('PuassonStatic', 'Статический коэффициент Пуассона'),
-            ('YungStatic', 'Статический модуль Юнга'),
-            ('CoreDepth', 'Глубина взятия образца керна'),
-            ('E1', 'Относительная деформация образца - 1'),
-            ('E2', 'Относительная деформация образца - 2'),
-            ('E3', 'Относительная деформация образца - 3'),
-            ('E4', 'Относительная деформация образца - 4'),
-            ('Rotate', 'Угол коррекции направления напряжений'),
-            ('RockType', 'Тип породы')
+            Column('RID', 'Внутренний идентификатор замера'),
+            Column('DSID', 'Серия замеров', modifier=lambda dsid: get_session().query(DischargeSeries).get(dsid).Name),
+            Column('SNumber', 'Порядковый номер замера.'),
+            Column('DschNumber', 'Регистрационный номер разгрузки'),
+            Column('CoreNumber', 'Регистрационный номер образца керна'),
+            Column('Diameter', 'Диаметр образца керна'),
+            Column('Length', 'Длина образца керна'),
+            Column('Weight', 'Вес образца керна'),
+            Column('CartNumber', 'Номер тензопатрона'),
+            Column('PartNumber', 'Номер партии тензодатчиков'),
+            Column('R1', 'Сопротивление тензорезистора R1'),
+            Column('R2', 'Сопротивление тензорезистора R2'),
+            Column('R3', 'Сопротивление тензорезистора R3'),
+            Column('R4', 'Сопротивление тензорезистора R4'),
+            Column('RComp', 'Сопротивление компенсационного резистора'),
+            Column('Sensitivity', 'Коэффициент чувствительности тензодатчиков'),
+            Column('TP1_1', 'Замер времени прохождения продольных волн (ультразвуковое профилирование или др.) - 1'),
+            Column('TP1_2', 'Замер времени прохождения продольных волн (ультразвуковое профилирование или др.) - 2'),
+            Column('TP2_1', 'Замер времени прохождения продольных волн (между торцами или др.) - 1'),
+            Column('TP2_2', 'Замер времени прохождения продольных волн (между торцами или др.) - 2'),
+            Column('TR_1', 'Замер времени прохождения поверхностных волн - 1'),
+            Column('TR_2', 'Замер времени прохождения поверхностных волн - 2'),
+            Column('TS_1', 'Замер времени прохождения поперечных волн - 1'),
+            Column('TS_2', 'Замер времени прохождения поперечных волн - 2'),
+            Column('PuassonStatic', 'Статический коэффициент Пуассона'),
+            Column('YungStatic', 'Статический модуль Юнга'),
+            Column('CoreDepth', 'Глубина взятия образца керна'),
+            Column('E1', 'Относительная деформация образца - 1'),
+            Column('E2', 'Относительная деформация образца - 2'),
+            Column('E3', 'Относительная деформация образца - 3'),
+            Column('E4', 'Относительная деформация образца - 4'),
+            Column('Rotate', 'Угол коррекции направления напряжений'),
+            Column('RockType', 'Тип породы')
         ]
         cols = [
-            ('SNumber', 'Порядковый номер замера.'),
-            ('DschNumber', 'Регистрационный номер разгрузки'),
-            ('CoreNumber', 'Регистрационный номер образца керна'),
-            ('CartNumber', 'Номер тензопатрона'),
-            ('PartNumber', 'Номер партии тензодатчиков'),
-            ('R1', 'Сопротивление тензорезистора R1'),
-            ('R2', 'Сопротивление тензорезистора R2'),
-            ('R3', 'Сопротивление тензорезистора R3'),
-            ('R4', 'Сопротивление тензорезистора R4'),
-            ('RComp', 'Сопротивление компенсационного резистора'),
-            ('Sensitivity', 'Коэффициент чувствительности тензодатчиков'),
+            'SNumber', 'DschNumber', 'CoreNumber', 'CartNumber', 'PartNumber', 'R1', 'R2', 'R3', 'R4', 'RComp', 'Sensitivity'
         ]
-        order_by = [
-            ('SNumber', 'desc')
-        ]
-        self.__list = xControlTableView[DischargeMeasurement](DischargeMeasurement, available_cols, cols, order_by,
-                                        parent=self.window_1_pane_1, on_edit=self.__on_edit, 
-                                        on_create=self.__on_create, on_delete=self.__on_delete,
-                                        on_dbclick=self.__ondbclick, on_deselect=self.__ondeselect)
+        order_by = query_dsl.OrderBy([
+            query_dsl.OrderClause('SNumber', query_dsl.Direction.DESC)
+        ])
+        self.__list = xControlTableView[DischargeMeasurement](
+            DischargeMeasurement,
+            available_cols,
+            cols,
+            order_by,
+            filter_window=DischargeMeasurement_Filter,
+            parent=self.window_1_pane_1,
+            on_edit=self.__on_edit, 
+            on_create=self.__on_create,
+            on_delete=self.__on_delete,
+            on_dbclick=self.__ondbclick,
+            on_deselect=self.__ondeselect
+        )
         self.list_container.Add(self.__list, wx.EXPAND)
         self.list_container.Layout()
         self.__list.Layout()
@@ -158,7 +169,7 @@ class MainWindow(Ui_MainWindow):
         if ret == wx.ID_YES:
             for e in entities:
                 get_session().delete(e)
-            get_session().commit()
+            commit_changes(self)
             self.__list.refresh()
             self.__remove_details()
 
@@ -182,3 +193,27 @@ class MainWindow(Ui_MainWindow):
     def __ondeselect(self, e: DischargeMeasurement):
         if self.__detail_entity == e:
             self.__remove_details()
+
+    def _on_show_discharge_series(self, event):
+        w = DischargeSeries_List(parent=self)
+        w.Show()
+
+    def _on_show_bore_holes(self, event):
+        w = BoreHoles_List(parent=self)
+        w.Show()
+
+    def _on_show_orig_sample_sets(self, event):
+        w = OrigSampleSets_List(parent=self)
+        w.Show()
+
+    def _on_create_discharge_measurement(self, event):
+        w = DischargeMeasurementEditor(parent=self, on_save=lambda: self.__list.refresh())
+        w.Show()
+
+    def _on_create_orig_sample_sets(self, event):
+        w = OrigSampleSets_Editor(parent=self)
+        w.Show()
+
+    def _on_create_discharge_series(self, event):
+        w = DischargeSeriesEditor(parent=self)
+        w.Show()

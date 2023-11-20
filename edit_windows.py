@@ -1,28 +1,30 @@
 from typing import (
     Dict,
     Optional,
-    Callable
+    Callable,
+    List
 )
 import wx
 import wx.adv
 import re
-import time
-import threading
-import sys
-from queue import Queue
 from datetime import datetime
 from ui import (
     Ui_DischargeMeasurement_Editor,
-    Ui_DischargeSeries_Editor
+    Ui_DischargeSeries_Editor,
+    Ui_OrigSampleSets_Editor
 )
 import sqlalchemy
 from database import (
     get_session,
     DischargeMeasurement,
     DischargeSeries,
-    OrigSampleSet
+    OrigSampleSet,
+    MineObject,
+    BoreHole
 )
-from sqlalchemy import func 
+import mixins
+from sqlalchemy import func
+from util import commit_changes
 
 class _Validator(wx.Validator):
     _message: str
@@ -108,7 +110,7 @@ class _NumericValidator(_Validator):
                  *args,
                  min: Optional[int|float] = None,
                  max: Optional[int|float] = None,
-                 is_positive: Optional[bool] = False,
+                 is_positive: Optional[bool] = None,
                  **kwds):
         super().__init__(*args, **kwds)
         self._min = min
@@ -148,7 +150,7 @@ class _ChoiceValidator(_Validator):
         c.__dict__.update(self.__dict__)
         return c
     
-class _CalendarValidator(_Validator):
+class _DateValidator(_Validator):
     _min: wx.DateTime
     _max: wx.DateTime
 
@@ -157,39 +159,21 @@ class _CalendarValidator(_Validator):
         self._max = max
         super().__init__(*args, **kwds)
 
-    def _x_validate(self, ctrl: wx.adv.CalendarCtrl):
+    def _x_validate(self, ctrl: wx.adv.CalendarCtrl | wx.adv.DatePickerCtrl):
+        match type(ctrl):
+            case wx.adv.CalendarCtrl: date = ctrl.GetDate()
+            case wx.adv.DatePickerCtrl: date = ctrl.GetValue()
         _valid = True
         if not self._min is None:
-            _valid = _valid and self._min <= ctrl.GetDate()
+            _valid = _valid and self._min <= date
         if not self._max is None:
-            _valid = _valid and self._max >= ctrl.GetDate()
+            _valid = _valid and self._max >= date
         return _valid
     
     def Clone(self):
-        c = _CalendarValidator()
+        c = _DateValidator()
         c.__dict__.update(self.__dict__)
         return c
-        
-
-class _OptionalFieldsMixin(object):
-    _checkbox_fields_mapping: Dict[int, wx.Control] = {}
-    window = None
-
-    def _observe_optional_fields(self, window):
-        self.window = window
-        for i, (key, checkbox) in enumerate(window.__dict__.items()):
-            if re.match(r"field_(.+)_enabled", key):
-                field = re.search(r"(.+)_enabled", key).group(1)
-                if not field in window.__dict__:
-                    raise Exception(u"Для чекбокса \"" + key + u"\" нет соотвествующего поля.")
-                self._checkbox_fields_mapping[checkbox.GetId()] = field
-                checkbox.Bind(wx.EVT_CHECKBOX, self.__on_toggle_optional_field_checkbox, id=checkbox.GetId())
-
-    def __on_toggle_optional_field_checkbox(self, event: wx.Event):
-        checkBox: wx.CheckBox = event.GetEventObject()
-        if not checkBox.GetId() in self._checkbox_fields_mapping:
-            return
-        self.window.__dict__[ self._checkbox_fields_mapping[checkBox.GetId()] ].Enable( checkBox.IsChecked() )
 
 from database import Base
 
@@ -198,32 +182,8 @@ def _db_error_msg(e):
     dlg.ShowModal()
     dlg.Destroy()
 
-def _commit_changes(parent):
-    def _thread(exc_bucket):
-        time.sleep(1)
-        try:
-            get_session().commit()
-        except Exception as e:
-            get_session().rollback()
-            exc_bucket.put(e)
 
-    exc_bucket = Queue()
-    t = threading.Thread(target=_thread, args=[exc_bucket])
-    t.start()
-    w = wx.ProgressDialog("Обновление", "Идет обновление базы данных...", parent=parent)
-    while True:
-        time.sleep(0.01)
-        if not exc_bucket.empty():
-            w.Update(100)
-            w.Close()
-            raise exc_bucket.get(False)
-        w.Pulse()
-        if not t.is_alive():
-            break;
-    w.Update(100)
-    w.Close()
-
-class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, _OptionalFieldsMixin):
+class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.OptionalFieldsMixin):
     _entity: DischargeMeasurement | None
     _series: Dict[int, DischargeSeries] = {}
 
@@ -233,6 +193,7 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, _OptionalFields
                  on_save: Callable[[Base], None] = None,
                  **kwds) -> None:
         super().__init__(*args, **kwds)
+        mixins.OptionalFieldsMixin.__init__(self, self)
 
         self.__set_series()
 
@@ -241,7 +202,6 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, _OptionalFields
         if not entity is None:
             self._set_fields(entity)
         self.__init_validator()
-        self._observe_optional_fields(self)
 
         self.button_Cancel.Bind(wx.EVT_BUTTON, self.__on_cancel_click)
         self.button_Save.Bind(wx.EVT_BUTTON, self.__on_save_click)
@@ -286,7 +246,7 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, _OptionalFields
         self.Enable(False)
         try:
             get_session().add(self._entity)
-            _commit_changes(self)
+            commit_changes(self)
             if not self._on_save is None:
                 self._on_save(self._entity)
             self.Close()
@@ -324,13 +284,13 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, _OptionalFields
         _set('field_TR_2', _NumericValidator(is_positive=True))
         _set('field_TS_1', _NumericValidator(is_positive=True))
         _set('field_TS_2', _NumericValidator(is_positive=True))
-        _set('field_PuassonStatic', _NumericValidator(is_positive=True))
+        _set('field_PuassonStatic', _NumericValidator(is_positive=True, max=1))
         _set('field_YungStatic', _NumericValidator(is_positive=True))
         _set('field_E1', _NumericValidator(is_positive=True))
-        _set('field_E2', _NumericValidator(is_positive=True))
-        _set('field_E3', _NumericValidator(is_positive=True))
-        _set('field_E4', _NumericValidator(is_positive=True))
-        _set('field_Rotate', _NumericValidator(is_positive=True))
+        _set('field_E2', _NumericValidator())
+        _set('field_E3', _NumericValidator())
+        _set('field_E4', _NumericValidator())
+        _set('field_Rotate', _NumericValidator(min=-180, max=180, message="Значение: -180 >= a >= 180"))
 
     def _set_fields(self, entity: DischargeMeasurement):
         def _set(field, value):
@@ -431,7 +391,7 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, _OptionalFields
 
         return e
 
-class DischargeSeriesEditor(Ui_DischargeSeries_Editor, _OptionalFieldsMixin):
+class DischargeSeriesEditor(Ui_DischargeSeries_Editor, mixins.OptionalFieldsMixin):
     _oss: Dict[int, OrigSampleSet]  = {}
     _entity: DischargeSeries = None
     _on_save = None
@@ -441,13 +401,12 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, _OptionalFieldsMixin):
                  on_save: Callable[[DischargeSeries], None] = None,
                  *args, **kwds):
         super().__init__(*args, **kwds)
+        mixins.OptionalFieldsMixin.__init__(self, self)
 
         self._entity = entity
         self._on_save = on_save
 
-        for e in get_session().query(OrigSampleSet).all():
-            item = self.field_OSSID.Append(e.Name, e.RID)
-            self._oss[item] = e
+        self.__init_orig_sample_set()
 
         if not entity is None:
             self._entity = entity
@@ -455,9 +414,16 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, _OptionalFieldsMixin):
 
         self.button_CANCEL.Bind(wx.EVT_BUTTON, self.__on_cancel_click)
         self.button_SAVE.Bind(wx.EVT_BUTTON, self.__on_save_click)
+        self.btn_add_orig_sample_set.Bind(wx.EVT_BUTTON, self.__on_add_orig_sample_set)
 
         self.__init_validator()
-        self._observe_optional_fields(self)
+
+    def __init_orig_sample_set(self):
+        self.field_OSSID.Clear()
+        self.field_OSSID.Append('-- Не выбрано --')
+        for e in get_session().query(OrigSampleSet).all():
+            item = self.field_OSSID.Append(e.Name, e.RID)
+            self._oss[item] = e
 
     def __on_cancel_click(self, event):
         self.Close()
@@ -469,7 +435,7 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, _OptionalFieldsMixin):
         self.Enable(False)
         try:
             get_session().add(self._entity)
-            _commit_changes(self)
+            commit_changes(self)
             if not self._on_save is None:
                 self._on_save(self._entity)
             self.Close()
@@ -483,7 +449,7 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, _OptionalFieldsMixin):
         e.Name = self.field_Name.GetValue()
         e.Comment = self.field_Comment.GetValue() if self.field_Comment.IsEnabled() else None
         e.orig_sample_set = self._oss[self.field_OSSID.GetSelection()]
-        date: wx.DateTime = self.field_MeasureDate.GetDate()
+        date: wx.DateTime = self.field_MeasureDate.GetValue()
         date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
         e.MeasureDate = date
 
@@ -497,7 +463,7 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, _OptionalFieldsMixin):
         _set('field_Name', _TextValidator(len_min=1, len_max=255))
         _set('field_Comment', _TextValidator(len_min=1, len_max=255))
         _set('field_OSSID', _ChoiceValidator())
-        _set('field_MeasureDate', _CalendarValidator(max=wx.DateTime.Now()))
+        _set('field_MeasureDate', _DateValidator(max=wx.DateTime.Now()))
 
     def __set_fields(self, entity: DischargeSeries):
         e = entity
@@ -508,7 +474,7 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, _OptionalFieldsMixin):
             self.field_Comment.Enable(True)
             self.field_Comment.SetValue(e.Comment)
             self.field_Comment_enabled.SetValue(True)
-        for i, oss in self._oss:
+        for i, oss in self._oss.items():
             if oss.RID == e.OSSID:
                 self.field_OSSID.Select(i)
                 break
@@ -521,5 +487,134 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, _OptionalFieldsMixin):
         except ValueError:
             wx.MessageBox("Невалидная дата!", "Ошибка!")
             date = datetime.now()
-        self.field_MeasureDate.SetDate(date)
+        self.field_MeasureDate.SetValue(date)
 
+    def __on_add_orig_sample_set(self, event):
+        def _on_save(e):
+            self.__init_orig_sample_set()
+            for i, oss in self._oss.items():
+                if oss.RID == e.OSSID:
+                    self.field_OSSID.Select(i)
+                    break
+        w = OrigSampleSets_Editor(on_save=_on_save, parent=self)
+        w.Show()
+
+class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin):
+    __mine_objects: List[MineObject] = []
+    __bore_holes: List[BoreHole] = []
+    __entity: OrigSampleSet|None = None
+    __on_save: Callable[[OrigSampleSet], None]|None = None
+
+    def __init__(self,
+                 entity: OrigSampleSet|None = None,
+                 on_save: Callable[[OrigSampleSet], None] = None, *args, **kwds):
+        super().__init__(*args, **kwds)
+        mixins.OptionalFieldsMixin.__init__(self, self)
+
+        self.__entity = entity
+        self.__on_save = on_save
+
+        def _set_mine_objects_R(parent: MineObject = None, parent_str = ''):
+            if parent is None:
+                objects = get_session().query(MineObject).where(MineObject.Level == 0).all()
+            else:
+                objects = parent.childrens
+            for o in objects:
+                self.__mine_objects.append(o)
+                self.field_MOID.Append(parent_str + o.Name)
+                _set_mine_objects_R(o, parent_str + o.Name + ' / ')
+
+        _set_mine_objects_R()
+        self.__bore_holes = get_session().query(BoreHole).all()
+        for bh in self.__bore_holes:
+            self.field_HID.Append(bh.Name)
+
+        if not self.__entity is None:
+            self.__set_fields()
+
+        self.__init_validator()
+
+        self.button_CANCEL.Bind(wx.EVT_BUTTON, self.__on_cancel_click)
+        self.button_SAVE.Bind(wx.EVT_BUTTON, self.__on_save_click)
+
+    def __set_fields(self):
+        e = self.__entity
+        self.field_RID.SetLabelText(str(e.RID))
+        self.field_Number.SetValue(e.Number)
+        self.field_Name.SetValue(e.Name)
+        if e.Comment != None:
+            self.field_Comment.Enable(True)
+            self.field_Comment.SetValue(e.Comment)
+            self.field_Comment_enabled.SetValue(True)
+        match e.SampleType:
+            case 'CORE': self.field_SampleType.Select(0)
+            case 'STUFF': self.field_SampleType.Select(0)
+            case 'DISPERCE': self.field_SampleType.Select(0)
+        self.field_X.SetValue(e.X)
+        self.field_Y.SetValue(e.Y)
+        self.field_Z.SetValue(e.Z)
+        self.field_HID.Select(self.__bore_holes.index(e.bore_hole) + 1)
+        self.field_HID.Enable(False)
+        self.field_MOID.Select(self.__mine_objects.index(e.mine_object) + 1)
+        self.field_MOID.Enable(False)
+        try:
+            date = datetime(
+                int(str(e.SetDate)[0:4]),
+                int(str(e.SetDate)[4:6]),
+                int(str(e.SetDate)[6:8]))
+        except ValueError:
+            wx.MessageBox("Невалидная дата!", "Ошибка!")
+            date = datetime.now()
+        self.field_SetDate.SetValue(date)
+
+    def __init_validator(self):
+        def _set(field, validator):
+            self.__dict__[field].SetValidator(validator)
+
+        _set('field_Number', _TextValidator(len_min=1, len_max=255))
+        _set('field_Name', _TextValidator(len_min=1, len_max=255))
+        _set('field_Comment', _TextValidator(len_min=1, len_max=255))
+        _set('field_HID', _ChoiceValidator())
+        _set('field_MOID', _ChoiceValidator())
+        _set('field_SetDate', _DateValidator(max=wx.DateTime.Now()))
+        _set('field_X', _NumericValidator())
+        _set('field_Y', _NumericValidator())
+        _set('field_Z', _NumericValidator())
+
+    def __on_cancel_click(self, event):
+        self.Close()
+
+    def __on_save_click(self, event):
+        if not self.Validate():
+            return
+        self.__entity = self.__write_entity(OrigSampleSet() if self.__entity == None else self.__entity)
+        self.Enable(False)
+        try:
+            get_session().add(self.__entity)
+            commit_changes(self)
+            if not self.__on_save is None:
+                self.__on_save(self.__entity)
+            self.Close()
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            _db_error_msg(e)
+        finally:
+            self.Enable(True)
+
+    def __write_entity(self, e: OrigSampleSet) -> OrigSampleSet:
+        e.Number = self.field_Number.GetValue()
+        e.Name = self.field_Name.GetValue()
+        e.Comment = self.field_Comment.GetValue() if self.field_Comment.IsEnabled() else None
+        e.X = self.field_X.GetValue()
+        e.Y = self.field_Y.GetValue()
+        e.Z = self.field_Z.GetValue()
+        match self.field_SampleType.GetSelection():
+            case 0: e.SampleType = 'CORE'
+            case 1: e.SampleType = 'STUFF'
+            case 2: e.SampleType = 'DISPERCE'
+        e.bore_hole = self.__bore_holes[self.field_HID.GetSelection() - 1]
+        e.mine_object = self.__mine_objects[self.field_MOID.GetSelection() - 1]
+        date: wx.DateTime = self.field_SetDate.GetValue()
+        date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
+        e.SetDate = date
+
+        return e

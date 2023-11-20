@@ -119,6 +119,7 @@ class OrigSampleSet(Base):
     X: Mapped[float] = mapped_column(nullable=False)
     Y: Mapped[float] = mapped_column(nullable=False)
     Z: Mapped[float] = mapped_column(nullable=False)
+    SetDate: Mapped[int] = mapped_column(nullable=False)
 
     mine_object: Mapped['MineObject'] = relationship(
         backref='orig_sample_sets',
@@ -221,3 +222,4 @@ class DischargeMeasurement(Base):
         primaryjoin='foreign(DischargeMeasurement.DSID) == DischargeSeries.RID'
     )
 
+from dataclasses import dataclass
