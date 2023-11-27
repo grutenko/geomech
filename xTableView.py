@@ -30,9 +30,9 @@ import query_dsl
 @dataclass
 class Column:
     name: str
-    label: str|None = None
+    label: str = None
     size: int = -1
-    modifier: Callable[[Any], str] | None = None
+    modifier: Callable[[Any], str] = None
 
 CAN_CREATE = 0b00001
 CAN_EDIT = 0b00010
@@ -90,7 +90,7 @@ class _orderBySelector(Ui_orderBySelector):
         return query_dsl.OrderBy(order_by)
 
 
-class xControlTableView(Ui_xControlTableView, Generic[_T]):
+class xTableView(Ui_xControlTableView, Generic[_T]):
     class State(Enum):
         INIT = 1
         LOADING = 2
@@ -180,7 +180,10 @@ class xControlTableView(Ui_xControlTableView, Generic[_T]):
         if self._filter_editor is None:
             return
         w = self._filter_editor(filter_by=self._filter_by, parent=super().GetParent())
-        w.ShowModal()
+        ret = w.ShowModal()
+        if ret == wx.ID_OK:
+            self._filter_by = w.get_filter()
+            self.refresh()
 
     def __on_edit_cols_click(self, event):
         selected_cols = []

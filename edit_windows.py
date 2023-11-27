@@ -102,14 +102,14 @@ class _TextValidator(_Validator):
         return c
     
 class _NumericValidator(_Validator):
-    _min: Optional[int|float]
-    _max: Optional[int|float]
+    _min: Optional[float]
+    _max: Optional[float]
     _is_positive: Optional[bool]
 
     def __init__(self,
                  *args,
-                 min: Optional[int|float] = None,
-                 max: Optional[int|float] = None,
+                 min: Optional[float] = None,
+                 max: Optional[float] = None,
                  is_positive: Optional[bool] = None,
                  **kwds):
         super().__init__(*args, **kwds)
@@ -159,10 +159,13 @@ class _DateValidator(_Validator):
         self._max = max
         super().__init__(*args, **kwds)
 
-    def _x_validate(self, ctrl: wx.adv.CalendarCtrl | wx.adv.DatePickerCtrl):
-        match type(ctrl):
-            case wx.adv.CalendarCtrl: date = ctrl.GetDate()
-            case wx.adv.DatePickerCtrl: date = ctrl.GetValue()
+    def _x_validate(self, ctrl):
+        if type(ctrl) == wx.adv.CalendarCtrl:
+            date = ctrl.GetDate()
+        elif type(ctrl) == wx.adv.DatePickerCtrl:
+            date = ctrl.GetValue()
+        else:
+            raise Exception('Doesnt fit widget for date validation.')
         _valid = True
         if not self._min is None:
             _valid = _valid and self._min <= date
@@ -184,12 +187,12 @@ def _db_error_msg(e):
 
 
 class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.OptionalFieldsMixin):
-    _entity: DischargeMeasurement | None
+    _entity: DischargeMeasurement
     _series: Dict[int, DischargeSeries] = {}
 
     def __init__(self,
                  *args,
-                 entity: DischargeMeasurement | None = None,
+                 entity: DischargeMeasurement = None,
                  on_save: Callable[[Base], None] = None,
                  **kwds) -> None:
         super().__init__(*args, **kwds)
@@ -297,15 +300,15 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.Optional
             if value == None:
                 return
 
-            match type(self.__dict__[field]):
-                case wx.StaticText: 
-                    self.__dict__[field].SetLabelText(str(value))
-                case wx.SpinCtrl | wx.SpinCtrlDouble: 
-                    self.__dict__[field].SetValue(value)
-                case wx.TextCtrl: 
-                    self.__dict__[field].SetValue(value)
-                case wx.Choice: 
-                    for item, seria in self._series.items():
+            t = type(self.__dict__[field])
+            if t == wx.StaticText:
+                self.__dict__[field].SetLabelText(str(value))
+            elif t == wx.SpinCtrl or t == wx.SpinCtrlDouble:
+                self.__dict__[field].SetValue(value)
+            elif t == wx.TextCtrl:
+                self.__dict__[field].SetValue(value)
+            elif t == wx.Choice:
+                for item, seria in self._series.items():
                         if seria.RID == value.RID:
                             self.__dict__[field].Select(item)
                             break
@@ -502,11 +505,11 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, mixins.OptionalFieldsMixi
 class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin):
     __mine_objects: List[MineObject] = []
     __bore_holes: List[BoreHole] = []
-    __entity: OrigSampleSet|None = None
-    __on_save: Callable[[OrigSampleSet], None]|None = None
+    __entity: OrigSampleSet = None
+    __on_save: Callable[[OrigSampleSet], None] = None
 
     def __init__(self,
-                 entity: OrigSampleSet|None = None,
+                 entity: OrigSampleSet = None,
                  on_save: Callable[[OrigSampleSet], None] = None, *args, **kwds):
         super().__init__(*args, **kwds)
         mixins.OptionalFieldsMixin.__init__(self, self)
@@ -546,10 +549,12 @@ class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin
             self.field_Comment.Enable(True)
             self.field_Comment.SetValue(e.Comment)
             self.field_Comment_enabled.SetValue(True)
-        match e.SampleType:
-            case 'CORE': self.field_SampleType.Select(0)
-            case 'STUFF': self.field_SampleType.Select(0)
-            case 'DISPERCE': self.field_SampleType.Select(0)
+        if e.SampleType == 'CORE':
+            self.field_SampleType.Select(0)
+        elif e.SampleType == 'STUFF':
+            self.field_SampleType.Select(1)
+        elif e.SampleType == 'DISPERCE':
+            self.field_SampleType.Select(2)
         self.field_X.SetValue(e.X)
         self.field_Y.SetValue(e.Y)
         self.field_Z.SetValue(e.Z)
@@ -607,10 +612,13 @@ class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin
         e.X = self.field_X.GetValue()
         e.Y = self.field_Y.GetValue()
         e.Z = self.field_Z.GetValue()
-        match self.field_SampleType.GetSelection():
-            case 0: e.SampleType = 'CORE'
-            case 1: e.SampleType = 'STUFF'
-            case 2: e.SampleType = 'DISPERCE'
+        s = self.field_SampleType.GetSelection()
+        if s == 0:
+            e.SampleType = 'CORE'
+        elif s == 1:
+            e.SampleType = 'STUFF'
+        elif s == 2:
+            e.SampleType = 'DISPERCE'
         e.bore_hole = self.__bore_holes[self.field_HID.GetSelection() - 1]
         e.mine_object = self.__mine_objects[self.field_MOID.GetSelection() - 1]
         date: wx.DateTime = self.field_SetDate.GetValue()

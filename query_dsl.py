@@ -1,4 +1,4 @@
-from dataclasses import (dataclass, field)
+from dataclasses import (dataclass, field as dataclass_field)
 from database import Base
 from database import get_session
 from database import init
@@ -15,31 +15,23 @@ class FilterClause:
     field: str
     cmp: Callable[[Any, Any], Any]
     value: Any
-
-@dataclass
-class Group:
-    name: str
-    clauses: List[FilterClause] = field(default_factory=list)
-
-    def find_clause(self, field: str) -> FilterClause:
-        for o in self.clauses:
-            if type(o) == FilterClause and o.field == field:
-                return o
-        return None
+    name: str = dataclass_field(default=None)
 
 @dataclass
 class FilterBy:
-    clauses: List[Union[Group, FilterClause]] = field(default_factory=list)
-
-    def find_group(self, name: str) -> Group:
+    clauses: List[FilterClause] = dataclass_field(default_factory=list)
+    
+    def find(self, field: str) -> FilterClause:
         for o in self.clauses:
-            if type(o) == Group and o.name == name:
+            if o.field == field:
                 return o
         return None
     
-    def find_clause(self, field: str) -> FilterClause:
+    def find_by_name(self, name: str) -> FilterClause:
+        if name is None:
+            return None
         for o in self.clauses:
-            if type(o) == FilterClause and o.field == field:
+            if o.name == name:
                 return o
         return None
 
@@ -50,11 +42,11 @@ class Direction(Enum):
 @dataclass
 class OrderClause:
     field: str
-    direction: Direction = field(default=Direction.ASC)
+    direction: Direction = dataclass_field(default=Direction.ASC)
 
 @dataclass
 class OrderBy:
-    clauses: List[OrderClause] = field(default_factory=list)
+    clauses: List[OrderClause] = dataclass_field(default_factory=list)
 
     def find_clause(self, field: str) -> FilterClause:
         for o in self.clauses:
@@ -76,10 +68,7 @@ def build_query(table_class: Type[_T], order_by: OrderBy, filter_by: FilterBy) -
 
     _filter_by_query = []
     for o in filter_by.clauses:
-        if type(o) == Group:
-            _filter_by_query = _filter_by_query + list(map(_make_filter_clause, o.clauses))
-        else:
-            _filter_by_query.append(_make_filter_clause(o))
+        _filter_by_query.append(_make_filter_clause(o))
     q = q.filter(and_(*_filter_by_query))
 
     return q

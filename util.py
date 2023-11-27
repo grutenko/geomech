@@ -17,7 +17,7 @@ def commit_changes(parent):
     exc_bucket = Queue()
     t = threading.Thread(target=_thread, args=[exc_bucket])
     t.start()
-    w = wx.ProgressDialog("Обновление", "Идет обновление базы данных...", parent=parent)
+    w = wx.ProgressDialog("Обновление", "Идет обновление базы данных...", style=wx.PD_AUTO_HIDE, parent=parent)
     while True:
         time.sleep(0.01)
         if not exc_bucket.empty():

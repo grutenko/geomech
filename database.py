@@ -10,19 +10,21 @@ from sqlalchemy.orm import (
     relationship,
     Session,
 )
+from typing import Callable
 
 engine: Engine = None
 session: Session = None
 
-def init(url: str, *args, **kwds) -> None:
+def init(dsn: str, *args, **kwds) -> None:
     global engine, session
-    engine = create_engine(url)
+    engine = create_engine(dsn)
     kwds['bind'] = engine
     session = Session(*args, **kwds)
 
 def get_session() -> Session:
     global session
     return session
+
 
 
 class Base(DeclarativeBase):
@@ -137,7 +139,7 @@ class BoreHole(Base):
     RID: Mapped[int] = mapped_column(primary_key=True)
     Number: Mapped[str] = mapped_column(nullable=False)
     Name: Mapped[str] = mapped_column(nullable=False)
-    Comment: Mapped[str | None] = mapped_column()
+    Comment: Mapped[str] = mapped_column()
     SID: Mapped[int] = mapped_column(ForeignKey('Stations.RID'))
     MOID: Mapped[int] = mapped_column(ForeignKey('MineObjects.RID'))
     X: Mapped[float] = mapped_column(nullable=False)
@@ -166,7 +168,7 @@ class Station(Base):
     RID: Mapped[int] = mapped_column(primary_key=True)
     Number: Mapped[str] = mapped_column(nullable=False)
     Name: Mapped[str] = mapped_column(nullable=False)
-    Comment: Mapped[str | None] = mapped_column()
+    Comment: Mapped[str] = mapped_column()
     MOID: Mapped[int] = mapped_column(ForeignKey('MineObject.RID'))
     X: Mapped[float] = mapped_column(nullable=False)
     Y: Mapped[float] = mapped_column(nullable=False)

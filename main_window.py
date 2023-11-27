@@ -18,12 +18,17 @@ from filter_windows import DischargeMeasurement_Filter
 from list_windows import (
     DischargeSeries_List,
     BoreHoles_List,
-    OrigSampleSets_List
+    OrigSampleSets_List,
+    Stations_List,
+    MineObjects_List,
+    CoordSystems_List,
+    Base
 )
-from xControlTableView import (
-    xControlTableView,
+from xTableView import (
+    xTableView,
     Column
 )
+from settings import Settings
 from util import commit_changes
 import query_dsl
 
@@ -85,10 +90,17 @@ class _Inspect(Ui_DischargeMesurement_Inspect):
         if not self.__entity.YungStatic is None:
             self.field_PuassonStatic.SetLabel(str(self.__entity.YungStatic))
 
-class MainWindow(Ui_MainWindow):
-    __list: xControlTableView
+class MainWindow(Ui_MainWindow, Base[DischargeMeasurement]):
+    __list: xTableView
     __detail_entity: DischargeMeasurement = None
     __inspector: _Inspect = None
+
+    _discharge_series_list: DischargeSeries_List = None
+    _bore_holes_list: BoreHoles_List = None
+    _orig_sample_sets_list: OrigSampleSets_List = None
+    _stations_list: Stations_List = None
+    _mine_objects_list: MineObjects_List = None
+    _coord_systems_list: CoordSystems_List = None
 
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
@@ -134,7 +146,7 @@ class MainWindow(Ui_MainWindow):
         order_by = query_dsl.OrderBy([
             query_dsl.OrderClause('SNumber', query_dsl.Direction.DESC)
         ])
-        self.__list = xControlTableView[DischargeMeasurement](
+        self.__list = xTableView[DischargeMeasurement](
             DischargeMeasurement,
             available_cols,
             cols,
@@ -150,6 +162,13 @@ class MainWindow(Ui_MainWindow):
         self.list_container.Add(self.__list, wx.EXPAND)
         self.list_container.Layout()
         self.__list.Layout()
+
+        self._discharge_series_list: DischargeSeries_List = None
+        self._bore_holes_list: BoreHoles_List = None
+        self._orig_sample_sets_list: OrigSampleSets_List = None
+        self._stations_list: Stations_List = None
+        self._mine_objects_list: MineObjects_List = None
+        self._coord_systems_list: CoordSystems_List = None
 
     def __on_edit(self, e: DischargeMeasurement):
         editor = DischargeMeasurementEditor(parent=self, entity=e, on_save=lambda _: self.__list.refresh())
@@ -194,17 +213,34 @@ class MainWindow(Ui_MainWindow):
         if self.__detail_entity == e:
             self.__remove_details()
 
+    def __open_list_window(self, property, class_name):
+        if not self.__dict__[property] is None:
+            self.__dict__[property].Raise()
+        else:
+            setattr(self, property, class_name(parent=self))
+            def _on_close(e):
+                self.__dict__[property].Destroy()
+                self.__dict__[property] = None
+            getattr(self, property).Bind(wx.EVT_CLOSE, _on_close)
+            getattr(self, property).Show()
+
     def _on_show_discharge_series(self, event):
-        w = DischargeSeries_List(parent=self)
-        w.Show()
+        self.__open_list_window('_discharge_series_list', DischargeSeries_List)
 
     def _on_show_bore_holes(self, event):
-        w = BoreHoles_List(parent=self)
-        w.Show()
+        self.__open_list_window('_bore_holes_list', BoreHoles_List)
 
     def _on_show_orig_sample_sets(self, event):
-        w = OrigSampleSets_List(parent=self)
-        w.Show()
+        self.__open_list_window('_orig_sample_sets_list', OrigSampleSets_List)
+
+    def _on_show_stations(self, event):
+        self.__open_list_window('_stations_list', Stations_List)
+
+    def _on_show_mine_object(self, event):
+        self.__open_list_window('_mine_objects_list', MineObjects_List)
+
+    def _on_show_coord_system(self, event):
+        self.__open_list_window('_coord_systems_list', CoordSystems_List)
 
     def _on_create_discharge_measurement(self, event):
         w = DischargeMeasurementEditor(parent=self, on_save=lambda: self.__list.refresh())
@@ -217,3 +253,10 @@ class MainWindow(Ui_MainWindow):
     def _on_create_discharge_series(self, event):
         w = DischargeSeriesEditor(parent=self)
         w.Show()
+
+    def _on_show_settings(self, event):
+        w = Settings(parent=self)
+        w.ShowModal()
+
+    def select(self, e: DischargeMeasurement):
+        self.__list.select(e)
