@@ -496,7 +496,7 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, mixins.OptionalFieldsMixi
         def _on_save(e):
             self.__init_orig_sample_set()
             for i, oss in self._oss.items():
-                if oss.RID == e.OSSID:
+                if oss.RID == e.RID:
                     self.field_OSSID.Select(i)
                     break
         w = OrigSampleSets_Editor(on_save=_on_save, parent=self)

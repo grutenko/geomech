@@ -53,12 +53,12 @@ class DischargeSeries_List(Ui_DischargeSeries_List, Base[DischargeSeries]):
             return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
 
         available_cols = [
-            Column('RID', 'id'),
-            Column('OSSID', 'Исходный набор образцов', modifier=lambda ossid: get_session().query(OrigSampleSet).get(ossid).Name),
-            Column('Number', '№ серии замеров'),
+            Column('RID', 'id', 50),
+            Column('OSSID', 'Исходный набор образцов', 350, modifier=lambda ossid: get_session().query(OrigSampleSet).get(ossid).Name),
+            Column('Number', '№ серии замеров', 50),
             Column('Name', 'Название', 500),
-            Column('Comment', 'Комментарий'),
-            Column('MeasureDate', 'Дата замера', -1, _date_modifier)
+            Column('Comment', 'Комментарий', 500),
+            Column('MeasureDate', 'Дата замера', 250, _date_modifier)
         ]
         cols = [
             'RID', 'Number', 'Name', 'MeasureDate'
@@ -114,21 +114,21 @@ class BoreHoles_List(Ui_BoreHoles_List, Base[BoreHole]):
             return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
 
         available_cols = [
-            Column('RID', 'id'),
-            Column('Number', '№ набора образцов'),
+            Column('RID', 'id', 50),
+            Column('Number', '№ набора образцов', 350),
             Column('Name', 'Название', 500),
-            Column('Comment', 'Комментарий'),
-            Column('SID', 'ID измерительной станции'),
-            Column('MOID', 'ID горного обьекта'),
-            Column('X', 'Коорд. X устья скважины'),
-            Column('Y', 'Коорд. Y устья скважины'),
-            Column('Z', 'Коорд. Z устья скважины'),
-            Column('Azimuth', 'Азимут'),
-            Column('Tilt', 'Наклон'),
-            Column('Diameter', 'Диаметр'),
-            Column('Length', 'Длина'),
-            Column('StartDate', 'Дата закладки / начала измерений', -1, _date_modifier),
-            Column('EndDate', 'Дата завершения измерений', -1, _date_modifier)
+            Column('Comment', 'Комментарий', 500),
+            Column('SID', 'ID измерительной станции', 50),
+            Column('MOID', 'ID горного обьекта', 50),
+            Column('X', 'Коорд. X устья скважины', 50),
+            Column('Y', 'Коорд. Y устья скважины', 50),
+            Column('Z', 'Коорд. Z устья скважины', 50),
+            Column('Azimuth', 'Азимут', 50),
+            Column('Tilt', 'Наклон', 50),
+            Column('Diameter', 'Диаметр', 50),
+            Column('Length', 'Длина', 50),
+            Column('StartDate', 'Дата закладки / начала измерений', 250, _date_modifier),
+            Column('EndDate', 'Дата завершения измерений', 250, _date_modifier)
         ]
         cols = [
             'RID', 'Number', 'Name', 'X', 'Y', 'Z', 'StartDate'
@@ -198,17 +198,17 @@ class OrigSampleSets_List(Ui_OrigSampleSets_List, Base[OrigSampleSet]):
             return _gen_name_r(get_session().query(MineObject).get(moid), '')
 
         available_cols = [
-            Column('RID', 'id'),
-            Column('Number', '№ серии замеров'),
+            Column('RID', 'id', 50),
+            Column('Number', '№ серии замеров', 350),
             Column('Name', 'Название', 500),
-            Column('Comment', 'Комментарий'),
-            Column('SampleType', 'Тип материала образцов', -1, _sample_type_modifier),
-            Column('MOID', 'Горный объект', modifier=_mine_object_modifier),
-            Column('HID', 'Скважина', modifier=lambda hid: get_session().query(BoreHole).get(hid).Name),
-            Column('X', 'Коорд. X устья скважины'),
-            Column('Y', 'Коорд. Y устья скважины'),
-            Column('Z', 'Коорд. Z устья скважины'),
-            Column('SetDate', 'Дата закладки / начала измерений', -1, _date_modifier),
+            Column('Comment', 'Комментарий', 500),
+            Column('SampleType', 'Тип материала образцов', 150, _sample_type_modifier),
+            Column('MOID', 'Горный объект', 350, modifier=_mine_object_modifier),
+            Column('HID', 'Скважина', 350, modifier=lambda hid: get_session().query(BoreHole).get(hid).Name),
+            Column('X', 'Коорд. X устья скважины', 50),
+            Column('Y', 'Коорд. Y устья скважины', 50),
+            Column('Z', 'Коорд. Z устья скважины', 50),
+            Column('SetDate', 'Дата закладки / начала измерений', 350, _date_modifier),
         ]
         cols = [
             'RID', 'Number', 'Name', 'SampleType', 'X', 'Y', 'Z', 'SetDate'
@@ -264,17 +264,17 @@ class Stations_List(Ui_Stations_List, Base[Station]):
             return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
 
         available_cols = [
-            Column('RID', 'id'),
-            Column('Number', '№ серии замеров'),
+            Column('RID', 'id', 50),
+            Column('Number', '№ серии замеров', 350),
             Column('Name', 'Название', 500),
-            Column('Comment', 'Комментарий'),
-            Column('MOID', 'Горный объект', modifier=lambda moid: get_session().query(MineObject).get(moid).Name),
-            Column('X', 'Коорд. X станции'),
-            Column('Y', 'Коорд. Y станции'),
-            Column('Z', 'Коорд. Z станции'),
-            Column('HoleCount', 'Количество скважин'),
-            Column('StartDate', 'Дата закладки / начала измерений', -1, _date_modifier),
-            Column('EndDate', 'Дата завершения измерений', -1, _date_modifier),
+            Column('Comment', 'Комментарий', 500),
+            Column('MOID', 'Горный объект', 350, modifier=lambda moid: get_session().query(MineObject).get(moid).Name),
+            Column('X', 'Коорд. X станции', 50),
+            Column('Y', 'Коорд. Y станции', 50),
+            Column('Z', 'Коорд. Z станции', 50),
+            Column('HoleCount', 'Количество скважин', 50),
+            Column('StartDate', 'Дата закладки / начала измерений', 250, _date_modifier),
+            Column('EndDate', 'Дата завершения измерений', 250, _date_modifier),
         ]
         cols = [
             'RID', 'Number', 'Name', 'X', 'Y', 'Z', 'StartDate'

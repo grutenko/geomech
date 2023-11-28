@@ -78,7 +78,7 @@ class _orderBySelector(Ui_orderBySelector):
             self.__props.append(self.fields.Append(wx.propgrid.EnumProperty(col.label if not col.label is None else col.name, col.name, choices)))
             for o in self.__order_by.clauses:
                 if o.field == col.name:
-                    self.fields.SetPropVal(self.__props[index], 1 if o.direction == query_dsl.Direction.ASC else 2)
+                    self.fields.SetPropertyValue(self.__props[index], 1 if o.direction == query_dsl.Direction.ASC else 2)
                     break
 
     def get_order_by(self) -> query_dsl.OrderBy:
@@ -237,8 +237,6 @@ class xTableView(Ui_xControlTableView, Generic[_T]):
     def __init_columns(self):
         for col in self._cols:
             colIndx = self.list.AppendColumn(col.label if not col.label is None else col.name, wx.LIST_FORMAT_LEFT, col.size)
-            if col.size == -1:
-                self.list.SetColumnWidth(colIndx, wx.COL_WIDTH_AUTOSIZE)
 
     def __set_state(self, state: State):
         if state == self.State.LOADING:

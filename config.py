@@ -1,4 +1,5 @@
 import wx
+import io
 
 __config: wx.FileConfig = None
 
@@ -10,6 +11,7 @@ def init_config():
     if not __config is None:
         raise Exception("Config already initialized.")
     __config = wx.FileConfig(__CONFIG_APP_NAME__, __CONFIG_APP_VENDOR__, style=wx.CONFIG_USE_LOCAL_FILE)
+    
 
 def read_config(key: str, defaultVal = wx.EmptyString):
     global __config
@@ -17,5 +19,5 @@ def read_config(key: str, defaultVal = wx.EmptyString):
     
 def write_config(key: str, value: str):
     global __config
-    if not __config.Write(key, value):
+    if not __config.Write(key, value) or not __config.Flush():
         raise Exception("Error writing to config.")
