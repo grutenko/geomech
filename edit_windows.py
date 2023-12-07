@@ -1,3 +1,5 @@
+# _*_ coding: UTF8 _*_
+
 from typing import (
     Dict,
     Optional,
@@ -11,7 +13,9 @@ from datetime import datetime
 from ui import (
     Ui_DischargeMeasurement_Editor,
     Ui_DischargeSeries_Editor,
-    Ui_OrigSampleSets_Editor
+    Ui_OrigSampleSets_Editor,
+    Ui_Stations_Editor,
+    Ui_MineObjects_Editor
 )
 import sqlalchemy
 from database import (
@@ -20,11 +24,13 @@ from database import (
     DischargeSeries,
     OrigSampleSet,
     MineObject,
-    BoreHole
+    BoreHole,
+    Station,
+    gen_name_path,
+    dry_commit_changes
 )
 import mixins
 from sqlalchemy import func
-from util import commit_changes
 
 class _Validator(wx.Validator):
     _message: str
@@ -210,6 +216,7 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.Optional
         self.button_Save.Bind(wx.EVT_BUTTON, self.__on_save_click)
         self.btn_addSeries.Bind(wx.EVT_BUTTON, self.__on_add_series_click)
         self.field_DSID.Bind(wx.EVT_CHOICE, self.__on_change_seria)
+        self.Bind(wx.EVT_CLOSE, self.__on_close)
 
     def __on_change_seria(self, event):
         item = event.GetEventObject().GetSelection()
@@ -221,13 +228,15 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.Optional
          .first())
         self.field_SNumber.SetValue(max[0] + 1 if max[0] != None else 1)
 
+    __new_series = None
 
     def __on_add_series_click(self, event):
         def _on_add_series(entity):
-            self.__set_series()
-            for item, e in self._series.items():
-                if entity.RID == e.RID:
-                    self.field_DSID.Select(item)
+            item = self.field_DSID.Append('[+] ' + entity.Name, -1)
+            self._series[item] = entity
+            self.field_DSID.Select(item)
+            self.btn_addSeries.Enable(False)
+            self.__new_series = entity
 
         editor = DischargeSeriesEditor(parent=self, on_save=_on_add_series)
         editor.Show()
@@ -239,6 +248,9 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.Optional
             item = self.field_DSID.Append(e.Name, e.RID)
             self._series[item] = e
 
+    def __on_close(self, event):
+        event.Skip()
+
     def __on_cancel_click(self, event):
         self.Close()
 
@@ -249,7 +261,7 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.Optional
         self.Enable(False)
         try:
             get_session().add(self._entity)
-            commit_changes(self)
+            dry_commit_changes()
             if not self._on_save is None:
                 self._on_save(self._entity)
             self.Close()
@@ -289,7 +301,7 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.Optional
         _set('field_TS_2', _NumericValidator(is_positive=True))
         _set('field_PuassonStatic', _NumericValidator(is_positive=True, max=1))
         _set('field_YungStatic', _NumericValidator(is_positive=True))
-        _set('field_E1', _NumericValidator(is_positive=True))
+        _set('field_E1', _NumericValidator())
         _set('field_E2', _NumericValidator())
         _set('field_E3', _NumericValidator())
         _set('field_E4', _NumericValidator())
@@ -317,7 +329,7 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.Optional
                 self.__dict__[field + '_enabled'].SetValue(True)
 
         _set('field_RID', entity.RID)
-        _set('field_DSID', entity.dischange_series)
+        _set('field_DSID', entity.discharge_series)
         self.field_DSID.Enable(False)
         self.btn_addSeries.Enable(False)
         _set('field_SNumber', entity.SNumber)
@@ -354,7 +366,7 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.Optional
 
     def __write_entity(self, e: DischargeMeasurement) -> DischargeMeasurement:
         if self.field_DSID.IsEnabled():
-            e.dischange_series = self._series[self.field_DSID.GetSelection()]
+            e.discharge_series = self._series[self.field_DSID.GetSelection()]
         e.SNumber = self.field_SNumber.GetValue()
         e.DschNumber = self.field_DschNumber.GetValue()
         e.CoreNumber = self.field_CoreNumber.GetValue()
@@ -399,6 +411,8 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, mixins.OptionalFieldsMixi
     _entity: DischargeSeries = None
     _on_save = None
 
+    __new_orig_sample_set = None
+
     def __init__(self, 
                  entity: DischargeSeries = None,
                  on_save: Callable[[DischargeSeries], None] = None,
@@ -409,7 +423,7 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, mixins.OptionalFieldsMixi
         self._entity = entity
         self._on_save = on_save
 
-        self.__init_orig_sample_set()
+        self.__set_orig_sample_set()
 
         if not entity is None:
             self._entity = entity
@@ -421,7 +435,7 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, mixins.OptionalFieldsMixi
 
         self.__init_validator()
 
-    def __init_orig_sample_set(self):
+    def __set_orig_sample_set(self):
         self.field_OSSID.Clear()
         self.field_OSSID.Append('-- Не выбрано --')
         for e in get_session().query(OrigSampleSet).all():
@@ -438,7 +452,7 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, mixins.OptionalFieldsMixi
         self.Enable(False)
         try:
             get_session().add(self._entity)
-            commit_changes(self)
+            dry_commit_changes()
             if not self._on_save is None:
                 self._on_save(self._entity)
             self.Close()
@@ -494,11 +508,10 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, mixins.OptionalFieldsMixi
 
     def __on_add_orig_sample_set(self, event):
         def _on_save(e):
-            self.__init_orig_sample_set()
-            for i, oss in self._oss.items():
-                if oss.RID == e.RID:
-                    self.field_OSSID.Select(i)
-                    break
+            self.__set_orig_sample_set()
+            item = self.field_OSSID.Append('[+] ' + e.Name)
+            self._oss[item] = e
+            self.field_OSSID.Select(item)
         w = OrigSampleSets_Editor(on_save=_on_save, parent=self)
         w.Show()
 
@@ -517,17 +530,8 @@ class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin
         self.__entity = entity
         self.__on_save = on_save
 
-        def _set_mine_objects_R(parent: MineObject = None, parent_str = ''):
-            if parent is None:
-                objects = get_session().query(MineObject).where(MineObject.Level == 0).all()
-            else:
-                objects = parent.childrens
-            for o in objects:
-                self.__mine_objects.append(o)
-                self.field_MOID.Append(parent_str + o.Name)
-                _set_mine_objects_R(o, parent_str + o.Name + ' / ')
-
-        _set_mine_objects_R()
+        self.__load_mine_objects()
+        self.__set_mine_objects()
         self.__bore_holes = get_session().query(BoreHole).all()
         for bh in self.__bore_holes:
             self.field_HID.Append(bh.Name)
@@ -535,10 +539,36 @@ class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin
         if not self.__entity is None:
             self.__set_fields()
 
+
         self.__init_validator()
 
         self.button_CANCEL.Bind(wx.EVT_BUTTON, self.__on_cancel_click)
         self.button_SAVE.Bind(wx.EVT_BUTTON, self.__on_save_click)
+        self.btn_add_mine_object.Bind(wx.EVT_BUTTON, self.__on_add_mine_object)
+
+    def __load_mine_objects(self):
+        def _load_r(parent):
+            if parent is None:
+                objects = get_session().query(MineObject).where(MineObject.Level == 0).all()
+            else:
+                objects = parent.childrens
+            for o in objects:
+                self.__mine_objects.append(o)
+                _load_r(o)
+        _load_r(None)
+
+    def __set_mine_objects(self):
+        self.field_MOID.Clear()
+        for e in self.__mine_objects:
+            self.field_MOID.Append(gen_name_path(e, 'parent'))
+
+    def __on_add_mine_object(self, event):
+        def _on_save(e):
+            index = self.__mine_objects.index(e) + 1 if e.parent != None else 0
+            self.__mine_objects.insert(index, e)
+            self.__set_mine_objects()
+        w = MineObjects_Editor(on_save=_on_save, parent=self)
+        w.Show()
 
     def __set_fields(self):
         e = self.__entity
@@ -596,7 +626,7 @@ class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin
         self.Enable(False)
         try:
             get_session().add(self.__entity)
-            commit_changes(self)
+            dry_commit_changes()
             if not self.__on_save is None:
                 self.__on_save(self.__entity)
             self.Close()
@@ -626,3 +656,133 @@ class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin
         e.SetDate = date
 
         return e
+    
+class StationsEditor(Ui_Stations_Editor, mixins.OptionalFieldsMixin):
+    __entity: Station
+    __on_save: Callable[[Station], None]
+    __mine_objects: List[MineObject]
+
+    def __init__(self, entity: OrigSampleSet = None,
+                 on_save: Callable[[OrigSampleSet], None] = None, *args, **kwds):
+        super().__init__(*args, **kwds)
+        mixins.OptionalFieldsMixin.__init__(self, self)
+
+        self.__entity = entity
+        self.__on_save = on_save
+
+        def _set_mine_objects_R(parent: MineObject = None, parent_str = ''):
+            if parent is None:
+                objects = get_session().query(MineObject).where(MineObject.Level == 0).all()
+            else:
+                objects = parent.childrens
+            for o in objects:
+                self.__mine_objects.append(o)
+                self.field_MOID.Append(parent_str + o.Name)
+                _set_mine_objects_R(o, parent_str + o.Name + ' / ')
+
+        self.__mine_objects = []
+        _set_mine_objects_R()
+
+        if not self.__entity is None:
+            self.__set_fields()
+
+        self.__init_validator()
+
+        self.button_CANCEL.Bind(wx.EVT_BUTTON, self.__on_cancel_click)
+        self.button_SAVE.Bind(wx.EVT_BUTTON, self.__on_save_click)
+
+    def __set_fields(self):
+        e = self.__entity
+        self.field_RID.SetLabelText(str(e.RID))
+        self.field_Number.SetValue(e.Number)
+        self.field_Name.SetValue(e.Name)
+        if e.Comment != None:
+            self.field_Comment.SetValue(e.Comment)
+            self.field_Comment.Enable(True)
+            self.field_Comment_enabled.SetValue(True)
+        self.field_X.SetValue(e.X)
+        self.field_Y.SetValue(e.Y)
+        self.field_Z.SetValue(e.Z)
+        self.field_MOID.Select(self.__mine_objects.index(e.mine_object) + 1)
+        self.field_MOID.Enable(False)
+        self.button_Moid_Add.Enable(False)
+        self.field_HoleCount.SetValue(e.HoleCount)
+        try:
+            date = datetime(
+                int(str(e.StartDate)[0:4]),
+                int(str(e.StartDate)[4:6]),
+                int(str(e.StartDate)[6:8]))
+        except ValueError:
+            wx.MessageBox("Невалидная дата!", "Ошибка!")
+            date = datetime.now()
+        self.field_StartDate.SetValue(date)
+        if e.EndDate != None:
+            try:
+                date = datetime(
+                    int(str(e.StartDate)[0:4]),
+                    int(str(e.StartDate)[4:6]),
+                    int(str(e.StartDate)[6:8]))
+            except ValueError:
+                wx.MessageBox("Невалидная дата!", "Ошибка!")
+                date = datetime.now()
+            self.field_EndDate.SetValue(date)
+            self.field_EndDate.Enable(True)
+            self.field_EndDate_enabled.SetValue(True)
+
+    def __on_save_click(self, event):
+        if not self.Validate():
+            return
+        self.__entity = self.__write_entity(Station() if self.__entity == None else self.__entity)
+        self.Enable(False)
+        try:
+            dry_commit_changes()
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            _db_error_msg(e)
+        finally:
+            self.Enable(True)
+        if not self.__on_save is None:
+            self.__on_save(self.__entity)
+        self.Close()
+
+    def __write_entity(self, e: Station) -> Station:
+        e.Number = self.field_Number.GetValue()
+        e.Name = self.field_Name.GetValue()
+        if self.field_Comment.IsEnabled():
+            e.Comment = self.field_Comment.GetValue()
+        e.X = self.field_X.GetValue()
+        e.Y = self.field_Y.GetValue()
+        e.Z = self.field_Z.GetValue()
+        e.mine_object = self.__mine_objects[self.field_MOID.GetSelection() - 1]
+        e.HoleCount = self.field_HoleCount.GetValue()
+        date: wx.DateTime = self.field_StartDate.GetValue()
+        date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
+        e.StartDate = date
+        if self.field_EndDate.IsEnabled():
+            date: wx.DateTime = self.field_EndDate.GetValue()
+            date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
+            e.EndDate = date
+
+        return e
+
+    def __on_cancel_click(self, event):
+        self.Close()
+
+    def __init_validator(self):
+        def _set(field, validator):
+            self.__dict__[field].SetValidator(validator)
+
+        _set('field_Number', _TextValidator(len_min=1, len_max=255))
+        _set('field_Name', _TextValidator(len_min=1, len_max=255))
+        _set('field_Comment', _TextValidator(len_min=1, len_max=255))
+        _set('field_MOID', _ChoiceValidator())
+        _set('field_X', _NumericValidator())
+        _set('field_Y', _NumericValidator())
+        _set('field_Z', _NumericValidator())
+        _set('field_HoleCount', _NumericValidator())
+        _set('field_StartDate', _DateValidator(max=wx.DateTime.Now()))
+        _set('field_EndDate', _DateValidator())
+
+class MineObjects_Editor(Ui_MineObjects_Editor, mixins.OptionalFieldsMixin):
+    def __init__(self, entity: MineObject = None, on_save: Callable[[MineObject], None] = None, *args, **kwds):
+        super().__init__(*args, **kwds)
+        mixins.OptionalFieldsMixin.__init__(self, self)

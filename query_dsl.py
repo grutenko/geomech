@@ -1,7 +1,8 @@
+# _*_ coding: UTF8 _*_
+
 from dataclasses import (dataclass, field as dataclass_field)
 from database import Base
 from database import get_session
-from database import init
 from sqlalchemy.orm import Query
 from sqlalchemy import asc
 from sqlalchemy import desc

@@ -1,8 +1,12 @@
+# _*_ coding: UTF8 _*_
+
 import wx
 from typing import (
     List,
     Generic,
-    TypeVar
+    TypeVar,
+    Type,
+    Union
 )
 from ui import (
     Ui_DischargeSeries_List,
@@ -19,7 +23,9 @@ from xTableView import (
 from xTreeView import xTreeView
 from edit_windows import (
     DischargeSeriesEditor,
-    OrigSampleSets_Editor
+    OrigSampleSets_Editor,
+    StationsEditor,
+    MineObjects_Editor
 )
 from database import (
     DischargeSeries,
@@ -29,10 +35,13 @@ from database import (
     Station,
     CoordSystem,
     Base,
-    get_session
+    get_session,
+    commit_changes
 )
+from sqlalchemy.inspection import inspect
+from column import Column
 import query_dsl as dsl
-from util import commit_changes
+import authority
 
 _T = TypeVar('_T', bound=Base)
 
@@ -49,12 +58,12 @@ class DischargeSeries_List(Ui_DischargeSeries_List, Base[DischargeSeries]):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
-        def _date_modifier(date):
+        def _date_modifier(_, date):
             return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
 
         available_cols = [
             Column('RID', 'id', 50),
-            Column('OSSID', 'Исходный набор образцов', 350, modifier=lambda ossid: get_session().query(OrigSampleSet).get(ossid).Name),
+            Column('OSSID', 'Исходный набор образцов', 350, modifier=lambda e, ossid: e.orig_sample_set.Name),
             Column('Number', '№ серии замеров', 50),
             Column('Name', 'Название', 500),
             Column('Comment', 'Комментарий', 500),
@@ -81,6 +90,8 @@ class DischargeSeries_List(Ui_DischargeSeries_List, Base[DischargeSeries]):
 
     def __on_create(self):
         def _on_save(e):
+            get_session().add(e)
+            commit_changes(self)
             self.__list.refresh()
             self.__list.select(e)
         editor = DischargeSeriesEditor(parent=self, on_save=_on_save)
@@ -88,6 +99,7 @@ class DischargeSeries_List(Ui_DischargeSeries_List, Base[DischargeSeries]):
 
     def __on_edit(self, e: DischargeSeries):
         def _on_save(e):
+            commit_changes(self)
             self.__list.refresh()
             self.__list.select(e)
         editor = DischargeSeriesEditor(parent=self, entity=e, on_save=_on_save)
@@ -110,7 +122,7 @@ class BoreHoles_List(Ui_BoreHoles_List, Base[BoreHole]):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
-        def _date_modifier(date):
+        def _date_modifier(_, date):
             return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
 
         available_cols = [
@@ -180,10 +192,10 @@ class OrigSampleSets_List(Ui_OrigSampleSets_List, Base[OrigSampleSet]):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
-        def _date_modifier(date):
+        def _date_modifier(_, date):
             return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
         
-        def _sample_type_modifier(type):
+        def _sample_type_modifier(_, type):
             if type == 'CORE':
                 return 'Керн'
             elif type == 'STUFF':
@@ -191,7 +203,7 @@ class OrigSampleSets_List(Ui_OrigSampleSets_List, Base[OrigSampleSet]):
             elif type == 'DISPERCE':
                 return 'Дисперсный материал'
 
-        def _mine_object_modifier(moid):
+        def _mine_object_modifier(_, moid):
             def _gen_name_r(o, acc):
                 return _gen_name_r(o.parent, '/' + o.Name + acc) if not o.parent is None else o.Name + acc
             
@@ -231,6 +243,8 @@ class OrigSampleSets_List(Ui_OrigSampleSets_List, Base[OrigSampleSet]):
 
     def __on_create(self):
         def _on_save(e):
+            get_session().add(e)
+            commit_changes(self)
             self.__list.refresh()
             self.__list.select(e)
         editor = OrigSampleSets_Editor(parent=self, on_save=_on_save)
@@ -238,6 +252,7 @@ class OrigSampleSets_List(Ui_OrigSampleSets_List, Base[OrigSampleSet]):
 
     def __on_edit(self, e: OrigSampleSet):
         def _on_save(e):
+            commit_changes(self)
             self.__list.refresh()
             self.__list.select(e)
         editor = OrigSampleSets_Editor(parent=self, entity=e, on_save=_on_save)
@@ -260,7 +275,7 @@ class Stations_List(Ui_Stations_List, Base[Station]):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
-        def _date_modifier(date):
+        def _date_modifier(_, date):
             return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
 
         available_cols = [
@@ -268,7 +283,7 @@ class Stations_List(Ui_Stations_List, Base[Station]):
             Column('Number', '№ серии замеров', 350),
             Column('Name', 'Название', 500),
             Column('Comment', 'Комментарий', 500),
-            Column('MOID', 'Горный объект', 350, modifier=lambda moid: get_session().query(MineObject).get(moid).Name),
+            Column('MOID', 'Горный объект', 350, modifier=lambda e, moid: e.mine_object.Name),
             Column('X', 'Коорд. X станции', 50),
             Column('Y', 'Коорд. Y станции', 50),
             Column('Z', 'Коорд. Z станции', 50),
@@ -287,6 +302,9 @@ class Stations_List(Ui_Stations_List, Base[Station]):
             available_cols,
             cols,
             order_by,
+            on_create=self.__on_create,
+            on_edit=self.__on_edit,
+            on_delete=self.__on_delete,
             parent=self.panel_1)
         self.list_container.Add(self.__list, wx.EXPAND)
         self.list_container.Layout()
@@ -295,19 +313,70 @@ class Stations_List(Ui_Stations_List, Base[Station]):
     def select(self, e: Station):
         self.__list.select(e)
 
+    def __on_create(self):
+        def _on_save(e):
+            get_session().add(e)
+            commit_changes(self)
+            self.__list.refresh()
+            self.__list.select(e)
+        editor = StationsEditor(parent=self, on_save=_on_save)
+        editor.Show()
+
+    def __on_edit(self, e: OrigSampleSet):
+        def _on_save(e):
+            commit_changes(self)
+            self.__list.refresh()
+            self.__list.select(e)
+        editor = StationsEditor(parent=self, entity=e, on_save=_on_save)
+        editor.Show()
+
+    def __on_delete(self, entities: List[Station]):
+        if len(entities) == 0:
+            return
+        ret = _deletion_dialog("Станция " + entities[0].Name if len(entities) == 1 else "{0} обьектов".format(len(entities)))
+        if ret == wx.ID_YES:
+            for e in entities:
+                get_session().delete(e)
+            commit_changes(self)
+            self.__list.refresh()
+
 class MineObjects_List(Ui_MineObjects_List, Base[MineObject]):
     __tree: xTreeView
 
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
-        self.__tree = xTreeView(MineObject, 'Level', 'childrens', parent=self.panel_1)
+        self.__tree = xTreeView(
+            MineObject,
+            'Level',
+            'childrens',
+            on_create=self.__on_create,
+            on_edit=self.__on_edit,
+            on_delete=self.__on_delete,
+            parent=self.panel_1)
         self.tree_container.Add(self.__tree, wx.EXPAND)
         self.tree_container.Layout()
         self.__tree.Layout()
 
     def select(self, e: MineObject):
-        self.__list.select(e)
+        self.__tree.select(e)
+
+    def __on_create(self, parent):
+        w = MineObjects_Editor(parent=self)
+        w.Show()
+
+    def __on_edit(self, e):
+        pass
+
+    def __on_delete(self, entities: List[MineObject]):
+        if len(entities) == 0:
+            return
+        ret = _deletion_dialog("Горный объект " + entities[0].Name if len(entities) == 1 else "{0} обьектов".format(len(entities)))
+        if ret == wx.ID_YES:
+            for e in entities:
+                get_session().delete(e)
+            commit_changes(self)
+            self.__list.refresh()
 
 class CoordSystems_List(Ui_CoordSystems_List, Base[CoordSystem]):
     __tree: xTreeView
@@ -315,11 +384,35 @@ class CoordSystems_List(Ui_CoordSystems_List, Base[CoordSystem]):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
-        self.__tree = xTreeView(CoordSystem, 'Level', 'childrens', parent=self.panel_1)
+        self.__tree = xTreeView(
+            CoordSystem,
+            'Level',
+            'childrens',
+            flags=authority.CAN_FILTER|authority.CAN_SORT,
+            on_create=self.__on_create,
+            on_edit=self.__on_edit,
+            on_delete=self.__on_delete,
+            parent=self.panel_1)
         self.tree_container.Add(self.__tree, wx.EXPAND)
         self.tree_container.Layout()
         self.__tree.Layout()
         self.Layout()
 
     def select(self, e: CoordSystem):
-        self.__list.select(e)
+        self.__tree.select(e)
+
+    def __on_create(self, parent):
+        pass
+
+    def __on_edit(self, e):
+        pass
+
+    def __on_delete(self, entities: List[CoordSystem]):
+        if len(entities) == 0:
+            return
+        ret = _deletion_dialog("Систему координат " + entities[0].Name if len(entities) == 1 else "{0} обьектов".format(len(entities)))
+        if ret == wx.ID_YES:
+            for e in entities:
+                get_session().delete(e)
+            commit_changes(self)
+            self.__list.refresh()

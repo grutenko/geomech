@@ -1,3 +1,5 @@
+# _*_ coding: UTF8 _*_
+
 import wx
 from database import (
     DischargeSeries,
@@ -68,5 +70,7 @@ class DischargeMeasurement_Filter(Ui_DischargeMeasurement_Filter, mixins.Optiona
         _set('field_Diameter_max', operator.le, 'Diameter', 'Diameter_max')
         _set('field_Length_min', operator.ge, 'Length', 'Length_min')
         _set('field_Length_max', operator.le, 'Length', 'Length_max')
+        _set('field_Weight_min', operator.ge, 'Weight', 'Weight_min')
+        _set('field_Weight_max', operator.le, 'Weight', 'Weight_max')
         
         return query_dsl.FilterBy(filter_by)

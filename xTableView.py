@@ -1,3 +1,5 @@
+# _*_ coding: UTF8 _*_
+
 import wx
 import wx.propgrid
 from typing import (
@@ -25,21 +27,9 @@ from sqlalchemy import (
     desc, asc
 )
 from dataclasses import dataclass
+from column import Column
 import query_dsl
-
-@dataclass
-class Column:
-    name: str
-    label: str = None
-    size: int = -1
-    modifier: Callable[[Any], str] = None
-
-CAN_CREATE = 0b00001
-CAN_EDIT = 0b00010
-CAN_DELETE = 0b00100
-CAN_SORT = 0b01000
-CAN_FILTER = 0b10000
-CAN_ALL = CAN_EDIT | CAN_DELETE | CAN_CREATE | CAN_SORT | CAN_FILTER
+import authority
 
 _T = TypeVar('_T', bound=Base)
 
@@ -123,7 +113,7 @@ class xTableView(Ui_xControlTableView, Generic[_T]):
                  initial_order_by: query_dsl.OrderBy = query_dsl.OrderBy(),
                  initial_filter_by: query_dsl.FilterBy = query_dsl.FilterBy(),
                  filter_window: Type[wx.Window] = None,
-                 flags: int = CAN_ALL,
+                 flags: int = authority.CAN_ALL,
                  on_create: Callable[[], None] = None,
                  on_edit: Callable[[_T], None] = None,
                  on_delete: Callable[[List[_T]], None] = None,
@@ -193,6 +183,7 @@ class xTableView(Ui_xControlTableView, Generic[_T]):
         ret = w.ShowModal()
         if ret == wx.ID_OK:
             self._cols = w.get_selected_cols()
+            self.list.DeleteAllItems()
             self.list.DeleteAllColumns()
             self.__init_columns()
             self.__render()
@@ -231,8 +222,8 @@ class xTableView(Ui_xControlTableView, Generic[_T]):
         self.btn_order_by.Update()
         self.btn_Delete.Enable(len(self._selected_entities) >= 1)
         self.btn_Edit.Enable(len(self._selected_entities) == 1)
-        self.btn_order_by.Enable(self._flags & CAN_SORT > 0)
-        self.btn_filter_by.Enable(self._flags & CAN_FILTER > 0)
+        self.btn_order_by.Enable(self._flags & authority.CAN_SORT > 0)
+        self.btn_filter_by.Enable(self._flags & authority.CAN_FILTER > 0)
 
     def __init_columns(self):
         for col in self._cols:
@@ -247,8 +238,8 @@ class xTableView(Ui_xControlTableView, Generic[_T]):
     def __render(self):
         self.list.DeleteAllItems()
 
-        def _set_col(row_index, col_index, col, value):
-            value = col.modifier(value) if not col.modifier is None else str(value)
+        def _set_col(e, row_index, col_index, col, value):
+            value = col.modifier(e, value) if not col.modifier is None else str(value)
             self.list.SetItem(row_index, col_index, value)
 
         if len(self._cols) == 0:
@@ -257,7 +248,7 @@ class xTableView(Ui_xControlTableView, Generic[_T]):
         for row_index, e in enumerate(self._entities):
             self.list.InsertItem(row_index, "")
             for col_index, col in enumerate(self._cols):
-                _set_col(row_index, col_index, col, e.__dict__[col.name])
+                _set_col(e, row_index, col_index, col, e.__dict__[col.name])
 
         for e in list(self._selected_entities):
             if e in self._entities:
@@ -265,7 +256,8 @@ class xTableView(Ui_xControlTableView, Generic[_T]):
 
     def refresh(self):
         self.__set_state(self.State.LOADING)
-        self._entities = query_dsl.build_query(self._table_class, self._order_by, self._filter_by).all()
+        q = query_dsl.build_query(self._table_class, self._order_by, self._filter_by)
+        self._entities = q.all()
         self._selected_entities = set()
 
         self.__render()

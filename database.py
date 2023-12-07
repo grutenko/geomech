@@ -1,3 +1,5 @@
+# _*_ coding: UTF8 _*_
+
 from sqlalchemy import (
     ForeignKey,
     Engine,
@@ -11,24 +13,100 @@ from sqlalchemy.orm import (
     Session,
 )
 from typing import Callable
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from queue import Queue
+import threading
+import time
+import wx
 
 engine: Engine = None
 session: Session = None
 
-def init(dsn: str, *args, **kwds) -> None:
-    global engine, session
+class xDatabaseInitError(BaseException):
+    pass
+
+def __exc():
+    return xDatabaseInitError("Произошла ошибка во время попытки открытия соединения с базой данных." 
+                              + "Возможно неверно введены авторизационные данные, или название базы.")
+
+def __init(dsn) -> (Engine, Session):
     engine = create_engine(dsn)
-    kwds['bind'] = engine
-    session = Session(*args, **kwds)
+    session = Session(bind=engine)
+    try:
+        session.execute(text("SELECT 1"))
+    except UnicodeDecodeError as e:
+        session.close()
+        raise __exc()
+    result = session.execute(text("select exists(select from pg_tables where schemaname='public'"
+                                  +" and tablename='DischargeMeasurements')"))
+    if result.first()[0] == False:
+        raise __exc()
+    return (engine, session)
+
+'''
+Выбросит исключение если подключится к бд не удалось
+'''
+def test_connection(dsn):
+    try:
+        _, session = __init(dsn)
+    except:
+        raise
+    else:
+        session.close()
+        
+
+def init_database(dsn: str) -> None:
+    global engine, session
+    _engine, _session = __init(dsn)
+    engine = _engine
+    session = _session
 
 def get_session() -> Session:
     global session
     return session
 
+def commit_changes(parent = None):
+    def _thread(exc_bucket):
+        try:
+            get_session().commit()
+        except Exception as e:
+            get_session().rollback()
+            exc_bucket.put(e)
 
+    exc_bucket = Queue()
+    t = threading.Thread(target=_thread, args=[exc_bucket])
+    t.start()
+    w = wx.ProgressDialog("Обновление", "Идет обновление базы данных...", style=0, parent=parent)
+    while True:
+        if not t.is_alive():
+            if not exc_bucket.empty():
+                w.Destroy()
+                raise exc_bucket.get(False)
+            else:
+                break
+        else:
+            time.sleep(0.01)
+            w.Pulse()
+    w.Destroy()
+
+def dry_commit_changes():
+    try:
+        get_session().flush()
+    finally:
+        get_session().rollback()
 
 class Base(DeclarativeBase):
     pass
+
+def gen_name_path(e: Base, parent_field: str) -> str:
+    cur = e
+    path = ''
+    while cur != None:
+        path = cur.Name + (' / ' if cur != e else '') + path
+        cur = getattr(cur, parent_field)
+        print(cur)
+    return path
 
 class MineObject(Base):
     __tablename__ = "MineObjects"
@@ -40,7 +118,7 @@ class MineObject(Base):
     Name: Mapped[str] = mapped_column(nullable=False)
     Comment: Mapped[str] = mapped_column()
     Type: Mapped[str] = mapped_column(nullable=False)
-    CSID: Mapped[int] = mapped_column(ForeignKey("CoordSystems.RID"), nullable=False)
+    CSID: Mapped[int] = mapped_column(ForeignKey("CoordSystems.RID", ondelete="NOACTION"), nullable=False)
     X_Min: Mapped[float] = mapped_column(nullable=False)
     X_Max: Mapped[float] = mapped_column(nullable=False)
     Y_Min: Mapped[float] = mapped_column(nullable=False)
@@ -100,7 +178,7 @@ class DischargeSeries(Base):
     Number: Mapped[str] = mapped_column(nullable=False)
     Name: Mapped[str] = mapped_column(nullable=False)
     Comment: Mapped[str] = mapped_column()
-    OSSID: Mapped[int] = mapped_column(ForeignKey('OrigSampleSets.RID'), nullable=False)
+    OSSID: Mapped[int] = mapped_column(ForeignKey('OrigSampleSets.RID', ondelete="NO ACTION"), nullable=False)
     MeasureDate: Mapped[int] = mapped_column(nullable=False)
 
     orig_sample_set: Mapped['OrigSampleSet'] = relationship(
@@ -116,8 +194,8 @@ class OrigSampleSet(Base):
     Name: Mapped[str] = mapped_column(nullable=False)
     Comment: Mapped[str] = mapped_column()
     SampleType: Mapped[str] = mapped_column(nullable=False)
-    MOID: Mapped[int] = mapped_column(ForeignKey('MineObjects.RID'))
-    HID: Mapped[int] = mapped_column(ForeignKey('BoreHoles.RID'))
+    MOID: Mapped[int] = mapped_column(ForeignKey('MineObjects.RID', ondelete="NO ACTION"))
+    HID: Mapped[int] = mapped_column(ForeignKey('BoreHoles.RID', ondelete="NO ACTION"))
     X: Mapped[float] = mapped_column(nullable=False)
     Y: Mapped[float] = mapped_column(nullable=False)
     Z: Mapped[float] = mapped_column(nullable=False)
@@ -140,8 +218,8 @@ class BoreHole(Base):
     Number: Mapped[str] = mapped_column(nullable=False)
     Name: Mapped[str] = mapped_column(nullable=False)
     Comment: Mapped[str] = mapped_column()
-    SID: Mapped[int] = mapped_column(ForeignKey('Stations.RID'))
-    MOID: Mapped[int] = mapped_column(ForeignKey('MineObjects.RID'))
+    SID: Mapped[int] = mapped_column(ForeignKey('Stations.RID', ondelete="NO ACTION"))
+    MOID: Mapped[int] = mapped_column(ForeignKey('MineObjects.RID', ondelete="NO ACTION"))
     X: Mapped[float] = mapped_column(nullable=False)
     Y: Mapped[float] = mapped_column(nullable=False)
     Z: Mapped[float] = mapped_column(nullable=False)
@@ -169,7 +247,7 @@ class Station(Base):
     Number: Mapped[str] = mapped_column(nullable=False)
     Name: Mapped[str] = mapped_column(nullable=False)
     Comment: Mapped[str] = mapped_column()
-    MOID: Mapped[int] = mapped_column(ForeignKey('MineObject.RID'))
+    MOID: Mapped[int] = mapped_column(ForeignKey('MineObjects.RID', ondelete="NO ACTION"))
     X: Mapped[float] = mapped_column(nullable=False)
     Y: Mapped[float] = mapped_column(nullable=False)
     Z: Mapped[float] = mapped_column(nullable=False)
@@ -186,7 +264,7 @@ class DischargeMeasurement(Base):
     __tablename__ = 'DischargeMeasurements'
 
     RID: Mapped[int] = mapped_column(primary_key=True)
-    DSID: Mapped[int] = mapped_column(nullable=False)
+    DSID: Mapped[int] = mapped_column(ForeignKey('DischargeSeries.RID', ondelete="NO ACTION"), nullable=False)
     SNumber: Mapped[int] = mapped_column(nullable=False)
     DschNumber: Mapped[int] = mapped_column(nullable=False)
     CoreNumber: Mapped[int] = mapped_column(nullable=False)
@@ -219,9 +297,9 @@ class DischargeMeasurement(Base):
     Rotate: Mapped[float] = mapped_column(nullable=False)
     RockType: Mapped[str] = mapped_column(nullable=False)
 
-    dischange_series: Mapped['DischargeSeries'] = relationship(
+    discharge_series: Mapped['DischargeSeries'] = relationship(
         backref='dischage_measurements',
-        primaryjoin='foreign(DischargeMeasurement.DSID) == DischargeSeries.RID'
+        primaryjoin='foreign(DischargeMeasurement.DSID) == DischargeSeries.RID',
+        lazy="joined",
+        passive_deletes=False
     )
-
-from dataclasses import dataclass

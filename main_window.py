@@ -1,9 +1,11 @@
+# _*_ coding: UTF8 _*_
+
 import wx
 from typing import List
 from database import (
     DischargeMeasurement,
-    DischargeSeries,
-    get_session
+    get_session,
+    commit_changes
 )
 from ui import (
     Ui_MainWindow,
@@ -29,7 +31,6 @@ from xTableView import (
     Column
 )
 from settings import Settings
-from util import commit_changes
 import query_dsl
 
 def _deletion_dialog(whats: str):
@@ -47,7 +48,7 @@ class _Inspect(Ui_DischargeMesurement_Inspect):
 
     def __set_fields(self):
         self.field_RID.SetLabel(str(self.__entity.RID))
-        self.field_DSID.SetLabel(self.__entity.dischange_series.Name)
+        self.field_DSID.SetLabel(self.__entity.discharge_series.Name)
         self.field_DSID.Wrap(300)
         self.field_SNumber.SetLabel(str(self.__entity.SNumber))
         self.field_DschNumber.SetLabel(str(self.__entity.DschNumber))
@@ -56,7 +57,7 @@ class _Inspect(Ui_DischargeMesurement_Inspect):
         self.field_Length_.SetLabel(str(self.__entity.Length) + 'мм')
         self.field_Weight.SetLabel(str(self.__entity.Weight) + 'г')
         self.field_CartNumber.SetLabel(str(self.__entity.CartNumber))
-        self.field_PartNumber.SetLabel(str(self.__entity.CartNumber))
+        self.field_PartNumber.SetLabel(str(self.__entity.PartNumber))
         self.field_CoreDepth.SetLabel(str(self.__entity.CoreDepth) + 'м')
         self.field_R.SetLabel('1) ' + str(self.__entity.R1) + 'Ом' + ', ' + '2) ' + str(self.__entity.R2) + 'Ом' + ', ' + '3) ' + str(self.__entity.R3) + 'Ом' + ', ' + '4) ' + str(self.__entity.R4) + 'Ом' + ', ')
         self.field_RComp.SetLabel(str(self.__entity.RComp))
@@ -107,10 +108,10 @@ class MainWindow(Ui_MainWindow, Base[DischargeMeasurement]):
 
         available_cols = [
             Column('RID', 'Внутренний идентификатор замера', 50),
-            Column('DSID', 'Серия замеров', 350, modifier=lambda dsid: get_session().query(DischargeSeries).get(dsid).Name),
+            Column('DSID', 'Серия замеров', 350, modifier=lambda e, dsid: e.discharge_series.Name),
             Column('SNumber', 'Порядковый номер замера.', 50),
-            Column('DschNumber', 'Регистрационный номер разгрузки', 350),
-            Column('CoreNumber', 'Регистрационный номер образца керна', 350),
+            Column('DschNumber', 'Регистрационный номер разгрузки', 50),
+            Column('CoreNumber', 'Регистрационный номер образца керна', 50),
             Column('Diameter', 'Диаметр образца керна', 50),
             Column('Length', 'Длина образца керна', 50),
             Column('Weight', 'Вес образца керна', 50),
@@ -138,13 +139,14 @@ class MainWindow(Ui_MainWindow, Base[DischargeMeasurement]):
             Column('E3', 'Относительная деформация образца - 3', 50),
             Column('E4', 'Относительная деформация образца - 4', 50),
             Column('Rotate', 'Угол коррекции направления напряжений', 50),
-            Column('RockType', 'Тип породы', 250)
+            Column('RockType', 'Тип породы', 500)
         ]
         cols = [
-            'SNumber', 'DschNumber', 'CoreNumber', 'CartNumber', 'PartNumber', 'R1', 'R2', 'R3', 'R4', 'RComp', 'Sensitivity'
+            'DSID', 'SNumber', 'DschNumber', 'CoreNumber', 'CartNumber', 'PartNumber', 'Rotate', 'RockType'
         ]
         order_by = query_dsl.OrderBy([
-            query_dsl.OrderClause('SNumber', query_dsl.Direction.DESC)
+            query_dsl.OrderClause('DSID', query_dsl.Direction.ASC),
+            query_dsl.OrderClause('SNumber', query_dsl.Direction.ASC)
         ])
         self.__list = xTableView[DischargeMeasurement](
             DischargeMeasurement,
@@ -170,12 +172,20 @@ class MainWindow(Ui_MainWindow, Base[DischargeMeasurement]):
         self._mine_objects_list: MineObjects_List = None
         self._coord_systems_list: CoordSystems_List = None
 
+        self.SetIcon(wx.Icon("geomech.ico", wx.BITMAP_TYPE_ICO))
+
     def __on_edit(self, e: DischargeMeasurement):
-        editor = DischargeMeasurementEditor(parent=self, entity=e, on_save=lambda _: self.__list.refresh())
+        def _on_save(e: DischargeMeasurement):
+            commit_changes(self)
+            self.__list.refresh()
+
+        editor = DischargeMeasurementEditor(parent=self, entity=e, on_save=_on_save)
         editor.Show()
 
     def __on_create(self):
         def _on_save(e: DischargeMeasurement):
+            get_session().add(e)
+            commit_changes(self)
             self.__list.refresh()
             self.__list.select(e)
         editor = DischargeMeasurementEditor(parent=self, on_save=_on_save)
