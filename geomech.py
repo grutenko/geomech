@@ -1,22 +1,16 @@
 # _*_ coding: UTF8 _*_
 
 import wx
-from main_window import MainWindow
 import sys, traceback
-import sqlalchemy
-from database import (
-    get_session,
-    init_database,
-    test_connection,
-    xDatabaseInitError
-)
+import database
 from sqlalchemy.exc import SQLAlchemyError
 import config
 import traceback
+import list_windows
 
 def except_hook(exception_type, exception_value, exception_traceback):
     if exception_type is SQLAlchemyError:
-        session = get_session()
+        session = database.get_session()
         if session != None and session.in_transaction():
             session.rollback()
 
@@ -42,8 +36,8 @@ def _ask_dsn():
         if w.ShowModal() != wx.ID_OK:
             exit()
         try:
-            test_connection(w.GetValue())
-        except (SQLAlchemyError, xDatabaseInitError) as e:
+            database.test_connection(w.GetValue())
+        except (SQLAlchemyError, database.xDatabaseInitError) as e:
             except_hook(type(e), e, e.__traceback__)
         else:
             config.write_config('/Dsn', w.GetValue())
@@ -53,8 +47,8 @@ if __name__ == '__main__':
     config.init_config()
 
     try:
-        test_connection(config.read_config('/Dsn'))
-    except (SQLAlchemyError, xDatabaseInitError) as e:
+        database.test_connection(config.read_config('/Dsn'))
+    except (SQLAlchemyError, database.xDatabaseInitError) as e:
         conn_success = False
         except_hook(type(e), e, e.__traceback__)
     else:
@@ -63,13 +57,12 @@ if __name__ == '__main__':
     if not conn_success or len(config.read_config('/Dsn')) == 0:
         _ask_dsn()
     try:
-        init_database(config.read_config('/Dsn'))
-    except (SQLAlchemyError, xDatabaseInitError) as e:
+        database.init_database(config.read_config('/Dsn'))
+    except (SQLAlchemyError, database.xDatabaseInitError) as e:
         config.write_config("/Dsn", "")
         raise e
 
-    mainWindow = MainWindow(None)
-    mainWindow.Show()
+    mainWindow = list_windows.cmd_show(database.DischargeMeasurement)
     app.SetTopWindow(mainWindow)
     app.MainLoop()
 

@@ -13,6 +13,7 @@ from sqlalchemy.orm import (
     Session,
 )
 from typing import Callable
+from typing import List
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from queue import Queue
@@ -127,14 +128,35 @@ class MineObject(Base):
     Z_Max: Mapped[float] = mapped_column(nullable=False)
 
     parent: Mapped["MineObject"] = relationship(
-        backref='childrens',
+        back_populates='childrens',
         primaryjoin='foreign(MineObject.PID) == MineObject.RID',
         remote_side=[RID]
     )
 
+    childrens: Mapped[List["MineObject"]] = relationship(
+        back_populates='parent',
+        primaryjoin='foreign(MineObject.PID) == MineObject.RID',
+        remote_side=[PID]
+    )
+
     coord_system: Mapped["CoordSystem"] = relationship(
-        backref='mine_objects',
+        back_populates='mine_objects',
         primaryjoin='MineObject.CSID == CoordSystem.RID'
+    )
+
+    orig_sample_sets: Mapped[List['OrigSampleSet']] = relationship(
+        back_populates='mine_object',
+        primaryjoin='OrigSampleSet.MOID == MineObject.RID'
+    )
+
+    bore_holes: Mapped[List['BoreHole']] = relationship(
+        back_populates='mine_object',
+        primaryjoin='foreign(BoreHole.MOID) == MineObject.RID'
+    )
+
+    stations: Mapped[List['Station']] = relationship(
+        back_populates='mine_object',
+        primaryjoin='foreign(Station.MOID) == MineObject.RID'
     )
 
 class CoordSystem(Base):
@@ -166,9 +188,20 @@ class CoordSystem(Base):
     Z_Z: Mapped[float] = mapped_column(nullable=False)
 
     parent: Mapped["CoordSystem"] = relationship(
-        backref='childrens',
+        back_populates='childrens',
         primaryjoin='foreign(CoordSystem.PID) == CoordSystem.RID',
         remote_side=[RID]
+    )
+
+    childrens: Mapped[List["CoordSystem"]] = relationship(
+        back_populates='parent',
+        primaryjoin='foreign(CoordSystem.PID) == CoordSystem.RID',
+        remote_side=[PID]
+    )
+
+    mine_objects: Mapped[List["MineObject"]] = relationship(
+        back_populates='coord_system',
+        primaryjoin='MineObject.CSID == CoordSystem.RID'
     )
 
 class DischargeSeries(Base):
@@ -182,8 +215,13 @@ class DischargeSeries(Base):
     MeasureDate: Mapped[int] = mapped_column(nullable=False)
 
     orig_sample_set: Mapped['OrigSampleSet'] = relationship(
-        backref='discharge_series',
+        back_populates='discharge_series',
         primaryjoin='DischargeSeries.OSSID == OrigSampleSet.RID'
+    )
+
+    discharge_measurements: Mapped[List['DischargeMeasurement']] = relationship(
+        back_populates='discharge_series',
+        primaryjoin='DischargeSeries.RID == DischargeMeasurement.DSID'
     )
 
 class OrigSampleSet(Base):
@@ -202,13 +240,18 @@ class OrigSampleSet(Base):
     SetDate: Mapped[int] = mapped_column(nullable=False)
 
     mine_object: Mapped['MineObject'] = relationship(
-        backref='orig_sample_sets',
+        back_populates='orig_sample_sets',
         primaryjoin='OrigSampleSet.MOID == MineObject.RID'
     )
 
     bore_hole: Mapped['BoreHole'] = relationship(
-        backref='orig_sample_sets',
+        back_populates='orig_sample_sets',
         primaryjoin='OrigSampleSet.HID == BoreHole.RID'
+    )
+
+    discharge_series: Mapped[List['DischargeSeries']] = relationship(
+        back_populates='orig_sample_set',
+        primaryjoin='DischargeSeries.OSSID == OrigSampleSet.RID'
     )
 
 class BoreHole(Base):
@@ -231,13 +274,18 @@ class BoreHole(Base):
     EndDate: Mapped[int] = mapped_column(nullable=False)
 
     mine_object: Mapped['MineObject'] = relationship(
-        backref='bore_hole',
+        back_populates='bore_holes',
         primaryjoin='foreign(BoreHole.MOID) == MineObject.RID'
     )
 
     station: Mapped['Station'] = relationship(
-        backref='bore_holes',
+        back_populates='bore_holes',
         primaryjoin='BoreHole.SID == Station.RID'
+    )
+
+    orig_sample_sets: Mapped[List['OrigSampleSet']] = relationship(
+        back_populates="bore_hole",
+        primaryjoin='OrigSampleSet.HID == BoreHole.RID'
     )
 
 class Station(Base):
@@ -256,8 +304,13 @@ class Station(Base):
     EndDate: Mapped[int] = mapped_column(nullable=False)
 
     mine_object: Mapped['MineObject'] = relationship(
-        backref='stations',
+        back_populates='stations',
         primaryjoin='foreign(Station.MOID) == MineObject.RID'
+    )
+
+    bore_holes: Mapped[List['BoreHole']] = relationship(
+        back_populates='station',
+        primaryjoin='BoreHole.SID == Station.RID'
     )
 
 class DischargeMeasurement(Base):
@@ -298,7 +351,7 @@ class DischargeMeasurement(Base):
     RockType: Mapped[str] = mapped_column(nullable=False)
 
     discharge_series: Mapped['DischargeSeries'] = relationship(
-        backref='dischage_measurements',
+        back_populates='discharge_measurements',
         primaryjoin='foreign(DischargeMeasurement.DSID) == DischargeSeries.RID',
         lazy="joined",
         passive_deletes=False

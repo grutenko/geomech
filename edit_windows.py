@@ -191,7 +191,6 @@ def _db_error_msg(e):
     dlg.ShowModal()
     dlg.Destroy()
 
-
 class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.OptionalFieldsMixin):
     _entity: DischargeMeasurement
     _series: Dict[int, DischargeSeries] = {}
