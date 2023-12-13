@@ -133,21 +133,67 @@ class _CoordSystem_Inspect(_Inspect):
     def _set_fields(self, e: database.DischargeMeasurement):
         self._set_name("Система координат " + str(e.Name))
         self._add_field("ID:", self._text_value(e.RID))
+        self._add_field("Вышестоящая система координат:", self._relation_value(e.parent) if e.parent != None else self._text_value("<нет>"))
+        self._add_field("Уровень системы координат:", self._text_value(str(e.Level)))
+        self._add_field("Название:", self._text_value(e.Name))
+        self._add_field("Комментарий:", self._text_value(e.Comment))
+        self._add_field("Минимальные координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X_Min, e.Y_Min, e.Z_Min)))
+        self._add_field("Максимальные координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X_Max, e.Y_Max, e.Z_Max)))
+        self._add_field("Положение начала в вышестоящей системе координат:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X_0, e.Y_0, e.Z_0)))
 
 class _MineObject_Inspect(_Inspect):
-    def _set_fields(self, e: database.DischargeMeasurement):
+    def _set_fields(self, e: database.MineObject):
         self._set_name("Горный объект " + str(e.Name))
         self._add_field("ID:", self._text_value(e.RID))
+        self._add_field("Вышестоящий горный объект:", self._relation_value(e.parent) if e.parent != None else self._text_value("<нет>"))
+        self._add_field("Уровень системы координат:", self._text_value(str(e.Level)))
+        self._add_field("Название:", self._text_value(e.Name))
+        self._add_field("Комментарий:", self._text_value(e.Comment))
+        self._add_field("Система координат:", self._relation_value(e.coord_system))
+        if e.Type == 'REGION':
+            type = 'Регион'
+        elif e.Type == 'ROCKS':
+            type = 'Горный массив'
+        elif e.Type == 'FIELD':
+            type = 'Месторождение'
+        elif e.Type == 'HORIZON':
+            type = 'Горизонт'
+        elif e.Type == 'EXCAVATION':
+            type = 'Выработка'
+        self._add_field("Тип:", self._text_value(type))
+        self._add_field("Минимальные координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X_Min, e.Y_Min, e.Z_Min)))
+        self._add_field("Максимальные координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X_Max, e.Y_Max, e.Z_Max)))
+        
 
 class _OrigSampleSetInspect(_Inspect):
     def _set_fields(self, e: database.DischargeMeasurement):
         self._set_name("Набор образцов " + str(e.Name))
         self._add_field("ID:", self._text_value(e.RID))
+        self._add_field("№ набора образцов:", self._text_value(e.Number))
+        self._add_field("Название:", self._text_value(e.Name))
+        self._add_field("Комментарий:", self._text_value(e.Comment))
+        if e.SampleType == 'CORE':
+            type = 'Керн'
+        elif e.SampleType == 'STUFF':
+            type = 'Штуф'
+        elif e.SampleType == 'DISPERCE':
+            type = 'Дисперсный материал'
+        self._add_field("Тип метариала", self._text_value(type))
+        self._add_field("Горный объект:", self._relation_value(e.mine_object))
+        self._add_field("Скважина:", self._relation_value(e.bore_hole))
+        self._add_field("Дата отбора:", self._text_value(_date_modifier(e.SetDate)))
 
 class _Station_Inspect(_Inspect):
     def _set_fields(self, e: database.DischargeMeasurement):
         self._set_name("Станция " + str(e.Name))
         self._add_field("ID:", self._text_value(e.RID))
+        self._add_field("№ станции:", self._text_value(e.Number))
+        self._add_field("Название:", self._text_value(e.Name))
+        self._add_field("Комментарий:", self._text_value(e.Comment))
+        self._add_field("Горный объект:", self._relation_value(e.mine_object))
+        self._add_field("Координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X, e.Y, e.Z)))
+        self._add_field("Дата закладки / начала измерений:", self._text_value(_date_modifier(e.StartDate)))
+        self._add_field("Дата завершения измерений:", self._text_value(_date_modifier(e.EndDate) if e.EndDate != None else '<нет>'))
 
 __MAPPING__ = {
     database.DischargeMeasurement: _DischargeMeasurement_Inspect,
