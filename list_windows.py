@@ -248,6 +248,11 @@ class CoordSystem_List(Base, ui.Ui_CoordSystems_List):
         self.tree.set_level_field("Level")
         self.tree.set_flags(authority.CAN_SORT|authority.CAN_FILTER)
         self.tree.reload()
+        self.tree.Bind(widgets.event.EVT_ENTITY_MANAGE_EVENT, self.__on_manage_entities)
+
+    def __on_manage_entities(self, event):
+        if event.type == widgets.event.ManageTypes.NEED_SHOW_DETAIL:
+            inspect_windows.cmd_show(event.entity)
 
     def select(self, entities: typing.List[_T]):
         if len(entities) > 0:

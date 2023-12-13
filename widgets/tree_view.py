@@ -4,6 +4,7 @@ import wx
 import typing
 import authority
 import database
+import widgets.event
 from . import event
 
 class UI_xTreeView(wx.Panel):
@@ -69,6 +70,11 @@ class TreeView(UI_xTreeView, typing.Generic[_T]):
         self.btn_Edit.Bind(wx.EVT_BUTTON, self.__on_edit_click)
         self.btn_Delete.Bind(wx.EVT_BUTTON, self.__on_delete_click)
         self.tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.__on_select)
+        self.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.__on_dbclick, self.tree)
+
+    def __on_dbclick(self, event):
+        e = widgets.event.xEntityManageEvent(type=widgets.event.ManageTypes.NEED_SHOW_DETAIL, entity=self._selected_entities[0])
+        wx.PostEvent(self, e)
 
     def __on_select(self, event):
         rid = self.tree.GetItemData(event.GetItem())
@@ -88,15 +94,15 @@ class TreeView(UI_xTreeView, typing.Generic[_T]):
         self.__update_controls_state()
 
     def __on_add_click(self, evt):
-        e = event.xEntityManageEvent(type=event.ManageTypes.NEED_CREATE)
+        e = widgets.event.xEntityManageEvent(type=widgets.event.ManageTypes.NEED_CREATE)
         wx.PostEvent(self, e)
     
     def __on_edit_click(self, evt):
-        e = event.xEntityManageEvent(type=event.ManageTypes.NEED_EDIT, entity=self._selected_entities[0])
+        e = widgets.event.xEntityManageEvent(type=widgets.event.ManageTypes.NEED_EDIT, entity=self._selected_entities[0])
         wx.PostEvent(self, e)
 
     def __on_delete_click(self, evt):
-        e = event.xEntityManageEvent(type=event.ManageTypes.NEED_DELETE, entities=list(self._selected_entities))
+        e = widgets.event.xEntityManageEvent(type=widgets.event.ManageTypes.NEED_DELETE, entities=list(self._selected_entities))
         wx.PostEvent(self, e)
 
     def set_table_class(self, table_class: typing.Type[_T]):
@@ -139,12 +145,23 @@ class TreeView(UI_xTreeView, typing.Generic[_T]):
                 _insert_r(e, i)
 
         _insert_r(None, self._root)
+        self.tree.ExpandAll()
 
-    def select(self, e: _T):
-        child, cookie = self.tree.GetFirstChild(self._root)
+    def __get_tree_item_by_entity(self, e: _T, parent = None):
+        child, cookie = self.tree.GetFirstChild(self._root if parent == None else parent)
         while child.IsOk():
             entity_id = self.tree.GetItemData(child)
+            print(entity_id, e.RID)
             if e.RID == entity_id:
-                self.tree.SelectItem(child)
-                return
-            (child, cookie) = self.tree.GetNextChild(child, cookie)
+                return child
+            finded_item = self.__get_tree_item_by_entity(e, child)
+            if finded_item != None:
+                return finded_item
+            child = self.tree.GetNextSibling(child)
+        return None
+
+    def select(self, e: _T):
+        tree_item = self.__get_tree_item_by_entity(e)
+        print(tree_item)
+        if tree_item != None:
+            self.tree.SelectItem(tree_item, True)
