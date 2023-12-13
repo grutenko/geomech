@@ -7,7 +7,7 @@ class Ui_Inspect(wx.Frame):
     def __init__(self, *args, **kwds):
         kwds["style"] = kwds.get("style", 0) | wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
-        self.SetSize((400, 491))
+        self.SetSize((400, 490))
         self.SetTitle("frame_3")
 
         # Menu Bar
@@ -69,10 +69,11 @@ class _Inspect(Ui_Inspect):
         self.__rows += 1
         self.grid.SetRows(self.__rows)
         name = wx.StaticText(self.panel_2, label=str(label))
-        name.Wrap(150)
+        name.Wrap(250)
         self.grid.Add(name, 0, wx.ALIGN_RIGHT | wx.ALL, 4)
         self.grid.Add(value, 0, wx.ALL | wx.CENTER, 4)
         self.grid.Layout()
+        self.panel_2.FitInside()
 
     def _set_name(self, name: str):
         self.SetTitle(name)
@@ -85,6 +86,7 @@ class _Inspect(Ui_Inspect):
     
 class _DischargeMeasurement_Inspect(_Inspect):
     def _set_fields(self, e: database.DischargeMeasurement):
+        self.SetSize((500, 600))
         self._set_name("Замер №" + str(e.RID))
         self._add_field("ID:", self._text_value(e.RID))
         self._add_field("Серия замеров:", self._relation_value(e.discharge_series))
@@ -99,6 +101,16 @@ class _DischargeMeasurement_Inspect(_Inspect):
         self._add_field("Сопр. тензорезистора:", self._text_value("1) {0} Ом, 2) {1} Ом, 3) {2} Ом, 4) {3} Ом".format(e.R1, e.R2, e.R3, e.R4)))
         self._add_field("Сопр. компенсационного резистора:", self._text_value(str(e.RComp) + ' Ом'))
         self._add_field("Коэф. чувств. тензодатчиков:", self._text_value(e.Sensitivity))
+        self._add_field("Замер времени прохождения продольных волн (ультразвуковое профилирование или др.):", self._text_value("1) {0}, 2) {1}".format(e.TP1_1, e.TP1_2)))
+        self._add_field("Замер времени прохождения продольных волн (между торцами или др.):", self._text_value("1) {0}, 2) {1}".format(e.TP2_1, e.TP2_2)))
+        self._add_field("Замер времени прохождения поверхностных волн:", self._text_value("1) {0}, 2) {1}".format(e.TR_1, e.TR_2)))
+        self._add_field("Замер времени прохождения поперечных волн:", self._text_value("1) {0}, 2) {1}".format(e.TS_1, e.TS_2)))
+        self._add_field("Статический коэффициент Пуассона:", self._text_value(str(e.PuassonStatic)))
+        self._add_field("Статический модуль Юнга:", self._text_value(str(e.YungStatic)))
+        self._add_field("Глубина взятия образца керна:", self._text_value(str(e.CoreDepth)))
+        self._add_field("Относительная деформация образца:", self._text_value("1) {0}, 2) {1}, 3) {2}, 4) {3}".format(e.E1, e.E2, e.E3, e.E4)))
+        self._add_field("Угол коррекции направления напряжений:", self._text_value(str(e.Rotate)))
+        self._add_field("Тип породы:", self._text_value(str(e.RockType)))
 
 def _date_modifier(date):
     return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
