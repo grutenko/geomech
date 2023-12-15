@@ -30,159 +30,8 @@ from database import (
     dry_commit_changes
 )
 import mixins
+from form_validators import *
 from sqlalchemy import func
-
-class _Validator(wx.Validator):
-    _message: str
-    _title: str
-    _skip_if_disabled: bool
-
-    def __init__(self, 
-                 title: str = u"Ошибка!",
-                 message: str = u"Поле заполнено неверно.",
-                 skip_if_disabled: bool = True):
-        super().__init__()
-        self._message = message
-        self._title = title
-        self._skip_if_disabled = skip_if_disabled
-
-    def TransferToWindow(self):
-        return True
-    
-    def TransferFromWindow(self):
-        return True
-    
-    def _x_validate(self, ctrl: wx.Control):
-        raise NotImplementedError('Implement _x_validate in %s.' % (self.__class__.__name__))
-    
-    def Validate(self, parent):
-        ctrl: wx.Control = self.GetWindow()
-        if self._skip_if_disabled and not ctrl.IsEnabled():
-            return True
-        
-        if not self._x_validate(ctrl):
-            wx.MessageBox(self._message, self._title)
-            ctrl.SetBackgroundColour("red")
-            ctrl.SetFocus()
-            ctrl.Refresh()
-            return False
-        else:
-            ctrl.SetBackgroundColour(
-                 wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
-            ctrl.Refresh()
-            return True
-        
-    def Clone(self):
-        raise NotImplementedError("Implement Clone in %s" % (self.__class__.__name__))
-    
-class _TextValidator(_Validator):
-    _len_min: Optional[int]
-    _len_max: Optional[int]
-    _pattern: Optional[str]
-
-    def __init__(self, 
-                 *args,
-                 len_min: Optional[int] = 0, 
-                 len_max: Optional[int] = None, 
-                 pattern: Optional[str] = None,
-                 **kwds):
-        super().__init__(*args, **kwds)
-        self._len_min = len_min
-        self._len_max = len_max
-        self._pattern = pattern
-
-    def _x_validate(self, ctrl: wx.Control):
-        ctrl: wx.TextCtrl
-        _valid = True
-        if not self._len_min is None:
-            _valid = _valid and len(ctrl.GetValue()) >= self._len_min
-        if not self._len_max is None:
-            _valid = _valid and len(ctrl.GetValue()) <= self._len_max
-        if not self._pattern is None:
-            _valid = _valid and not re.match(self._pattern, ctrl.GetText()) is None
-        return _valid
-    
-    def Clone(self):
-        c = _TextValidator()
-        c.__dict__.update(self.__dict__)
-        return c
-    
-class _NumericValidator(_Validator):
-    _min: Optional[float]
-    _max: Optional[float]
-    _is_positive: Optional[bool]
-
-    def __init__(self,
-                 *args,
-                 min: Optional[float] = None,
-                 max: Optional[float] = None,
-                 is_positive: Optional[bool] = None,
-                 **kwds):
-        super().__init__(*args, **kwds)
-        self._min = min
-        self._max = max
-        self._is_positive = is_positive
-
-    def _x_validate(self, ctrl: wx.SpinCtrl):
-        _valid = True
-        if not self._min is None:
-            _valid = _valid and ctrl.GetValue() >= self._min
-        if not self._max is None:
-            _valid = _valid and ctrl.GetValue() <= self._max
-        if not self._is_positive is None:
-            _valid = _valid and ctrl.GetValue() > 0
-        return _valid
-
-    def Clone(self):
-        c = _NumericValidator()
-        c.__dict__.update(self.__dict__)
-        return c
-    
-class _ChoiceValidator(_Validator):
-    _should_selected: bool
-
-    def __init__(self, should_selected: bool = True, *args, **kwds):
-        self._should_selected = should_selected
-        super().__init__(*args, **kwds)
-
-    def _x_validate(self, ctrl: wx.Choice):
-        _valid = True
-        if not self._should_selected is None:
-            _valid = _valid and ctrl.GetSelection() != 0
-        return _valid
-
-    def Clone(self):
-        c = _ChoiceValidator()
-        c.__dict__.update(self.__dict__)
-        return c
-    
-class _DateValidator(_Validator):
-    _min: wx.DateTime
-    _max: wx.DateTime
-
-    def __init__(self, min: wx.DateTime = None, max: wx.DateTime = None, *args, **kwds):
-        self._min = min
-        self._max = max
-        super().__init__(*args, **kwds)
-
-    def _x_validate(self, ctrl):
-        if type(ctrl) == wx.adv.CalendarCtrl:
-            date = ctrl.GetDate()
-        elif type(ctrl) == wx.adv.DatePickerCtrl:
-            date = ctrl.GetValue()
-        else:
-            raise Exception('Doesnt fit widget for date validation.')
-        _valid = True
-        if not self._min is None:
-            _valid = _valid and self._min <= date
-        if not self._max is None:
-            _valid = _valid and self._max >= date
-        return _valid
-    
-    def Clone(self):
-        c = _DateValidator()
-        c.__dict__.update(self.__dict__)
-        return c
 
 from database import Base
 
@@ -273,38 +122,38 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.Optional
         def _set(field, validator):
             self.__dict__[field].SetValidator(validator)
 
-        _set('field_DSID', _ChoiceValidator())
-        _set('field_DschNumber', _TextValidator(len_min=1, len_max=255))
-        _set('field_CoreNumber', _TextValidator(len_min=1, len_max=255))
-        _set('field_CartNumber', _TextValidator(len_min=1, len_max=255))
-        _set('field_PartNumber', _TextValidator(len_min=1, len_max=255))
-        _set('field_RockType', _TextValidator(len_min=1, len_max=255))
-        _set('field_SNumber', _NumericValidator(is_positive=True))
-        _set('field_Diameter', _NumericValidator(is_positive=True))
-        _set('field_Length', _NumericValidator(is_positive=True))
-        _set('field_Weight', _NumericValidator(is_positive=True))
-        _set('field_CoreDepth', _NumericValidator(is_positive=True))
-        _set('field_R1', _NumericValidator(is_positive=True))
-        _set('field_R2', _NumericValidator(is_positive=True))
-        _set('field_R3', _NumericValidator(is_positive=True))
-        _set('field_R4', _NumericValidator(is_positive=True))
-        _set('field_RComp', _NumericValidator(is_positive=True))
-        _set('field_Sensitivity', _NumericValidator(is_positive=True))
-        _set('field_TP_1_1', _NumericValidator(is_positive=True))
-        _set('field_TP_1_2', _NumericValidator(is_positive=True))
-        _set('field_TP_2_1', _NumericValidator(is_positive=True))
-        _set('field_TP_2_2', _NumericValidator(is_positive=True))
-        _set('field_TR_1', _NumericValidator(is_positive=True))
-        _set('field_TR_2', _NumericValidator(is_positive=True))
-        _set('field_TS_1', _NumericValidator(is_positive=True))
-        _set('field_TS_2', _NumericValidator(is_positive=True))
-        _set('field_PuassonStatic', _NumericValidator(is_positive=True, max=1))
-        _set('field_YungStatic', _NumericValidator(is_positive=True))
-        _set('field_E1', _NumericValidator())
-        _set('field_E2', _NumericValidator())
-        _set('field_E3', _NumericValidator())
-        _set('field_E4', _NumericValidator())
-        _set('field_Rotate', _NumericValidator(min=-180, max=180, message="Значение: -180 >= a >= 180"))
+        _set('field_DSID', ChoiceValidator())
+        _set('field_DschNumber', TextValidator(len_min=1, len_max=255))
+        _set('field_CoreNumber', TextValidator(len_min=1, len_max=255))
+        _set('field_CartNumber', TextValidator(len_min=1, len_max=255))
+        _set('field_PartNumber', TextValidator(len_min=1, len_max=255))
+        _set('field_RockType', TextValidator(len_min=1, len_max=255))
+        _set('field_SNumber', NumericValidator(is_positive=True))
+        _set('field_Diameter', NumericValidator(is_positive=True))
+        _set('field_Length', NumericValidator(is_positive=True))
+        _set('field_Weight', NumericValidator(is_positive=True))
+        _set('field_CoreDepth', NumericValidator(is_positive=True))
+        _set('field_R1', NumericValidator(is_positive=True))
+        _set('field_R2', NumericValidator(is_positive=True))
+        _set('field_R3', NumericValidator(is_positive=True))
+        _set('field_R4', NumericValidator(is_positive=True))
+        _set('field_RComp', NumericValidator(is_positive=True))
+        _set('field_Sensitivity', NumericValidator(is_positive=True))
+        _set('field_TP_1_1', NumericValidator(is_positive=True))
+        _set('field_TP_1_2', NumericValidator(is_positive=True))
+        _set('field_TP_2_1', NumericValidator(is_positive=True))
+        _set('field_TP_2_2', NumericValidator(is_positive=True))
+        _set('field_TR_1', NumericValidator(is_positive=True))
+        _set('field_TR_2', NumericValidator(is_positive=True))
+        _set('field_TS_1', NumericValidator(is_positive=True))
+        _set('field_TS_2', NumericValidator(is_positive=True))
+        _set('field_PuassonStatic', NumericValidator(is_positive=True, max=1))
+        _set('field_YungStatic', NumericValidator(is_positive=True))
+        _set('field_E1', NumericValidator())
+        _set('field_E2', NumericValidator())
+        _set('field_E3', NumericValidator())
+        _set('field_E4', NumericValidator())
+        _set('field_Rotate', NumericValidator(min=-180, max=180, message="Значение: -180 >= a >= 180"))
 
     def _set_fields(self, entity: DischargeMeasurement):
         def _set(field, value):
@@ -475,11 +324,11 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, mixins.OptionalFieldsMixi
         def _set(field, validator):
             self.__dict__[field].SetValidator(validator)
 
-        _set('field_Number', _TextValidator(len_min=1, len_max=255))
-        _set('field_Name', _TextValidator(len_min=1, len_max=255))
-        _set('field_Comment', _TextValidator(len_min=1, len_max=255))
-        _set('field_OSSID', _ChoiceValidator())
-        _set('field_MeasureDate', _DateValidator(max=wx.DateTime.Now()))
+        _set('field_Number', TextValidator(len_min=1, len_max=255))
+        _set('field_Name', TextValidator(len_min=1, len_max=255))
+        _set('field_Comment', TextValidator(len_min=1, len_max=255))
+        _set('field_OSSID', ChoiceValidator())
+        _set('field_MeasureDate', DateValidator(max=wx.DateTime.Now()))
 
     def __set_fields(self, entity: DischargeSeries):
         e = entity
@@ -605,15 +454,15 @@ class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin
         def _set(field, validator):
             self.__dict__[field].SetValidator(validator)
 
-        _set('field_Number', _TextValidator(len_min=1, len_max=255))
-        _set('field_Name', _TextValidator(len_min=1, len_max=255))
-        _set('field_Comment', _TextValidator(len_min=1, len_max=255))
-        _set('field_HID', _ChoiceValidator())
-        _set('field_MOID', _ChoiceValidator())
-        _set('field_SetDate', _DateValidator(max=wx.DateTime.Now()))
-        _set('field_X', _NumericValidator())
-        _set('field_Y', _NumericValidator())
-        _set('field_Z', _NumericValidator())
+        _set('field_Number', TextValidator(len_min=1, len_max=255))
+        _set('field_Name', TextValidator(len_min=1, len_max=255))
+        _set('field_Comment', TextValidator(len_min=1, len_max=255))
+        _set('field_HID', ChoiceValidator())
+        _set('field_MOID', ChoiceValidator())
+        _set('field_SetDate', DateValidator(max=wx.DateTime.Now()))
+        _set('field_X', NumericValidator())
+        _set('field_Y', NumericValidator())
+        _set('field_Z', NumericValidator())
 
     def __on_cancel_click(self, event):
         self.Close()
@@ -770,16 +619,16 @@ class StationsEditor(Ui_Stations_Editor, mixins.OptionalFieldsMixin):
         def _set(field, validator):
             self.__dict__[field].SetValidator(validator)
 
-        _set('field_Number', _TextValidator(len_min=1, len_max=255))
-        _set('field_Name', _TextValidator(len_min=1, len_max=255))
-        _set('field_Comment', _TextValidator(len_min=1, len_max=255))
-        _set('field_MOID', _ChoiceValidator())
-        _set('field_X', _NumericValidator())
-        _set('field_Y', _NumericValidator())
-        _set('field_Z', _NumericValidator())
-        _set('field_HoleCount', _NumericValidator())
-        _set('field_StartDate', _DateValidator(max=wx.DateTime.Now()))
-        _set('field_EndDate', _DateValidator())
+        _set('field_Number', TextValidator(len_min=1, len_max=255))
+        _set('field_Name', TextValidator(len_min=1, len_max=255))
+        _set('field_Comment', TextValidator(len_min=1, len_max=255))
+        _set('field_MOID', ChoiceValidator())
+        _set('field_X', NumericValidator())
+        _set('field_Y', NumericValidator())
+        _set('field_Z', NumericValidator())
+        _set('field_HoleCount', NumericValidator())
+        _set('field_StartDate', DateValidator(max=wx.DateTime.Now()))
+        _set('field_EndDate', DateValidator())
 
 class MineObjects_Editor(Ui_MineObjects_Editor, mixins.OptionalFieldsMixin):
     def __init__(self, entity: MineObject = None, on_save: Callable[[MineObject], None] = None, *args, **kwds):

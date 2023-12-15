@@ -6,6 +6,7 @@ import database
 import query_dsl
 import logging
 import authority
+import wizards.table_export
 from column import Column
 from . import event
 
@@ -249,11 +250,42 @@ class TableView(Ui_xControlTableView, typing.Generic[_T]):
         self.Bind(wx.EVT_MENU, self.__on_edit_cols_click, item)
         export_menu = wx.Menu()
         item = export_menu.Append(wx.MenuItem(export_menu, wx.NewId(), "XLS"))
+        self.Bind(wx.EVT_MENU, self.__on_export_xls, item)
         item = export_menu.Append(wx.MenuItem(export_menu, wx.NewId(), "CSV"))
+        self.Bind(wx.EVT_MENU, self.__on_export_csv, item)
         item = menu.Append(wx.MenuItem(menu, wx.NewId(), "Экспортировать как", subMenu=export_menu))
+        export_menu = wx.Menu()
+        item = export_menu.Append(wx.MenuItem(export_menu, wx.NewId(), "XLS"))
+        self.Bind(wx.EVT_MENU, self.__on_export_selected_xls, item)
+        item = export_menu.Append(wx.MenuItem(export_menu, wx.NewId(), "CSV"))
+        self.Bind(wx.EVT_MENU, self.__on_export_selected_csv, item)
+        export_selected = wx.MenuItem(menu, wx.NewId(), "Экспортировать выделеное как", subMenu=export_menu)
+        item = menu.Append(export_selected)
+        if len(self._selected_entities) == 0:
+            export_selected.Enable(False)
         x, y = self.btn_settings.GetPosition()
         sx, sy = self.btn_settings.GetSize()
         self.PopupMenu(menu, (x, y + sy))
+
+    def __open_export_wizard(self, entities, format):
+        w = wizards.table_export.TableExport(
+            available_cols=self._available_cols,
+            cols=self._cols,
+            entities=entities,
+            parent=self.GetParent())
+        w.Show()
+
+    def __on_export_xls(self, event):
+        self.__open_export_wizard(self._entities, 'xls')
+
+    def __on_export_csv(self, event):
+        self.__open_export_wizard(self._entities, 'csv')
+
+    def __on_export_selected_xls(self, event):
+        self.__open_export_wizard(self._selected_entities, 'xls')
+
+    def __on_export_selected_csv(self, event):
+        self.__open_export_wizard(self._selected_entities, 'csv')
 
     def __on_order_by_click(self, evt):
         w = _orderBySelector(self._available_cols, self._order_by, parent=self.GetParent())
