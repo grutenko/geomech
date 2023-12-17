@@ -1,25 +1,37 @@
 # _*_ coding: UTF8 _*_
 
-import wx
 import io
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import ConfigParser
+import os
 
-__config: wx.FileConfig = None
 
-__CONFIG_APP_NAME__ = 'geomech'
-__CONFIG_APP_VENDOR__ = 'mountine_institute'
+__CONFIGPATH__ = 'geomech.ini'
+__config = ConfigParser()
 
 def init_config():
     global __config
-    if not __config is None:
-        raise Exception("Config already initialized.")
-    __config = wx.FileConfig(__CONFIG_APP_NAME__, __CONFIG_APP_VENDOR__, style=wx.CONFIG_USE_LOCAL_FILE)
-    
+    if not os.path.exists(__CONFIGPATH__):
+        with open(__CONFIGPATH__, 'a'):
+            os.utime(__CONFIGPATH__, None)
+    __config.read(__CONFIGPATH__)
 
-def read_config(key: str, defaultVal = wx.EmptyString):
+def has_option(section: str, key: str):
     global __config
-    return __config.Read(key, defaultVal)
+    return __config.has_section(section) and __config.has_option(section, key)
     
-def write_config(key: str, value: str):
+def read_option(section: str, key: str):
     global __config
-    if not __config.Write(key, value) or not __config.Flush():
-        raise Exception("Error writing to config.")
+    if not __config.has_section(section):
+        return None
+    return __config.get(section, key)
+    
+def write_option(section: str, key: str, value: str):
+    global __config
+    if not __config.has_section(section):
+        __config.add_section(section)
+    __config.set(section, key, str(value))
+    with open(__CONFIGPATH__, 'w') as file:
+        __config.write(file)

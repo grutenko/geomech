@@ -69,7 +69,7 @@ class TextValidator(_Validator):
         if not self._len_max is None:
             _valid = _valid and len(ctrl.GetValue()) <= self._len_max
         if not self._pattern is None:
-            _valid = _valid and not re.match(self._pattern, ctrl.GetText()) is None
+            _valid = _valid and not re.match(self._pattern, ctrl.GetValue()) is None
         return _valid
     
     def Clone(self):
