@@ -153,3 +153,14 @@ class DateValidator(_Validator):
         c = DateValidator()
         c.__dict__.update(self.__dict__)
         return c
+    
+class RelationSelectorValidator(_Validator):
+    def _x_validate(self, ctrl):
+        _valid = True
+        _valid = _valid and ctrl.get_selected_entity() != None
+        return _valid
+    
+    def Clone(self):
+        c = RelationSelectorValidator()
+        c.__dict__.update(self.__dict__)
+        return c
