@@ -45,7 +45,8 @@ if __name__ == '__main__':
             conn_success = True
 
     if not conn_success:
-        util.ask_dsn()
+        if not util.ask_dsn():
+            exit()
     try:
         database.init_database(read_dsn())
     except (SQLAlchemyError, database.xDatabaseInitError) as e:

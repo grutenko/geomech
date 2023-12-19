@@ -27,13 +27,13 @@ __DEFAULT_NAME__ = 'geomech'
 def ask_dsn(parent=None):
     while True:
         w = dialogs.DatabaseAccess(parent=parent)
-        if config.has_option('database', 'login'):
-            w.set_login_value(config.read_option('database', 'login'))
+        if config.has_option('database', 'user'):
+            w.set_login_value(config.read_option('database', 'user'))
         w.set_ip_value(config.read_option('database', 'ip') if config.has_option('database', 'ip') else __DEFAULT_IP__)
         w.set_port_value(config.read_option('database', 'port') if config.has_option('database', 'port') else __DEFAULT_PORT__)
         w.set_name_value(config.read_option('database', 'name') if config.has_option('database', 'name') else __DEFAULT_NAME__)
         if w.ShowModal() != wx.ID_SAVE:
-            exit()
+            return False
         try:
             database.test_connection(w.get_dsn())
         except (SQLAlchemyError, database.xDatabaseInitError) as e:
@@ -44,4 +44,4 @@ def ask_dsn(parent=None):
             config.write_option('database', 'ip', w.get_ip()), 
             config.write_option('database', 'port', w.get_port()), 
             config.write_option('database', 'name', w.get_name())
-            break;
+            return True
