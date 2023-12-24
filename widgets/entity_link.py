@@ -5,6 +5,7 @@ import typing
 import database
 import inspect_windows
 import list_windows
+import resources
 
 _T = typing.TypeVar('_T', bound=database.Base)
 
@@ -15,7 +16,7 @@ class EntityLink(wx.Button, typing.Generic[_T]):
         super().__init__(*args, **kw)
         self.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, 1, ""))
         self.SetOwnForegroundColour(wx.Colour(0, 102, 204))
-        self.SetBitmap(wx.Bitmap("icons/external-link.png"))
+        self.SetBitmap(wx.Bitmap(resources.resource_path("icons/external-link.png")))
 
         self.Bind(wx.EVT_BUTTON, self.__on_click)
         self.Bind(wx.EVT_RIGHT_DOWN, self.__on_context_menu)

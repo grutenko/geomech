@@ -9,6 +9,7 @@ import traceback
 import list_windows
 import dialogs
 import util
+from sys import exit
 
 sys.excepthook = util.except_hook
 

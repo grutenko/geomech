@@ -1,0 +1,12 @@
+Version: 1.0.0
+CompanyName: Горный институт КНЦ РАН
+FileDescription: Интерфейс для управления базой данных геомеханики
+InternalName: Геомеханика
+LegalCopyright: © Горный институт КНЦ РАН.
+OriginalFilename: geomech.exe
+ProductName: Геомеханика
+Translation:
+  - langID: 0
+    charsetID: 1200
+  - langID: 1049
+    charsetID: 1251

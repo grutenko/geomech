@@ -1,6 +1,7 @@
 import wx
 import typing
 import database
+import resources
 
 class UI_RelationSelector(wx.Panel):
     def __init__(self, *args, **kwds):
@@ -186,7 +187,7 @@ class RelationSelector(UI_RelationSelector, typing.Generic[_T]):
         self.entity_name.SetLabel(label)
         self.btn_add.Enable(self._new_entity == None and self._selected_entity == None and self._can_create)
         if not self._can_create:
-            self.btn_add.SetBitmap(wx.Bitmap("icons/padlock.png"))
+            self.btn_add.SetBitmap(wx.Bitmap(resources.resource_path("icons/padlock.png")))
         self.btn_select.Enable(self._new_entity == None)
         self.btn_remove.Enable(self._selected_entity != None)
 
