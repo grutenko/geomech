@@ -7,15 +7,17 @@ from sqlalchemy.exc import SQLAlchemyError
 import config
 import traceback
 import list_windows
-import dialogs
 import util
+import logging
 from sys import exit
 
-sys.excepthook = util.except_hook
+logging.basicConfig(
+    level=logging.INFO,
+    filename="geomech.log",
+    filemode="a",
+    format="%(asctime)s %(levelname)s %(message)s")
 
-import logging
-logging.basicConfig()
-logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+sys.excepthook = util.except_hook
 
 app = wx.App(0)
 
@@ -27,16 +29,16 @@ def read_dsn() -> str:
             config.read_option('database', 'port'), 
             config.read_option('database', 'name'))
 
-if __name__ == '__main__':
+def main():
     config.init_config()
 
-    if not config.has_option('database', 'user') \
-            or not config.has_option('database', 'password') \
-            or not config.has_option('database', 'ip') \
-            or not config.has_option('database', 'port') \
-            or not config.has_option('database', 'name'):
-        conn_success = False
-    else:
+    logging.info("--- STARTED ---")
+
+    if config.has_option('database', 'user') \
+            and config.has_option('database', 'password') \
+            and config.has_option('database', 'ip') \
+            and config.has_option('database', 'port') \
+            and config.has_option('database', 'name'):
         try:
             database.test_connection(read_dsn())
         except (SQLAlchemyError, database.xDatabaseInitError) as e:
@@ -44,16 +46,18 @@ if __name__ == '__main__':
             util.except_hook(type(e), e, e.__traceback__)
         else:
             conn_success = True
+    else:
+        conn_success = False
 
     if not conn_success:
         if not util.ask_dsn():
             exit()
-    try:
-        database.init_database(read_dsn())
-    except (SQLAlchemyError, database.xDatabaseInitError) as e:
-        raise e
+
+    database.init_database(read_dsn())
 
     mainWindow = list_windows.cmd_show(database.DischargeMeasurement)
     app.SetTopWindow(mainWindow)
     app.MainLoop()
 
+if __name__ == '__main__':
+    main()

@@ -4,6 +4,7 @@ import wx
 import database
 from sqlalchemy.exc import SQLAlchemyError
 import traceback
+import logging
 
 def except_hook(exception_type, exception_value, exception_traceback):
     if exception_type is SQLAlchemyError:
@@ -13,7 +14,7 @@ def except_hook(exception_type, exception_value, exception_traceback):
 
     message = 'Uncaught exception:\n'
     message += ''.join(traceback.format_exception(exception_type, exception_value, exception_traceback))
-    print(message)
+    logging.exception(message)
 
     dlg=wx.MessageDialog(None, "Ошибка: " + str(exception_value), str(exception_type), wx.OK|wx.ICON_ERROR)
     dlg.ShowModal()

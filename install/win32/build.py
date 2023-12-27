@@ -34,6 +34,7 @@ def main():
         "--noconfirm",
         "--clean",
         "--onefile",
+        "--windowed",
         "--add-data={}/icons/*;icons".format(__ROOT__),
         "--add-data={}/geomech.ico;geomech.ico".format(__ROOT__),
         "--version-file={}/build/generated-version.txt".format(__ROOT__),
