@@ -27,7 +27,6 @@ from database import (
     BoreHole,
     Station,
     CoordSystem,
-    gen_name_path,
     dry_commit_changes
 )
 import widgets.relation_selector
