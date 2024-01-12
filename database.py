@@ -5,6 +5,7 @@ from sqlalchemy import (
     Engine,
     create_engine,
 )
+import sqlalchemy.dialects.postgresql
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -13,6 +14,7 @@ from sqlalchemy.orm import (
     Session,
 )
 from typing import Callable
+from typing import ByteString
 from typing import List
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -100,15 +102,6 @@ def dry_commit_changes():
 class Base(DeclarativeBase):
     pass
 
-def gen_name_path(e: Base, parent_field: str) -> str:
-    cur = e
-    path = ''
-    while cur != None:
-        path = cur.Name + (' / ' if cur != e else '') + path
-        cur = getattr(cur, parent_field)
-        print(cur)
-    return path
-
 class MineObject(Base):
     __tablename__ = "MineObjects"
 
@@ -159,6 +152,11 @@ class MineObject(Base):
         primaryjoin='foreign(Station.MOID) == MineObject.RID'
     )
 
+    supplied_data: Mapped[List['SuppliedData']] = relationship(
+        primaryjoin='and_(foreign(SuppliedData.OwnID) == MineObject.RID, foreign(SuppliedData.OwnType) == "MineObjects")',
+        overlaps="supplied_data,supplied_data"
+    )
+
 class CoordSystem(Base):
     __tablename__ = 'CoordSystems'
 
@@ -204,6 +202,11 @@ class CoordSystem(Base):
         primaryjoin='MineObject.CSID == CoordSystem.RID'
     )
 
+    supplied_data: Mapped[List['SuppliedData']] = relationship(
+        primaryjoin='and_(foreign(SuppliedData.OwnID) == CoordSystem.RID, foreign(SuppliedData.OwnType) == "CoordSystems")',
+        overlaps="supplied_data,supplied_data"
+    )
+
 class DischargeSeries(Base):
     __tablename__ = 'DischargeSeries'
 
@@ -222,6 +225,11 @@ class DischargeSeries(Base):
     discharge_measurements: Mapped[List['DischargeMeasurement']] = relationship(
         back_populates='discharge_series',
         primaryjoin='DischargeSeries.RID == DischargeMeasurement.DSID'
+    )
+
+    supplied_data: Mapped[List['SuppliedData']] = relationship(
+        primaryjoin='and_(foreign(SuppliedData.OwnID) == DischargeSeries.RID, foreign(SuppliedData.OwnType) == "DischargeSeries")',
+        overlaps="supplied_data,supplied_data"
     )
 
 class OrigSampleSet(Base):
@@ -252,6 +260,11 @@ class OrigSampleSet(Base):
     discharge_series: Mapped[List['DischargeSeries']] = relationship(
         back_populates='orig_sample_set',
         primaryjoin='DischargeSeries.OSSID == OrigSampleSet.RID'
+    )
+
+    supplied_data: Mapped[List['SuppliedData']] = relationship(
+        primaryjoin='and_(foreign(SuppliedData.OwnID) == OrigSampleSet.RID, foreign(SuppliedData.OwnType) == "OrigSampleSets")',
+        overlaps="supplied_data,supplied_data"
     )
 
 class BoreHole(Base):
@@ -288,6 +301,11 @@ class BoreHole(Base):
         primaryjoin='OrigSampleSet.HID == BoreHole.RID'
     )
 
+    supplied_data: Mapped[List['SuppliedData']] = relationship(
+        primaryjoin='and_(foreign(SuppliedData.OwnID) == BoreHole.RID, foreign(SuppliedData.OwnType) == "BoreHoles")',
+        overlaps="supplied_data,supplied_data"
+    )
+
 class Station(Base):
     __tablename__ = 'Stations'
 
@@ -311,6 +329,11 @@ class Station(Base):
     bore_holes: Mapped[List['BoreHole']] = relationship(
         back_populates='station',
         primaryjoin='BoreHole.SID == Station.RID'
+    )
+
+    supplied_data: Mapped[List['SuppliedData']] = relationship(
+        primaryjoin='and_(foreign(SuppliedData.OwnID) == Station.RID, foreign(SuppliedData.OwnType) == "STATION")',
+        overlaps="supplied_data,supplied_data"
     )
 
 class DischargeMeasurement(Base):
@@ -356,3 +379,45 @@ class DischargeMeasurement(Base):
         lazy="joined",
         passive_deletes=False
     )
+
+    supplied_data: Mapped[List['SuppliedData']] = relationship(
+        primaryjoin='and_(foreign(SuppliedData.OwnID) == DischargeMeasurement.RID, foreign(SuppliedData.OwnType) == "DischargeMeasurements")',
+        overlaps="supplied_data,supplied_data"
+    )
+
+class SuppliedData(Base):
+    __tablename__ = 'SuppliedData'
+    
+    RID: Mapped[int] = mapped_column(primary_key=True)
+    OwnID: Mapped[int] = mapped_column(nullable=False)
+    OwnType: Mapped[str] = mapped_column(nullable=False)
+    Number: Mapped[str] = mapped_column(nullable=False)
+    Name: Mapped[str] = mapped_column(nullable=False)
+    Comment: Mapped[str] = mapped_column()
+    DataDate: Mapped[int] = mapped_column()
+
+    parts: Mapped[List['SuppliedDataPart']] = relationship(
+        back_populates='supplied_data',
+        primaryjoin='SuppliedDataPart.SDID == SuppliedData.RID'
+    )
+
+class SuppliedDataPart(Base):
+    __tablename__ = 'SuppliedDataParts'
+
+    RID: Mapped[int] = mapped_column(primary_key=True)
+    SDID: Mapped[int] = mapped_column(ForeignKey('SuppliedData.RID', ondelete="NO ACTION"), nullable=False)
+    Name: Mapped[str] = mapped_column(nullable=False)
+    Comment: Mapped[str] = mapped_column()
+    DType: Mapped[str] = mapped_column()
+    FileName: Mapped[str] = mapped_column()
+    DataContent: Mapped[ByteString] = mapped_column('DataContent', sqlalchemy.dialects.postgresql.BYTEA)
+    DataDate: Mapped[int] = mapped_column()
+
+    supplied_data: Mapped['SuppliedData'] = relationship(
+        back_populates='parts',
+        primaryjoin='foreign(SuppliedDataPart.SDID) == SuppliedData.RID',
+        lazy="joined",
+        passive_deletes=False
+    )
+
+Base.registry.configure()
