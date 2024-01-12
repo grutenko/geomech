@@ -2,81 +2,12 @@ import wx
 import typing
 import database
 import resources
-
-class UI_RelationSelector(wx.Panel):
-    def __init__(self, *args, **kwds):
-        kwds["style"] = kwds.get("style", 0) | wx.TAB_TRAVERSAL
-        wx.Panel.__init__(self, *args, **kwds)
-
-        sizer_1 = wx.FlexGridSizer(2, 1, 0, 0)
-
-        self.entity_name = wx.StaticText(self, wx.ID_ANY, u"<Не выбрано>")
-        sizer_1.Add(self.entity_name, 0, wx.BOTTOM, 10)
-
-        sizer_2 = wx.StdDialogButtonSizer()
-        sizer_1.Add(sizer_2, 1, wx.ALIGN_RIGHT | wx.EXPAND, 0)
-
-        self.btn_add = wx.Button(self, wx.ID_ANY, u"Создать", style=wx.BU_EXACTFIT)
-        sizer_2.Add(self.btn_add, 0, wx.RIGHT, 5)
-
-        self.btn_select = wx.Button(self, wx.ID_ANY, u"Выбрать", style=wx.BU_EXACTFIT)
-        sizer_2.Add(self.btn_select, 0, wx.RIGHT, 5)
-
-        self.btn_remove = wx.Button(self, wx.ID_ANY, u"Убрать выбор", style=wx.BU_EXACTFIT)
-        self.btn_remove.Enable(False)
-        sizer_2.Add(self.btn_remove, 0, 0, 0)
-
-        sizer_2.Realize()
-
-        self.SetSizer(sizer_1)
-        sizer_1.Fit(self)
-
-        self.Layout()
-
-
-class UI_RelationSelector_Dialog(wx.Dialog):
-    def __init__(self, *args, **kwds):
-        kwds["style"] = kwds.get("style", 0) | wx.DEFAULT_DIALOG_STYLE
-        wx.Dialog.__init__(self, *args, **kwds)
-        self.SetTitle(u"Выбрать связаный объект")
-
-        sizer_1 = wx.BoxSizer(wx.VERTICAL)
-
-        grid_sizer_1 = wx.FlexGridSizer(2, 1, 5, 0)
-        sizer_1.Add(grid_sizer_1, 1, wx.ALL | wx.EXPAND, 5)
-
-        self.search = wx.SearchCtrl(self, wx.ID_ANY, "")
-        self.search.ShowCancelButton(True)
-        grid_sizer_1.Add(self.search, 0, wx.EXPAND | wx.RIGHT, 5)
-
-        self.entities = wx.ListBox(self, wx.ID_ANY, choices=[""], style=wx.LB_SINGLE)
-        self.entities.SetMinSize((366, 207))
-        grid_sizer_1.Add(self.entities, 0, wx.EXPAND, 0)
-
-        sizer_2 = wx.StdDialogButtonSizer()
-        sizer_1.Add(sizer_2, 0, wx.ALIGN_RIGHT | wx.ALL, 4)
-
-        self.button_OK = wx.Button(self, wx.ID_OK, "")
-        self.button_OK.SetDefault()
-        sizer_2.AddButton(self.button_OK)
-
-        self.button_CANCEL = wx.Button(self, wx.ID_CANCEL, "")
-        sizer_2.AddButton(self.button_CANCEL)
-
-        sizer_2.Realize()
-
-        grid_sizer_1.AddGrowableRow(1)
-        grid_sizer_1.AddGrowableCol(0)
-
-        self.SetSizer(sizer_1)
-        sizer_1.Fit(self)
-
-        self.SetAffirmativeId(self.button_OK.GetId())
-        self.SetEscapeId(self.button_CANCEL.GetId())
-
-        self.Layout()
-
 import wx.lib.newevent
+
+from .ui.relation_selector import (
+    UI_RelationSelector,
+    UI_RelationSelector_Dialog
+)
 
 __xRelationSelectorSelect__ = wx.NewEventType()
 
