@@ -5,51 +5,11 @@ import typing
 import authority
 import database
 import widgets.event
-from . import event
-
-class UI_xTreeView(wx.Panel):
-    def __init__(self, *args, **kwds):
-        kwds["style"] = kwds.get("style", 0) | wx.TAB_TRAVERSAL
-        wx.Panel.__init__(self, *args, **kwds)
-
-        grid_sizer_1 = wx.FlexGridSizer(2, 1, 0, 0)
-
-        sizer_3 = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, u"Управление"), wx.HORIZONTAL)
-        grid_sizer_1.Add(sizer_3, 1, wx.EXPAND | wx.TOP, 10)
-
-        sizer_2 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_3.Add(sizer_2, 1, wx.ALL | wx.EXPAND, 5)
-
-        self.btn_Add = wx.Button(self, wx.ID_ANY, u"Добавить")
-        sizer_2.Add(self.btn_Add, 0, wx.RIGHT, 5)
-
-        self.btn_Edit = wx.Button(self, wx.ID_ANY, u"Редактировать")
-        self.btn_Edit.Enable(False)
-        sizer_2.Add(self.btn_Edit, 0, wx.RIGHT, 5)
-
-        self.btn_Delete = wx.Button(self, wx.ID_ANY, u"Удалить")
-        self.btn_Delete.Enable(False)
-        sizer_2.Add(self.btn_Delete, 0, 0, 0)
-
-        sizer_3.Add((0, 0), 0, 0, 0)
-
-        self.btn_edit_cols = wx.Button(self, wx.ID_ANY, u"…")
-        self.btn_edit_cols.SetMinSize((30, -1))
-        sizer_3.Add(self.btn_edit_cols, 0, wx.ALIGN_CENTER_VERTICAL, 0)
-
-        self.tree = wx.TreeCtrl(self, wx.ID_ANY, style=wx.BORDER_SUNKEN | wx.TR_HAS_BUTTONS | wx.TR_NO_BUTTONS | wx.TR_SINGLE)
-        grid_sizer_1.Add(self.tree, 0, wx.EXPAND, 0)
-
-        grid_sizer_1.AddGrowableRow(1)
-        grid_sizer_1.AddGrowableCol(0)
-        self.SetSizer(grid_sizer_1)
-        grid_sizer_1.Fit(self)
-
-        self.Layout()
+from .ui.tree_view import Ui_TreeView
 
 _T = typing.TypeVar('_T', bound=database.Base)
 
-class TreeView(UI_xTreeView, typing.Generic[_T]):
+class TreeView(Ui_TreeView, typing.Generic[_T]):
     _table_class: typing.Type[_T] = None
     _childs_field: str = None
     _level_field: str = None
