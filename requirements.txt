@@ -5,3 +5,4 @@ psycopg2>=2.9.9
 pyinstaller==5.13.2
 PyYAML>=6.0.1
 pyinstaller-versionfile>=2.1.1
+pathvalidate>=3.2.0
