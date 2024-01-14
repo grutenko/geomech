@@ -1,6 +1,7 @@
 # _*_ coding: UTF8 _*_
 
 import wx
+import wx.propgrid
 import typing
 import database
 import query_dsl

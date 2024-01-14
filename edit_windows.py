@@ -351,6 +351,10 @@ class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin
         if not self.__entity is None:
             self.__set_fields()
 
+        if entity == None:
+            self.supplied_data.Enable(False)
+        else:
+            self.supplied_data.set_data_owner(entity)
 
         self.__init_validator()
 
@@ -465,6 +469,11 @@ class StationsEditor(Ui_Stations_Editor, mixins.OptionalFieldsMixin):
         if not self.__entity is None:
             self.__set_fields()
 
+        if entity == None:
+            self.supplied_data.Enable(False)
+        else:
+            self.supplied_data.set_data_owner(entity)
+
         self.__init_validator()
 
         self.button_CANCEL.Bind(wx.EVT_BUTTON, self.__on_cancel_click)
@@ -482,7 +491,7 @@ class StationsEditor(Ui_Stations_Editor, mixins.OptionalFieldsMixin):
         self.field_X.SetValue(e.X)
         self.field_Y.SetValue(e.Y)
         self.field_Z.SetValue(e.Z)
-        self.field_MOID.Select(e.mine_object)
+        self.field_MOID.select(e.mine_object)
         self.field_MOID.Enable(False)
         self.field_HoleCount.SetValue(e.HoleCount)
         try:
@@ -574,3 +583,8 @@ class MineObjects_Editor(Ui_MineObjects_Editor, mixins.OptionalFieldsMixin):
          .set_table_class(CoordSystem)
          .set_name_generator(lambda e: e.Comment)
          .set_can_create(False))
+        
+        if entity == None:
+            self.supplied_data.Enable(False)
+        else:
+            self.supplied_data.set_data_owner(entity)

@@ -22,6 +22,7 @@ from queue import Queue
 import threading
 import time
 import wx
+import io
 
 engine: Engine = None
 session: Session = None
@@ -102,7 +103,12 @@ def dry_commit_changes():
 class Base(DeclarativeBase):
     pass
 
-class MineObject(Base):
+class SuppliedDataOwner(Base):
+    __abstract__ = True
+    supplied_data: Mapped[List['SuppliedData']]
+    own_type: str
+
+class MineObject(SuppliedDataOwner):
     __tablename__ = "MineObjects"
 
     RID: Mapped[int] = mapped_column(primary_key=True)
@@ -153,9 +159,11 @@ class MineObject(Base):
     )
 
     supplied_data: Mapped[List['SuppliedData']] = relationship(
-        primaryjoin='and_(foreign(SuppliedData.OwnID) == MineObject.RID, foreign(SuppliedData.OwnType) == "MineObjects")',
+        primaryjoin='and_(foreign(SuppliedData.OwnID) == MineObject.RID, foreign(SuppliedData.OwnType) == "MINE_OBJECT")',
         overlaps="supplied_data,supplied_data"
     )
+
+    own_type = 'MINE_OBJECT'
 
 class CoordSystem(Base):
     __tablename__ = 'CoordSystems'
@@ -202,11 +210,6 @@ class CoordSystem(Base):
         primaryjoin='MineObject.CSID == CoordSystem.RID'
     )
 
-    supplied_data: Mapped[List['SuppliedData']] = relationship(
-        primaryjoin='and_(foreign(SuppliedData.OwnID) == CoordSystem.RID, foreign(SuppliedData.OwnType) == "CoordSystems")',
-        overlaps="supplied_data,supplied_data"
-    )
-
 class DischargeSeries(Base):
     __tablename__ = 'DischargeSeries'
 
@@ -227,12 +230,7 @@ class DischargeSeries(Base):
         primaryjoin='DischargeSeries.RID == DischargeMeasurement.DSID'
     )
 
-    supplied_data: Mapped[List['SuppliedData']] = relationship(
-        primaryjoin='and_(foreign(SuppliedData.OwnID) == DischargeSeries.RID, foreign(SuppliedData.OwnType) == "DischargeSeries")',
-        overlaps="supplied_data,supplied_data"
-    )
-
-class OrigSampleSet(Base):
+class OrigSampleSet(SuppliedDataOwner):
     __tablename__ = 'OrigSampleSets'
 
     RID: Mapped[int] = mapped_column(primary_key=True)
@@ -263,11 +261,13 @@ class OrigSampleSet(Base):
     )
 
     supplied_data: Mapped[List['SuppliedData']] = relationship(
-        primaryjoin='and_(foreign(SuppliedData.OwnID) == OrigSampleSet.RID, foreign(SuppliedData.OwnType) == "OrigSampleSets")',
+        primaryjoin='and_(foreign(SuppliedData.OwnID) == OrigSampleSet.RID, foreign(SuppliedData.OwnType) == "ORIG_SAMPLE_SET")',
         overlaps="supplied_data,supplied_data"
     )
 
-class BoreHole(Base):
+    own_type = 'ORIG_SAMPLE_SET'
+
+class BoreHole(SuppliedDataOwner):
     __tablename__ = 'BoreHoles'
 
     RID: Mapped[int] = mapped_column(primary_key=True)
@@ -302,11 +302,13 @@ class BoreHole(Base):
     )
 
     supplied_data: Mapped[List['SuppliedData']] = relationship(
-        primaryjoin='and_(foreign(SuppliedData.OwnID) == BoreHole.RID, foreign(SuppliedData.OwnType) == "BoreHoles")',
+        primaryjoin='and_(foreign(SuppliedData.OwnID) == BoreHole.RID, foreign(SuppliedData.OwnType) == "BOREHOLE")',
         overlaps="supplied_data,supplied_data"
     )
 
-class Station(Base):
+    own_type = 'BOREHOLE'
+
+class Station(SuppliedDataOwner):
     __tablename__ = 'Stations'
 
     RID: Mapped[int] = mapped_column(primary_key=True)
@@ -335,6 +337,8 @@ class Station(Base):
         primaryjoin='and_(foreign(SuppliedData.OwnID) == Station.RID, foreign(SuppliedData.OwnType) == "STATION")',
         overlaps="supplied_data,supplied_data"
     )
+
+    own_type = 'STATION'
 
 class DischargeMeasurement(Base):
     __tablename__ = 'DischargeMeasurements'
@@ -380,11 +384,6 @@ class DischargeMeasurement(Base):
         passive_deletes=False
     )
 
-    supplied_data: Mapped[List['SuppliedData']] = relationship(
-        primaryjoin='and_(foreign(SuppliedData.OwnID) == DischargeMeasurement.RID, foreign(SuppliedData.OwnType) == "DischargeMeasurements")',
-        overlaps="supplied_data,supplied_data"
-    )
-
 class SuppliedData(Base):
     __tablename__ = 'SuppliedData'
     
@@ -410,7 +409,7 @@ class SuppliedDataPart(Base):
     Comment: Mapped[str] = mapped_column()
     DType: Mapped[str] = mapped_column()
     FileName: Mapped[str] = mapped_column()
-    DataContent: Mapped[ByteString] = mapped_column('DataContent', sqlalchemy.dialects.postgresql.BYTEA)
+    DataContent: Mapped[bytes] = mapped_column('DataContent', sqlalchemy.dialects.postgresql.BYTEA, deferred=True)
     DataDate: Mapped[int] = mapped_column()
 
     supplied_data: Mapped['SuppliedData'] = relationship(
