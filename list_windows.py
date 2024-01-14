@@ -166,7 +166,7 @@ class DischargeSeries_List(Base, ui.Ui_DischargeSeries_List):
         self.list.set_table_class(database.DischargeSeries)
         self.list.set_available_cols([
             Column('RID', 'id', 50),
-            Column('OSSID', 'Исходный набор образцов', 350, modifier=lambda e, ossid: e.orig_sample_set.Name),
+            Column('OSSID', 'Исходный набор образцов', 350, modifier=lambda  e, _: e.orig_sample_set.Name),
             Column('Number', '№ серии замеров', 50),
             Column('Name', 'Название', 500),
             Column('Comment', 'Комментарий', 500),
@@ -311,7 +311,7 @@ class OrigSampleSet_List(Base, ui.Ui_OrigSampleSets_List):
             Column('Comment', 'Комментарий', 500),
             Column('SampleType', 'Тип материала образцов', 150, _sample_type_modifier),
             Column('MOID', 'Горный объект', 350, modifier=_mine_object_modifier),
-            Column('HID', 'Скважина', 350, modifier=lambda e: e.bore_hole.Name),
+            Column('HID', 'Скважина', 350, modifier=lambda  e, _: e.bore_hole.Name),
             Column('X', 'Коорд. X устья скважины', 50),
             Column('Y', 'Коорд. Y устья скважины', 50),
             Column('Z', 'Коорд. Z устья скважины', 50),
@@ -352,7 +352,7 @@ class Station_List(Base, ui.Ui_Stations_List):
             Column('Number', '№ серии замеров', 350),
             Column('Name', 'Название', 500),
             Column('Comment', 'Комментарий', 500),
-            Column('MOID', 'Горный объект', 350, modifier=lambda e, moid: e.mine_object.Name),
+            Column('MOID', 'Горный объект', 350, modifier=lambda  e, _, moid: e.mine_object.Name),
             Column('X', 'Коорд. X станции', 50),
             Column('Y', 'Коорд. Y станции', 50),
             Column('Z', 'Коорд. Z станции', 50),
