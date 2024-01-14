@@ -23,14 +23,27 @@ _T = typing.TypeVar('_T', bound=database.Base)
 
 class _RelationSelectorDialog(UI_RelationSelector_Dialog, typing.Generic[_T]):
     _entities = []
+    _all_entities = []
     _new_entity: _T = None
     _name_gen: typing.Callable[[_T], str]
 
     def __init__(self, entities, name_gen, *args, **kwds):
         super().__init__(*args, **kwds)
         self._entities = entities
+        self._all_entities = entities
         self._name_gen = name_gen
         self.entities.Bind(wx.EVT_LEFT_UP, self.__on_select)
+        self.search.Bind(wx.EVT_SEARCH, self.__on_search)
+        self.search.Bind(wx.EVT_SEARCH_CANCEL, self.__on_search_cancel)
+        self.__render()
+
+    def __on_search_cancel(self, event):
+        self._entities = self._all_entities
+        self.__render()
+
+    def __on_search(self, event):
+        q = self.search.GetValue()
+        self._entities = list(filter(lambda e: self._name_gen(e).find(q) != -1, self._all_entities))
         self.__render()
 
     def __on_select(self, event):
