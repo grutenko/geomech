@@ -2,12 +2,13 @@ import wx
 import database
 import typing
 import widgets.entity_link
+import widgets.supplied_data_viewer
 
 class Ui_Inspect(wx.Frame):
     def __init__(self, *args, **kwds):
         kwds["style"] = kwds.get("style", 0) | wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
-        self.SetSize((400, 490))
+        self.SetSize((400, 491))
         self.SetTitle("frame_3")
 
         # Menu Bar
@@ -21,14 +22,24 @@ class Ui_Inspect(wx.Frame):
 
         sizer_1 = wx.BoxSizer(wx.VERTICAL)
 
-        self.panel_2 = wx.ScrolledWindow(self.panel_1, wx.ID_ANY, style=wx.TAB_TRAVERSAL)
+        self.window_1 = wx.SplitterWindow(self.panel_1, wx.ID_ANY, style=wx.SP_3D | wx.SP_LIVE_UPDATE)
+        self.window_1.SetMinimumPaneSize(20)
+        sizer_1.Add(self.window_1, 1, wx.EXPAND, 0)
+
+        self.panel_2 = wx.ScrolledWindow(self.window_1, wx.ID_ANY, style=wx.TAB_TRAVERSAL)
         self.panel_2.SetScrollRate(10, 10)
-        sizer_1.Add(self.panel_2, 1, wx.EXPAND, 0)
 
         self.grid = wx.FlexGridSizer(0, 2, 0, 0)
 
+        self.window_1_pane_2 = wx.Panel(self.window_1, wx.ID_ANY)
+
+        sizer_3 = wx.StaticBoxSizer(wx.StaticBox(self.window_1_pane_2, wx.ID_ANY, u"Сопутствующие материалы"), wx.VERTICAL)
+
+        self.supplied_data = widgets.supplied_data_viewer.SuppliedData_Viewer(self.window_1_pane_2, wx.ID_ANY)
+        sizer_3.Add(self.supplied_data, 1, wx.EXPAND, 0)
+
         sizer_2 = wx.StdDialogButtonSizer()
-        sizer_1.Add(sizer_2, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
+        sizer_1.Add(sizer_2, 0, wx.ALIGN_RIGHT | wx.ALL, 4)
 
         self.button_OK = wx.Button(self.panel_1, wx.ID_ANY, u"ОК")
         self.button_OK.SetDefault()
@@ -36,7 +47,11 @@ class Ui_Inspect(wx.Frame):
 
         sizer_2.Realize()
 
+        self.window_1_pane_2.SetSizer(sizer_3)
+
         self.panel_2.SetSizer(self.grid)
+
+        self.window_1.SplitHorizontally(self.panel_2, self.window_1_pane_2)
 
         self.panel_1.SetSizer(sizer_1)
 
@@ -141,6 +156,8 @@ class _BoreHole_Inspect(_Inspect):
         self._add_field("Дата закладки / начала измерений:", self._text_value(_date_modifier(e.StartDate)))
         self._add_field("Дата завершения измерений:", self._text_value(_date_modifier(e.EndDate) if e.EndDate != None else '<нет>'))
 
+        self.supplied_data.set_data_owner(e)
+
 class _CoordSystem_Inspect(_Inspect):
     def _set_fields(self, e: database.DischargeMeasurement):
         self._set_name("Система координат " + str(e.Name))
@@ -176,6 +193,7 @@ class _MineObject_Inspect(_Inspect):
         self._add_field("Минимальные координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X_Min, e.Y_Min, e.Z_Min)))
         self._add_field("Максимальные координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X_Max, e.Y_Max, e.Z_Max)))
         
+        self.supplied_data.set_data_owner(e)
 
 class _OrigSampleSetInspect(_Inspect):
     def _set_fields(self, e: database.DischargeMeasurement):
@@ -195,6 +213,8 @@ class _OrigSampleSetInspect(_Inspect):
         self._add_field("Скважина:", self._relation_value(e.bore_hole))
         self._add_field("Дата отбора:", self._text_value(_date_modifier(e.SetDate)))
 
+        self.supplied_data.set_data_owner(e)
+
 class _Station_Inspect(_Inspect):
     def _set_fields(self, e: database.DischargeMeasurement):
         self._set_name("Станция " + str(e.Name))
@@ -206,6 +226,8 @@ class _Station_Inspect(_Inspect):
         self._add_field("Координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X, e.Y, e.Z)))
         self._add_field("Дата закладки / начала измерений:", self._text_value(_date_modifier(e.StartDate)))
         self._add_field("Дата завершения измерений:", self._text_value(_date_modifier(e.EndDate) if e.EndDate != None else '<нет>'))
+
+        self.supplied_data.set_data_owner(e)
 
 __MAPPING__ = {
     database.DischargeMeasurement: _DischargeMeasurement_Inspect,

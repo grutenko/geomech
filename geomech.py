@@ -54,7 +54,6 @@ def main():
             exit()
 
     database.init_database(read_dsn())
-
     mainWindow = list_windows.cmd_show(database.DischargeMeasurement)
     app.SetTopWindow(mainWindow)
     app.MainLoop()
