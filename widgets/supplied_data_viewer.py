@@ -138,6 +138,15 @@ class SuppliedData_Viewer(Ui_SuppliedData_Viewer):
             self.tree.CheckItem(item)
             for part in list(self.__mapping[item][1].keys()):
                 self.tree.CheckItem(part)
+        self.__update_controls_state()
+    
+    def __update_controls_state(self):
+        can_download = False
+        for item in list(self.__mapping.keys()):
+            if self.tree.GetCheckedState(item) != 0:
+                can_download = True
+                break;
+        self.button_download.Enable(can_download)
 
     def __on_checked(self, event: wx.dataview.TreeListEvent):
         is_checked = self.tree.GetCheckedState(event.GetItem())
@@ -157,12 +166,7 @@ class SuppliedData_Viewer(Ui_SuppliedData_Viewer):
                 self.tree.CheckItem(parent, wx.CHK_UNDETERMINED)
             else:
                 self.tree.CheckItem(parent, wx.CHK_UNCHECKED)
-        can_download = False
-        for item in list(self.__mapping.keys()):
-            if self.tree.GetCheckedState(item) != 0:
-                can_download = True
-                break;
-        self.button_download.Enable(can_download)
+        self.__update_controls_state()
 
     def __render(self):
         self.tree.DeleteAllItems()
