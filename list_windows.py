@@ -406,7 +406,8 @@ def cmd_show(table_class: typing.Type[_T], with_selection: typing.List[_T] = Non
     if table_class in __windows:
         __windows[table_class].Raise()
     else:
-        __windows[table_class] = __MAPPING__[table_class](parent=None)
+        parent = __windows[database.DischargeMeasurement] if database.DischargeMeasurement in __windows else None
+        __windows[table_class] = __MAPPING__[table_class](parent=parent)
         __windows[table_class].Show()
         def _on_close(event):
             event.Skip()
