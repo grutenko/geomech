@@ -228,9 +228,9 @@ class BoreHole_List(Base, ui.Ui_BoreHoles_List):
 
     def __on_manage_entities(self, event):
         if event.type == widgets.event.ManageTypes.NEED_CREATE:
-            pass#_do_edit(self.list, edit_windows, self, None)
+            _do_edit(self.list, edit_windows.BoreHole_Editor, self, None)
         elif event.type == widgets.event.ManageTypes.NEED_EDIT:
-            pass#_do_edit(self.list, edit_windows.DischargeSeriesEditor, self, event.entity)
+            _do_edit(self.list, edit_windows.BoreHole_Editor, self, event.entity)
         elif event.type == widgets.event.ManageTypes.NEED_DELETE:
             _do_delete(self.list, event.entities, self, "Скважины")
         elif event.type == widgets.event.ManageTypes.NEED_SHOW_DETAIL:

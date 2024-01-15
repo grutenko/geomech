@@ -15,7 +15,8 @@ from ui import (
     Ui_DischargeSeries_Editor,
     Ui_OrigSampleSets_Editor,
     Ui_Stations_Editor,
-    Ui_MineObjects_Editor
+    Ui_MineObjects_Editor,
+    Ui_BoreHole_Editor
 )
 import sqlalchemy
 from database import (
@@ -568,6 +569,145 @@ class StationsEditor(Ui_Stations_Editor, mixins.OptionalFieldsMixin):
         _set('field_HoleCount', NumericValidator())
         _set('field_StartDate', DateValidator(max=wx.DateTime.Now()))
         _set('field_EndDate', DateValidator())
+
+class BoreHole_Editor(Ui_BoreHole_Editor, mixins.OptionalFieldsMixin):
+    __entity: BoreHole = None
+    __on_save: Callable[[BoreHole], None]
+
+    def __init__(self, entity: BoreHole = None, on_save: Callable[[BoreHole], None] = None, *args, **kwds):
+        super().__init__(*args, **kwds)
+        mixins.OptionalFieldsMixin.__init__(self, self)
+
+        (self.field_MOID
+         .set_table_class(MineObject)
+         .set_name_generator(lambda e: e.Comment)
+         .set_can_create(True)
+         .set_editor(MineObjects_Editor))
+        
+        (self.field_SID
+         .set_table_class(Station)
+         .set_name_generator(lambda e: e.Name)
+         .set_can_create(True)
+         .set_editor(StationsEditor))
+        
+        self.__entity = entity
+        self.__on_save = on_save
+        if not self.__entity is None:
+            self.__set_fields()
+
+        if entity == None:
+            self.supplied_data.Enable(False)
+        else:
+            self.supplied_data.set_data_owner(entity)
+
+        self.__init_validator()
+
+        self.button_CANCEL.Bind(wx.EVT_BUTTON, self.__on_cancel_click)
+        self.button_SAVE.Bind(wx.EVT_BUTTON, self.__on_save_click)
+
+    def __init_validator(self):
+        def _set(field, validator):
+            self.__dict__[field].SetValidator(validator)
+
+        _set('field_Number', TextValidator(len_min=1, len_max=255))
+        _set('field_Name', TextValidator(len_min=1, len_max=255))
+        _set('field_Comment', TextValidator(len_min=1, len_max=255))
+        _set('field_MOID', RelationSelectorValidator())
+        _set('field_X', NumericValidator())
+        _set('field_Y', NumericValidator())
+        _set('field_Z', NumericValidator())
+        _set('field_Azimuth', NumericValidator())
+        _set('field_Tilt', NumericValidator())
+        _set('field_Diameter', NumericValidator())
+        _set('field_Length', NumericValidator())
+        _set('field_StartDate', DateValidator(max=wx.DateTime.Now()))
+        _set('field_EndDate', DateValidator())
+
+    def __set_fields(self):
+        e = self.__entity
+        self.field_RID.SetLabelText(str(e.RID))
+        self.field_Number.SetValue(e.Number)
+        self.field_Name.SetValue(e.Name)
+        if e.Comment != None:
+            self.field_Comment.SetValue(e.Comment)
+            self.field_Comment.Enable(True)
+            self.field_Comment_enabled.SetValue(True)
+        self.field_X.SetValue(e.X)
+        self.field_Y.SetValue(e.Y)
+        self.field_Z.SetValue(e.Z)
+        self.field_MOID.select(e.mine_object)
+        self.field_MOID.Enable(False)
+        if e.station != None:
+            self.field_SID.select(e.station)
+        self.field_SID.Enable(False)
+        self.field_Azimuth.SetValue(e.Azimuth)
+        self.field_Tilt.SetValue(e.Azimuth)
+        self.field_Diameter.SetValue(e.Diameter)
+        self.field_Length.SetValue(e.Length)
+        try:
+            date = datetime(
+                int(str(e.StartDate)[0:4]),
+                int(str(e.StartDate)[4:6]),
+                int(str(e.StartDate)[6:8]))
+        except ValueError:
+            wx.MessageBox("Невалидная дата!", "Ошибка!")
+            date = datetime.now()
+        self.field_StartDate.SetValue(date)
+        if e.EndDate != None:
+            try:
+                date = datetime(
+                    int(str(e.StartDate)[0:4]),
+                    int(str(e.StartDate)[4:6]),
+                    int(str(e.StartDate)[6:8]))
+            except ValueError:
+                wx.MessageBox("Невалидная дата!", "Ошибка!")
+                date = datetime.now()
+            self.field_EndDate.SetValue(date)
+            self.field_EndDate.Enable(True)
+            self.field_EndDate_enabled.SetValue(True)
+
+    def __write_entity(self, e: BoreHole):
+        e.Number = self.field_Number.GetValue()
+        e.Name = self.field_Name.GetValue()
+        if self.field_Comment.IsEnabled():
+            e.Comment = self.field_Comment.GetValue()
+        e.X = self.field_X.GetValue()
+        e.Y = self.field_Y.GetValue()
+        e.Z = self.field_Z.GetValue()
+        e.mine_object = self.field_MOID.get_selected_entity()
+        if self.field_SID.IsEnabled():
+            e.station = self.field_SID.get_selected_entity()
+        e.Azimuth = self.field_Azimuth.GetValue()
+        e.Tilt = self.field_Tilt.GetValue()
+        e.Diameter = self.field_Diameter.GetValue()
+        e.Length = self.field_Length.GetValue()
+        date: wx.DateTime = self.field_StartDate.GetValue()
+        date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
+        e.StartDate = date
+        if self.field_EndDate.IsEnabled():
+            date: wx.DateTime = self.field_EndDate.GetValue()
+            date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
+            e.EndDate = date
+        return e
+
+    def __on_save_click(self, event):
+        if not self.Validate():
+            return
+        self.__entity = self.__write_entity(BoreHole() if self.__entity == None else self.__entity)
+        self.Enable(False)
+        try:
+            get_session().add(self.__entity)
+            dry_commit_changes()
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            _db_error_msg(e)
+        finally:
+            self.Enable(True)
+        if not self.__on_save is None:
+            self.__on_save(self.__entity)
+        self.Close()
+
+    def __on_cancel_click(self, event):
+        self.Close()
 
 class MineObjects_Editor(Ui_MineObjects_Editor, mixins.OptionalFieldsMixin):
     def __init__(self, entity: MineObject = None, on_save: Callable[[MineObject], None] = None, *args, **kwds):
