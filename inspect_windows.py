@@ -56,6 +56,7 @@ class Ui_Inspect(wx.Frame):
         self.panel_1.SetSizer(sizer_1)
 
         self.Layout()
+        self.Centre()
 
 class _Inspect(Ui_Inspect):
     _entity: database.Base
