@@ -273,6 +273,7 @@ class TableView(Ui_xControlTableView, typing.Generic[_T]):
             available_cols=self._available_cols,
             cols=self._cols,
             entities=entities,
+            format=format,
             parent=self.GetParent())
         w.Show()
 

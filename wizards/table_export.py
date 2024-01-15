@@ -43,7 +43,7 @@ class TableExport(UI_ExportWizard):
     def __init__(self, 
                  available_cols: typing.List[column.Column],
                  cols: typing.List[column.Column],
-                 entities: typing.List[database.Base], *args, **kwds):
+                 entities: typing.List[database.Base], format = 'csv', *args, **kwds):
         super().__init__(*args, **kwds)
 
         self._available_cols = available_cols
@@ -57,6 +57,9 @@ class TableExport(UI_ExportWizard):
                     indexes.append(i)
         self.columns.SetCheckedItems(indexes)
         self._entities = entities
+
+        if format == 'xls':
+            self.field_export_type.Select(1)
 
         self.field_file_name.SetValidator(TextValidator(len_min=1, message="Заполните путь сохранения файла."))
         self.__bind()
