@@ -347,7 +347,8 @@ class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin
         (self.field_HID
          .set_table_class(BoreHole)
          .set_name_generator(lambda e: e.Name)
-         .set_can_create(False))
+         .set_can_create(True)
+         .set_editor(BoreHole_Editor))
 
         if not self.__entity is None:
             self.__set_fields()
