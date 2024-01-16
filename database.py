@@ -103,12 +103,19 @@ def dry_commit_changes():
 class Base(DeclarativeBase):
     pass
 
-class SuppliedDataOwner(Base):
-    __abstract__ = True
+class SuppliedDataOwner:
     supplied_data: Mapped[List['SuppliedData']]
     own_type: str
 
-class MineObject(SuppliedDataOwner):
+class TreeNode:
+    PID: Mapped[int]
+    parent: Mapped['TreeNode']
+    childrens: Mapped[List['TreeNode']]
+    Level: Mapped[int]
+    HCode: Mapped['str']
+
+
+class MineObject(Base, SuppliedDataOwner, TreeNode):
     __tablename__ = "MineObjects"
 
     RID: Mapped[int] = mapped_column(primary_key=True)
@@ -165,7 +172,7 @@ class MineObject(SuppliedDataOwner):
 
     own_type = 'MINE_OBJECT'
 
-class CoordSystem(Base):
+class CoordSystem(Base, TreeNode):
     __tablename__ = 'CoordSystems'
 
     RID: Mapped[int] = mapped_column(primary_key=True)
@@ -230,7 +237,7 @@ class DischargeSeries(Base):
         primaryjoin='DischargeSeries.RID == DischargeMeasurement.DSID'
     )
 
-class OrigSampleSet(SuppliedDataOwner):
+class OrigSampleSet(Base, SuppliedDataOwner):
     __tablename__ = 'OrigSampleSets'
 
     RID: Mapped[int] = mapped_column(primary_key=True)
@@ -267,7 +274,7 @@ class OrigSampleSet(SuppliedDataOwner):
 
     own_type = 'ORIG_SAMPLE_SET'
 
-class BoreHole(SuppliedDataOwner):
+class BoreHole(Base, SuppliedDataOwner):
     __tablename__ = 'BoreHoles'
 
     RID: Mapped[int] = mapped_column(primary_key=True)
@@ -308,7 +315,7 @@ class BoreHole(SuppliedDataOwner):
 
     own_type = 'BOREHOLE'
 
-class Station(SuppliedDataOwner):
+class Station(Base, SuppliedDataOwner):
     __tablename__ = 'Stations'
 
     RID: Mapped[int] = mapped_column(primary_key=True)
