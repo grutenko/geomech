@@ -9,7 +9,7 @@ from typing import (
 import wx
 import wx.adv
 import re
-from datetime import datetime
+import datetime
 from ui import (
     Ui_DischargeMeasurement_Editor,
     Ui_DischargeSeries_Editor,
@@ -289,8 +289,7 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, mixins.OptionalFieldsMixi
         e.Comment = self.field_Comment.GetValue() if self.field_Comment.IsEnabled() else None
         e.orig_sample_set = self.field_OSSID.get_selected_entity()
         date: wx.DateTime = self.field_MeasureDate.GetValue()
-        date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
-        e.MeasureDate = date
+        e.MeasureDate =  datetime.date(date.GetYear(), date.GetMonth() + 1, date.GetDay())
 
         return e
 
@@ -315,15 +314,7 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, mixins.OptionalFieldsMixi
             self.field_Comment_enabled.SetValue(True)
         self.field_OSSID.select(entity.orig_sample_set)
         self.field_OSSID.Enable(False)
-        try:
-            date = datetime(
-                int(str(e.MeasureDate)[0:4]),
-                int(str(e.MeasureDate)[4:6]),
-                int(str(e.MeasureDate)[6:8]))
-        except ValueError:
-            wx.MessageBox("Невалидная дата!", "Ошибка!")
-            date = datetime.now()
-        self.field_MeasureDate.SetValue(date)
+        self.field_MeasureDate.SetValue(e.MeasureDate)
 
 class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin):
     __entity: OrigSampleSet = None
@@ -385,15 +376,7 @@ class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin
         self.field_HID.Enable(False)
         self.field_MOID.select(e.mine_object)
         self.field_MOID.Enable(False)
-        try:
-            date = datetime(
-                int(str(e.SetDate)[0:4]),
-                int(str(e.SetDate)[4:6]),
-                int(str(e.SetDate)[6:8]))
-        except ValueError:
-            wx.MessageBox("Невалидная дата!", "Ошибка!")
-            date = datetime.now()
-        self.field_SetDate.SetValue(date)
+        self.field_SetDate.SetValue(e.SetDate)
 
     def __init_validator(self):
         def _set(field, validator):
@@ -445,8 +428,7 @@ class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin
         e.bore_hole = self.field_HID.get_selected_entity()
         e.mine_object = self.field_MOID.get_selected_entity()
         date: wx.DateTime = self.field_SetDate.GetValue()
-        date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
-        e.SetDate = date
+        e.SetDate =  datetime.date(date.GetYear(), date.GetMonth() + 1, date.GetDay())
 
         return e
     
@@ -496,25 +478,9 @@ class StationsEditor(Ui_Stations_Editor, mixins.OptionalFieldsMixin):
         self.field_MOID.select(e.mine_object)
         self.field_MOID.Enable(False)
         self.field_HoleCount.SetValue(e.HoleCount)
-        try:
-            date = datetime(
-                int(str(e.StartDate)[0:4]),
-                int(str(e.StartDate)[4:6]),
-                int(str(e.StartDate)[6:8]))
-        except ValueError:
-            wx.MessageBox("Невалидная дата!", "Ошибка!")
-            date = datetime.now()
-        self.field_StartDate.SetValue(date)
+        self.field_StartDate.SetValue(e.StartDate)
         if e.EndDate != None:
-            try:
-                date = datetime(
-                    int(str(e.StartDate)[0:4]),
-                    int(str(e.StartDate)[4:6]),
-                    int(str(e.StartDate)[6:8]))
-            except ValueError:
-                wx.MessageBox("Невалидная дата!", "Ошибка!")
-                date = datetime.now()
-            self.field_EndDate.SetValue(date)
+            self.field_EndDate.SetValue(e.EndDate)
             self.field_EndDate.Enable(True)
             self.field_EndDate_enabled.SetValue(True)
 
@@ -544,12 +510,10 @@ class StationsEditor(Ui_Stations_Editor, mixins.OptionalFieldsMixin):
         e.mine_object = self.field_MOID.get_selected_entity()
         e.HoleCount = self.field_HoleCount.GetValue()
         date: wx.DateTime = self.field_StartDate.GetValue()
-        date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
-        e.StartDate = date
+        e.StartDate =  datetime.date(date.GetYear(), date.GetMonth() + 1, date.GetDay())
         if self.field_EndDate.IsEnabled():
             date: wx.DateTime = self.field_EndDate.GetValue()
-            date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
-            e.EndDate = date
+            e.EndDate =  datetime.date(date.GetYear(), date.GetMonth() + 1, date.GetDay())
 
         return e
 
@@ -645,25 +609,9 @@ class BoreHole_Editor(Ui_BoreHole_Editor, mixins.OptionalFieldsMixin):
         self.field_Tilt.SetValue(e.Azimuth)
         self.field_Diameter.SetValue(e.Diameter)
         self.field_Length.SetValue(e.Length)
-        try:
-            date = datetime(
-                int(str(e.StartDate)[0:4]),
-                int(str(e.StartDate)[4:6]),
-                int(str(e.StartDate)[6:8]))
-        except ValueError:
-            wx.MessageBox("Невалидная дата!", "Ошибка!")
-            date = datetime.now()
-        self.field_StartDate.SetValue(date)
+        self.field_StartDate.SetValue(e.StartDate)
         if e.EndDate != None:
-            try:
-                date = datetime(
-                    int(str(e.StartDate)[0:4]),
-                    int(str(e.StartDate)[4:6]),
-                    int(str(e.StartDate)[6:8]))
-            except ValueError:
-                wx.MessageBox("Невалидная дата!", "Ошибка!")
-                date = datetime.now()
-            self.field_EndDate.SetValue(date)
+            self.field_EndDate.SetValue(e.EndDate)
             self.field_EndDate.Enable(True)
             self.field_EndDate_enabled.SetValue(True)
 
@@ -683,12 +631,10 @@ class BoreHole_Editor(Ui_BoreHole_Editor, mixins.OptionalFieldsMixin):
         e.Diameter = self.field_Diameter.GetValue()
         e.Length = self.field_Length.GetValue()
         date: wx.DateTime = self.field_StartDate.GetValue()
-        date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
-        e.StartDate = date
+        e.StartDate =  datetime.date(date.GetYear(), date.GetMonth() + 1, date.GetDay())
         if self.field_EndDate.IsEnabled():
             date: wx.DateTime = self.field_EndDate.GetValue()
-            date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
-            e.EndDate = date
+            e.EndDate =  datetime.date(date.GetYear(), date.GetMonth() + 1, date.GetDay())
         return e
 
     def __on_save_click(self, event):

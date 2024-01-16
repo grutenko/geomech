@@ -160,9 +160,6 @@ class DischargeSeries_List(Base, ui.Ui_DischargeSeries_List):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
-        def _date_modifier(_, date):
-            return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
-
         self.list.set_table_class(database.DischargeSeries)
         self.list.set_available_cols([
             Column('RID', 'id', 50),
@@ -170,7 +167,7 @@ class DischargeSeries_List(Base, ui.Ui_DischargeSeries_List):
             Column('Number', '№ серии замеров', 50),
             Column('Name', 'Название', 500),
             Column('Comment', 'Комментарий', 500),
-            Column('MeasureDate', 'Дата замера', 250, _date_modifier)
+            Column('MeasureDate', 'Дата замера', 250)
         ])
         self.list.set_display_cols(['RID', 'Number', 'Name', 'MeasureDate'], do_repaint=False)
         self.list.set_order_by(query_dsl.OrderBy([
@@ -196,9 +193,6 @@ class BoreHole_List(Base, ui.Ui_BoreHoles_List):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
-        def _date_modifier(_, date):
-            return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
-
         self.list.set_table_class(database.BoreHole)
         self.list.set_available_cols([
             Column('RID', 'id', 50),
@@ -214,8 +208,8 @@ class BoreHole_List(Base, ui.Ui_BoreHoles_List):
             Column('Tilt', 'Наклон', 50),
             Column('Diameter', 'Диаметр', 50),
             Column('Length', 'Длина', 50),
-            Column('StartDate', 'Дата закладки / начала измерений', 250, _date_modifier),
-            Column('EndDate', 'Дата завершения измерений', 250, _date_modifier)
+            Column('StartDate', 'Дата закладки / начала измерений', 250),
+            Column('EndDate', 'Дата завершения измерений', 250)
         ])
         self.list.set_display_cols([
             'RID', 'Number', 'Name', 'X', 'Y', 'Z', 'StartDate'
@@ -285,9 +279,6 @@ class MineObject_List(Base, ui.Ui_MineObjects_List):
 class OrigSampleSet_List(Base, ui.Ui_OrigSampleSets_List):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
-
-        def _date_modifier(_, date):
-            return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
         
         def _sample_type_modifier(_, type):
             if type == 'CORE':
@@ -315,7 +306,7 @@ class OrigSampleSet_List(Base, ui.Ui_OrigSampleSets_List):
             Column('X', 'Коорд. X устья скважины', 50),
             Column('Y', 'Коорд. Y устья скважины', 50),
             Column('Z', 'Коорд. Z устья скважины', 50),
-            Column('SetDate', 'Дата закладки / начала измерений', 350, _date_modifier),
+            Column('SetDate', 'Дата закладки / начала измерений', 350),
         ])
         self.list.set_display_cols([
             'RID', 'Number', 'Name', 'SampleType', 'X', 'Y', 'Z', 'SetDate'
@@ -343,22 +334,19 @@ class Station_List(Base, ui.Ui_Stations_List):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
 
-        def _date_modifier(_, date):
-            return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
-
         self.list.set_table_class(database.Station)
         self.list.set_available_cols([
             Column('RID', 'id', 50),
             Column('Number', '№ серии замеров', 350),
             Column('Name', 'Название', 500),
             Column('Comment', 'Комментарий', 500),
-            Column('MOID', 'Горный объект', 350, modifier=lambda  e, _, moid: e.mine_object.Name),
+            Column('MOID', 'Горный объект', 350, modifier=lambda  e, _: e.mine_object.Name),
             Column('X', 'Коорд. X станции', 50),
             Column('Y', 'Коорд. Y станции', 50),
             Column('Z', 'Коорд. Z станции', 50),
             Column('HoleCount', 'Количество скважин', 50),
-            Column('StartDate', 'Дата закладки / начала измерений', 250, _date_modifier),
-            Column('EndDate', 'Дата завершения измерений', 250, _date_modifier),
+            Column('StartDate', 'Дата закладки / начала измерений', 250),
+            Column('EndDate', 'Дата завершения измерений', 250),
         ])
         self.list.set_display_cols([
             'RID', 'Number', 'Name', 'X', 'Y', 'Z', 'StartDate'
