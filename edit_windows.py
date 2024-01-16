@@ -711,6 +711,9 @@ class BoreHole_Editor(Ui_BoreHole_Editor, mixins.OptionalFieldsMixin):
         self.Close()
 
 class MineObjects_Editor(Ui_MineObjects_Editor, mixins.OptionalFieldsMixin):
+    __entity: MineObject
+    __on_save: Callable[[MineObject], None]
+
     def __init__(self, entity: MineObject = None, on_save: Callable[[MineObject], None] = None, *args, **kwds):
         super().__init__(*args, **kwds)
         mixins.OptionalFieldsMixin.__init__(self, self)
@@ -725,7 +728,111 @@ class MineObjects_Editor(Ui_MineObjects_Editor, mixins.OptionalFieldsMixin):
          .set_name_generator(lambda e: e.Comment)
          .set_can_create(False))
         
+        self.__entity = entity
+        self.__on_save = on_save
+        if not self.__entity is None:
+            self.__set_fields()
+
         if entity == None:
             self.supplied_data.Enable(False)
         else:
             self.supplied_data.set_data_owner(entity)
+
+        self.__init_validator()
+
+        self.button_CANCEL.Bind(wx.EVT_BUTTON, self.__on_cancel_click)
+        self.button_SAVE.Bind(wx.EVT_BUTTON, self.__on_save_click)
+
+    def __on_save_click(self, event):
+        if not self.Validate():
+            return
+        self.__entity = self.__write_entity(MineObject() if self.__entity == None else self.__entity)
+        self.Enable(False)
+        try:
+            get_session().add(self.__entity)
+            dry_commit_changes()
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            _db_error_msg(e)
+        finally:
+            self.Enable(True)
+        if not self.__on_save is None:
+            self.__on_save(self.__entity)
+        self.Close()
+
+    def __on_cancel_click(self, event):
+        self.Close()
+
+    def __init_validator(self):
+        def _set(field, validator):
+            self.__dict__[field].SetValidator(validator)
+
+        _set('field_PID', RelationSelectorValidator())
+        _set('field_Name', TextValidator(len_min=1, len_max=255))
+        _set('field_Comment', TextValidator(len_min=1, len_max=255))
+        _set('field_Type', ChoiceValidator())
+        _set('field_CSID', RelationSelectorValidator())
+        _set('field_X_Min', NumericValidator())
+        _set('field_Y_Min', NumericValidator())
+        _set('field_Z_Min', NumericValidator())
+        _set('field_X_Max', NumericValidator())
+        _set('field_Y_Max', NumericValidator())
+        _set('field_Z_Max', NumericValidator())
+
+    def __set_fields(self):
+        e = self.__entity
+        self.field_RID.SetLabelText(str(e.RID))
+        self.field_Name.SetValue(e.Name)
+        if e.Comment != None:
+            self.field_Comment.SetValue(e.Comment)
+            self.field_Comment.Enable(True)
+            self.field_Comment_enabled.SetValue(True)
+        if e.parent != None:
+            self.field_PID.select(e.parent)
+            self.field_PID.Enable(True)
+            self.field_PID_enabled.SetValue(True)
+        self.field_PID_enabled.Enable(False)
+        self.field_PID.Enable(False)
+        self.field_CSID.select(e.coord_system)
+        self.field_PID.Enable(False)
+        if e.Type == 'REGION':
+            self.field_Type.Select(0)
+        elif e.Type == 'ROCKS':
+            self.field_Type.Select(1)
+        elif e.Type == 'FIELD':
+            self.field_Type.Select(2)
+        elif e.Type == 'HORIZON':
+            self.field_Type.Select(3)
+        elif e.Type == 'EXCAVATION':
+            self.field_Type.Select(3)
+        self.field_X_Min.SetValue(e.X_Min)
+        self.field_Y_Min.SetValue(e.Y_Min)
+        self.field_Z_Min.SetValue(e.Z_Min)
+        self.field_X_Max.SetValue(e.X_Max)
+        self.field_Y_Max.SetValue(e.Y_Max)
+        self.field_Z_Max.SetValue(e.Z_Max)
+
+    def __write_entity(self, e: MineObject):
+        e.Name = self.field_Name.GetValue()
+        e.Comment = self.field_Comment.GetValue() if self.field_Comment.IsEnabled() else None
+        e.parent = self.field_PID.get_selected_entity()
+        e.Level = e.parent.Level + 1 if e.parent != None else 0
+        e.HCode = str(e.parent.RID).zfill(10) + '.' + str(e.parent.RID).zfill(19) if e.parent != None else '0000000000.0000000000000000000'
+        e.coord_system = self.field_CSID.get_selected_entity()
+        if self.field_Type.GetSelection() == 0:
+            e.Type = 'REGION'
+        elif self.field_Type.GetSelection() == 1:
+            e.Type = 'ROCKS'
+        elif self.field_Type.GetSelection() == 2:
+            e.Type = 'FIELD'
+        elif self.field_Type.GetSelection() == 3:
+            e.Type = 'HORIZON'
+        elif self.field_Type.GetSelection() == 4:
+            e.Type = 'EXCAVATION'
+        e.X_Min = self.field_X_Min.GetValue()
+        e.Y_Min = self.field_X_Min.GetValue()
+        e.Z_Min = self.field_X_Min.GetValue()
+        e.X_Max = self.field_X_Max.GetValue()
+        e.Y_Max = self.field_Y_Max.GetValue()
+        e.Z_Max = self.field_Z_Max.GetValue()
+
+        return e

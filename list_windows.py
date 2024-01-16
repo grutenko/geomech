@@ -311,7 +311,7 @@ class OrigSampleSet_List(Base, ui.Ui_OrigSampleSets_List):
             Column('Comment', 'Комментарий', 500),
             Column('SampleType', 'Тип материала образцов', 150, _sample_type_modifier),
             Column('MOID', 'Горный объект', 350, modifier=_mine_object_modifier),
-            Column('HID', 'Скважина', 350, modifier=lambda  e, _: e.bore_hole.Name),
+            Column('HID', 'Скважина', 350, modifier=lambda  e, _: e.bore_hole.Name if e.bore_hole != None else "<нет>"),
             Column('X', 'Коорд. X устья скважины', 50),
             Column('Y', 'Коорд. Y устья скважины', 50),
             Column('Z', 'Коорд. Z устья скважины', 50),
