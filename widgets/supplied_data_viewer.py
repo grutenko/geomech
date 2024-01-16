@@ -20,7 +20,7 @@ class ResultEvent(wx.PyEvent):
         self.data = data
 
 class SuppliedData_Viewer(Ui_SuppliedData_Viewer):
-    _owner: database.SuppliedDataOwner
+    _data: typing.List[database.SuppliedData]
 
     __folder_icon: int
     __file_icon: int
@@ -42,8 +42,8 @@ class SuppliedData_Viewer(Ui_SuppliedData_Viewer):
         self.button_download.Bind(wx.EVT_BUTTON, self.__on_download)
         EVT_RESULT(self.GetParent(), self.__on_download_progress)
 
-    def set_data_owner(self, owner: database.SuppliedDataOwner):
-        self._owner = owner
+    def set_data(self, data: database.SuppliedData):
+        self._data = data
         self.__render()
 
     class DownloadThread(threading.Thread):
@@ -171,7 +171,7 @@ class SuppliedData_Viewer(Ui_SuppliedData_Viewer):
     def __render(self):
         self.tree.DeleteAllItems()
         self.__mapping = {}
-        for data in self._owner.supplied_data:
+        for data in self._data:
             item = self.tree.AppendItem(self.tree.GetRootItem(), data.Name, self.__folder_icon, self.__folder_icon)
             self.__mapping[item] = (data, {})
             for part in data.parts:
