@@ -22,7 +22,8 @@ from queue import Queue
 import threading
 import time
 import wx
-import io
+import sqlalchemy.types
+from datetime import date
 
 engine: Engine = None
 session: Session = None
@@ -100,8 +101,23 @@ def dry_commit_changes():
     finally:
         get_session().rollback()
 
+class DateType(sqlalchemy.types.TypeDecorator):
+    impl = sqlalchemy.types.Integer
+
+    cache_ok = True
+
+    def process_bind_param(self, value: date, dialect):
+        return int(str(value.year) + "{:02d}".format(value.month) + "{:02d}".format(value.day) + "000000")
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return date(int(str(value)[0:4]), int(str(value)[4:6]), int(str(value)[6:8]))
+
 class Base(DeclarativeBase):
-    pass
+    type_annotation_map = {
+        date: DateType,
+    }
 
 class SuppliedDataOwner:
     supplied_data: Mapped[List['SuppliedData']]
@@ -113,7 +129,6 @@ class TreeNode:
     childrens: Mapped[List['TreeNode']]
     Level: Mapped[int]
     HCode: Mapped['str']
-
 
 class MineObject(Base, SuppliedDataOwner, TreeNode):
     __tablename__ = "MineObjects"
@@ -172,6 +187,9 @@ class MineObject(Base, SuppliedDataOwner, TreeNode):
 
     own_type = 'MINE_OBJECT'
 
+    def __str__(self) -> str:
+        return self.Comment
+
 class CoordSystem(Base, TreeNode):
     __tablename__ = 'CoordSystems'
 
@@ -217,6 +235,9 @@ class CoordSystem(Base, TreeNode):
         primaryjoin='MineObject.CSID == CoordSystem.RID'
     )
 
+    def __str__(self) -> str:
+        return self.Comment
+
 class DischargeSeries(Base):
     __tablename__ = 'DischargeSeries'
 
@@ -225,7 +246,7 @@ class DischargeSeries(Base):
     Name: Mapped[str] = mapped_column(nullable=False)
     Comment: Mapped[str] = mapped_column()
     OSSID: Mapped[int] = mapped_column(ForeignKey('OrigSampleSets.RID', ondelete="NO ACTION"), nullable=False)
-    MeasureDate: Mapped[int] = mapped_column(nullable=False)
+    MeasureDate: Mapped[date] = mapped_column(nullable=False)
 
     orig_sample_set: Mapped['OrigSampleSet'] = relationship(
         back_populates='discharge_series',
@@ -236,6 +257,9 @@ class DischargeSeries(Base):
         back_populates='discharge_series',
         primaryjoin='DischargeSeries.RID == DischargeMeasurement.DSID'
     )
+
+    def __str__(self) -> str:
+        return self.Name
 
 class OrigSampleSet(Base, SuppliedDataOwner):
     __tablename__ = 'OrigSampleSets'
@@ -250,7 +274,7 @@ class OrigSampleSet(Base, SuppliedDataOwner):
     X: Mapped[float] = mapped_column(nullable=False)
     Y: Mapped[float] = mapped_column(nullable=False)
     Z: Mapped[float] = mapped_column(nullable=False)
-    SetDate: Mapped[int] = mapped_column(nullable=False)
+    SetDate: Mapped[date] = mapped_column(nullable=False)
 
     mine_object: Mapped['MineObject'] = relationship(
         back_populates='orig_sample_sets',
@@ -274,6 +298,9 @@ class OrigSampleSet(Base, SuppliedDataOwner):
 
     own_type = 'ORIG_SAMPLE_SET'
 
+    def __str__(self) -> str:
+        return self.Name
+
 class BoreHole(Base, SuppliedDataOwner):
     __tablename__ = 'BoreHoles'
 
@@ -290,8 +317,8 @@ class BoreHole(Base, SuppliedDataOwner):
     Tilt: Mapped[float] = mapped_column(nullable=False)
     Diameter: Mapped[float] = mapped_column(nullable=False)
     Length: Mapped[float] = mapped_column(nullable=False)
-    StartDate: Mapped[int] = mapped_column(nullable=False)
-    EndDate: Mapped[int] = mapped_column(nullable=False)
+    StartDate: Mapped[date] = mapped_column(nullable=False)
+    EndDate: Mapped[date] = mapped_column(nullable=False)
 
     mine_object: Mapped['MineObject'] = relationship(
         back_populates='bore_holes',
@@ -315,6 +342,9 @@ class BoreHole(Base, SuppliedDataOwner):
 
     own_type = 'BOREHOLE'
 
+    def __str__(self) -> str:
+        return self.Name
+
 class Station(Base, SuppliedDataOwner):
     __tablename__ = 'Stations'
 
@@ -327,8 +357,8 @@ class Station(Base, SuppliedDataOwner):
     Y: Mapped[float] = mapped_column(nullable=False)
     Z: Mapped[float] = mapped_column(nullable=False)
     HoleCount: Mapped[int] = mapped_column(nullable=False)
-    StartDate: Mapped[int] = mapped_column(nullable=False)
-    EndDate: Mapped[int] = mapped_column(nullable=False)
+    StartDate: Mapped[date] = mapped_column(nullable=False)
+    EndDate: Mapped[date] = mapped_column(nullable=False)
 
     mine_object: Mapped['MineObject'] = relationship(
         back_populates='stations',
@@ -346,6 +376,9 @@ class Station(Base, SuppliedDataOwner):
     )
 
     own_type = 'STATION'
+
+    def __str__(self) -> str:
+        return self.Name
 
 class DischargeMeasurement(Base):
     __tablename__ = 'DischargeMeasurements'
@@ -391,6 +424,9 @@ class DischargeMeasurement(Base):
         passive_deletes=False
     )
 
+    def __str__(self) -> str:
+        return "Замер №" + self.RID
+
 class SuppliedData(Base):
     __tablename__ = 'SuppliedData'
     
@@ -400,12 +436,15 @@ class SuppliedData(Base):
     Number: Mapped[str] = mapped_column(nullable=False)
     Name: Mapped[str] = mapped_column(nullable=False)
     Comment: Mapped[str] = mapped_column()
-    DataDate: Mapped[int] = mapped_column()
+    DataDate: Mapped[date] = mapped_column()
 
     parts: Mapped[List['SuppliedDataPart']] = relationship(
         back_populates='supplied_data',
         primaryjoin='SuppliedDataPart.SDID == SuppliedData.RID'
     )
+
+    def __str__(self) -> str:
+        return self.Name
 
 class SuppliedDataPart(Base):
     __tablename__ = 'SuppliedDataParts'
@@ -417,7 +456,7 @@ class SuppliedDataPart(Base):
     DType: Mapped[str] = mapped_column()
     FileName: Mapped[str] = mapped_column()
     DataContent: Mapped[bytes] = mapped_column('DataContent', sqlalchemy.dialects.postgresql.BYTEA, deferred=True)
-    DataDate: Mapped[int] = mapped_column()
+    DataDate: Mapped[date] = mapped_column()
 
     supplied_data: Mapped['SuppliedData'] = relationship(
         back_populates='parts',
@@ -425,5 +464,8 @@ class SuppliedDataPart(Base):
         lazy="joined",
         passive_deletes=False
     )
+
+    def __str__(self) -> str:
+        return self.Name
 
 Base.registry.configure()
