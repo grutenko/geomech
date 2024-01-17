@@ -45,15 +45,7 @@ class _DataEditor_Dialog(UI_DataEditor_Dialog, mixins.OptionalFieldsMixin):
             self.field_Comment.Enable(True)
             self.field_Comment_enabled.SetValue(1)
         if self.__e.DataDate != None:
-            try:
-                date = datetime(
-                    int(str(self.__e.DataDate)[0:4]),
-                    int(str(self.__e.DataDate)[4:6]),
-                    int(str(self.__e.DataDate)[6:8]))
-            except ValueError:
-                wx.MessageBox("Невалидная дата!", "Ошибка!")
-                date = datetime.now()
-            self.field_DataDate.SetValue(date)
+            self.field_DataDate.SetValue(self.__e.DataDate)
             self.field_DataDate.Enable(True)
             self.field_DataDate_enabled.SetValue(1)
 
@@ -72,8 +64,7 @@ class _DataEditor_Dialog(UI_DataEditor_Dialog, mixins.OptionalFieldsMixin):
         self.__e.Comment = self.field_Comment.GetValue() if self.field_Comment.IsEnabled() else None
         if self.field_DataDate.IsEnabled():
             date: wx.DateTime = self.field_DataDate.GetValue()
-            date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
-            self.__e.DataDate = date
+            self.__e.DataDate =  datetime.date(date.GetYear(), date.GetMonth() + 1, date.GetDay())
         else:
             self.__e.DataDate = None
         database.commit_changes(self.GetParent())
@@ -113,15 +104,7 @@ class _DataPartsEditor_Dialog(Ui_DataPartsEditor_Dialog, mixins.OptionalFieldsMi
             self.field_Comment.SetValue(self.__e.Comment)
             self.field_Comment_enabled.SetValue(1)
             self.field_Comment.Enable(True)
-        try:
-            date = datetime(
-                int(str(self.__e.DataDate)[0:4]),
-                int(str(self.__e.DataDate)[4:6]),
-                int(str(self.__e.DataDate)[6:8]))
-        except ValueError:
-            wx.MessageBox("Невалидная дата!", "Ошибка!")
-            date = datetime.now()
-        self.field_DataDate.SetValue(date)
+        self.field_DataDate.SetValue(self.__e.DataDate)
         self.file_mime_type.SetValue(self.__e.DType)
         self.file_name.SetValue(self.__e.FileName)
 
@@ -167,7 +150,7 @@ class _DataPartsEditor_Dialog(Ui_DataPartsEditor_Dialog, mixins.OptionalFieldsMi
         self.__e.Name = self.field_Name.GetValue()
         self.__e.Comment = self.field_Comment.GetValue() if self.field_Comment.IsEnabled() else None
         date: wx.DateTime = self.field_DataDate.GetValue()
-        date = str(date.GetYear()) + "{:02d}".format(date.GetMonth() + 1) + "{:02d}".format(date.GetDay()) + "000000"
+        self.__e.DataDate =  datetime.date(date.GetYear(), date.GetMonth() + 1, date.GetDay())
         self.__e.DataDate = date
         if len(self.file_path.GetValue()) > 0:
             with open(self.file_path.GetValue(), 'rb') as file:

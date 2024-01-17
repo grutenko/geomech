@@ -1,42 +1,52 @@
 import wx
 import database
 import typing
+import wx.lib.splitter
+import wx.dataview
 import widgets.entity_link
 import widgets.supplied_data_viewer
+import widgets.relations_viewer
+from dataclasses import dataclass
 
 class Ui_Inspect(wx.Frame):
-    def __init__(self, *args, **kwds):
-        kwds["style"] = kwds.get("style", 0) | wx.DEFAULT_FRAME_STYLE
-        wx.Frame.__init__(self, *args, **kwds)
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
         self.SetSize((482, 766))
-        self.SetTitle("frame_3")
+        self.SetTitle("Обзор объекта")
 
-        # Menu Bar
         self.frame_3_menubar = wx.MenuBar()
         wxglade_tmp_menu = wx.Menu()
-        self.frame_3_menubar.Append(wxglade_tmp_menu, u"Экспортировать")
+        self.frame_3_menubar.Append(wxglade_tmp_menu, u"Печать")
         self.SetMenuBar(self.frame_3_menubar)
-        # Menu Bar end
 
         self.panel_1 = wx.Panel(self, wx.ID_ANY)
-
         sizer_1 = wx.BoxSizer(wx.VERTICAL)
+        
+        self.split = wx.lib.splitter.MultiSplitterWindow(self.panel_1, style=wx.SP_LIVE_UPDATE)
+        self.split.SetOrientation(wx.VERTICAL)
+        sizer_1.Add(self.split, 1, wx.EXPAND, 0)
 
-        self.window_1 = wx.SplitterWindow(self.panel_1, wx.ID_ANY, style=wx.SP_3D | wx.SP_LIVE_UPDATE)
-        self.window_1.SetMinimumPaneSize(20)
-        sizer_1.Add(self.window_1, 1, wx.EXPAND, 0)
-
-        self.panel_2 = wx.ScrolledWindow(self.window_1, wx.ID_ANY, style=wx.TAB_TRAVERSAL)
-        self.panel_2.SetScrollRate(10, 10)
-
+        self.panel_main_info = wx.ScrolledWindow(self.split, wx.ID_ANY, style=wx.TAB_TRAVERSAL)
+        self.panel_main_info.SetScrollRate(10, 10)
+        sizer_main_info = wx.StaticBoxSizer(wx.StaticBox(self.panel_main_info, wx.ID_ANY, u"Основная информация"), wx.HORIZONTAL)
         self.grid = wx.FlexGridSizer(0, 2, 0, 0)
+        sizer_main_info.Add(self.grid, 1, wx.EXPAND, 0)
+        self.panel_main_info.SetSizer(sizer_main_info)
+        self.split.AppendWindow(self.panel_main_info, 250)
 
-        self.window_1_pane_2 = wx.Panel(self.window_1, wx.ID_ANY)
+        self.panel_relations = wx.Panel(self.split)
+        sizer_relations = wx.StaticBoxSizer(wx.StaticBox(self.panel_relations, wx.ID_ANY, u"Связаные объкты"), wx.HORIZONTAL)
+        self.relations = widgets.relations_viewer.RelationViewer(self.panel_relations)
+        sizer_relations.Add(self.relations, 1, wx.EXPAND, 0)
+        self.panel_relations.SetSizer(sizer_relations)
+        self.split.AppendWindow(self.panel_relations, 20)
 
-        sizer_3 = wx.StaticBoxSizer(wx.StaticBox(self.window_1_pane_2, wx.ID_ANY, u"Сопутствующие материалы"), wx.VERTICAL)
-
-        self.supplied_data = widgets.supplied_data_viewer.SuppliedData_Viewer(self.window_1_pane_2, wx.ID_ANY)
-        sizer_3.Add(self.supplied_data, 1, wx.EXPAND, 0)
+        self.panel_supplied_data = wx.Panel(self.split)
+        sizer_supplied_data = wx.StaticBoxSizer(wx.StaticBox(self.panel_supplied_data, wx.ID_ANY, u"Сопроводительные материалы"), wx.HORIZONTAL)
+        self.supplied_data = widgets.supplied_data_viewer.SuppliedData_Viewer(self.panel_supplied_data)
+        sizer_supplied_data.Add(self.supplied_data, 1, wx.EXPAND, 0)
+        self.panel_supplied_data.SetSizer(sizer_supplied_data)
+        self.split.AppendWindow(self.panel_supplied_data, 20)
 
         sizer_2 = wx.StdDialogButtonSizer()
         sizer_1.Add(sizer_2, 0, wx.ALIGN_RIGHT | wx.ALL, 4)
@@ -45,199 +55,225 @@ class Ui_Inspect(wx.Frame):
         self.button_OK.SetDefault()
         sizer_2.Add(self.button_OK, 0, 0, 0)
 
-        sizer_2.Realize()
-
-        self.window_1_pane_2.SetSizer(sizer_3)
-
-        self.panel_2.SetSizer(self.grid)
-
-        self.window_1.SplitHorizontally(self.panel_2, self.window_1_pane_2)
-
         self.panel_1.SetSizer(sizer_1)
+
+        sizer_2.Realize()
 
         self.Layout()
         self.Centre()
 
+@dataclass
+class _Field:
+    label: str
+
+@dataclass
+class _TextField(_Field):
+    value: typing.Optional[str]
+
+@dataclass
+class _RelationField(_Field):
+    related_to: database.Base
+
 class _Inspect(Ui_Inspect):
-    _entity: database.Base
-    __rows: int = 0
-
-    def __init__(self, entity: database.Base, *args, **kwds):
+    def __init__(self, 
+                 fields: typing.List[_Field],
+                 supplied_data: typing.List[database.SuppliedData] = None,
+                 relations: typing.List[typing.Tuple[str, database.Base]] = None,
+                 *args, **kwds):
         super().__init__(*args, **kwds)
-        self._entity = entity
-        self._set_fields(self._entity)
-        self.button_OK.Bind(wx.EVT_BUTTON, self.__on_button_ok)
-
-    def __on_button_ok(self, event):
-        self.Close()
-
-    def _text_value(self, label: str):
-        v = wx.StaticText(self.panel_2, label=str(label))
-        v.Wrap(200)
-        return v
+        if 'title' in kwds:
+            self.SetTitle(kwds['title'])
+        self.__display_fields(fields)
+        if supplied_data != None:
+            self.__display_supplied_data(supplied_data)
+        if relations != None:
+            self.__display_relations(relations)
+        self.button_OK.Bind(wx.EVT_BUTTON, lambda _: self.Close())
     
-    def _relation_value(self, e: database.Base):
-        link = widgets.entity_link.EntityLink(parent=self.panel_2)
-        link.set_entity(e)
-        return link
-
-    def _add_field(self, label: str, value):
-        self.__rows += 1
-        self.grid.SetRows(self.__rows)
-        name = wx.StaticText(self.panel_2, label=str(label))
-        name.Wrap(250)
-        self.grid.Add(name, 0, wx.ALIGN_RIGHT | wx.ALL, 4)
-        self.grid.Add(value, 0, wx.ALL | wx.CENTER, 4)
+    def __display_fields(self, fields) -> None:
+        self.grid.SetRows(len(fields))
+        for field in fields:
+            name = wx.StaticText(self.panel_main_info, label=field.label)
+            name.Wrap(250)
+            self.grid.Add(name, 0, wx.ALIGN_RIGHT | wx.ALL, 4)
+            if isinstance(field, _TextField):
+                value = wx.StaticText(self.panel_main_info, label=str(field.value) if field.value != None else '<Не задано>')
+                value.Wrap(200)
+            elif isinstance(field, _RelationField):
+                if field.related_to != None:
+                    value = widgets.entity_link.EntityLink(parent=self.panel_main_info)
+                    value.set_entity(field.related_to)
+                else: 
+                    value = wx.StaticText(self.panel_main_info, label="<Не задано>")
+                    value.Wrap(200)
+            else:
+                raise Exception("Unsupported field class {}.".format(field.__class__.__name__))
+            self.grid.Add(value, 0, wx.ALL | wx.CENTER, 4)
         self.grid.Layout()
-        self.panel_2.FitInside()
+        self.panel_main_info.FitInside()
 
-    def _set_name(self, name: str):
-        self.SetTitle(name)
+    def __display_supplied_data(self, supplied_data) -> None:
+        self.split.SetSashPosition(2, 250)
+        self.supplied_data.set_data(supplied_data)
 
-    def _set_fields(self, e: database.Base):
-        raise NotImplementedError("Method _set_fields() not implemented in class {0}".format(self.__class__.__name__))
-    
-    def Bind(self, event, handler, source=None, id=wx.ID_ANY, id2=wx.ID_ANY):
-        return super().Bind(event, handler, source, id, id2)
-    
-class _DischargeMeasurement_Inspect(_Inspect):
-    def _set_fields(self, e: database.DischargeMeasurement):
-        self.SetSize((500, 600))
-        self._set_name("Замер №" + str(e.RID))
-        self._add_field("ID:", self._text_value(e.RID))
-        self._add_field("Серия замеров:", self._relation_value(e.discharge_series))
-        self._add_field("№ замера:", self._text_value(e.SNumber))
-        self._add_field("Рег. № разгрузки:", self._text_value(e.DschNumber))
-        self._add_field("Рег. № образца керна:", self._text_value(e.CoreNumber))
-        self._add_field("Диаметр образца керна:", self._text_value(e.Diameter))
-        self._add_field("Диаметр образца керна:", self._text_value(e.Diameter))
-        self._add_field("Вес образца керна:", self._text_value(e.Weight))
-        self._add_field("Тензопатрон №:", self._text_value(e.CartNumber))
-        self._add_field("Партия тензопатронов №:", self._text_value(e.PartNumber))
-        self._add_field("Сопр. тензорезистора:", self._text_value("1) {0} Ом, 2) {1} Ом, 3) {2} Ом, 4) {3} Ом".format(e.R1, e.R2, e.R3, e.R4)))
-        self._add_field("Сопр. компенсационного резистора:", self._text_value(str(e.RComp) + ' Ом'))
-        self._add_field("Коэф. чувств. тензодатчиков:", self._text_value(e.Sensitivity))
-        self._add_field("Замер времени прохождения продольных волн (ультразвуковое профилирование или др.):", self._text_value("1) {0}, 2) {1}".format(e.TP1_1, e.TP1_2)))
-        self._add_field("Замер времени прохождения продольных волн (между торцами или др.):", self._text_value("1) {0}, 2) {1}".format(e.TP2_1, e.TP2_2)))
-        self._add_field("Замер времени прохождения поверхностных волн:", self._text_value("1) {0}, 2) {1}".format(e.TR_1, e.TR_2)))
-        self._add_field("Замер времени прохождения поперечных волн:", self._text_value("1) {0}, 2) {1}".format(e.TS_1, e.TS_2)))
-        self._add_field("Статический коэффициент Пуассона:", self._text_value(str(e.PuassonStatic)))
-        self._add_field("Статический модуль Юнга:", self._text_value(str(e.YungStatic)))
-        self._add_field("Глубина взятия образца керна:", self._text_value(str(e.CoreDepth)))
-        self._add_field("Относительная деформация образца:", self._text_value("1) {0}, 2) {1}, 3) {2}, 4) {3}".format(e.E1, e.E2, e.E3, e.E4)))
-        self._add_field("Угол коррекции направления напряжений:", self._text_value(str(e.Rotate)))
-        self._add_field("Тип породы:", self._text_value(str(e.RockType)))
+    def __display_relations(self, relations) -> None:
+        self.split.SetSashPosition(1, 250)
+        self.relations.set_relations(relations)
 
-def _date_modifier(date):
-    return str(date)[0:4] + '.' + str(date)[4:6] + '.' + str(date)[6:8]
+def discharge_measurement_factory(e: database.DischargeMeasurement) -> _Inspect:
+    fields = [
+        _TextField("Id", e.RID),
+        _RelationField("Серия замеров", e.discharge_series),
+        _TextField("Замер №", e.SNumber),
+        _TextField("Рег. № разгрузки", e.DschNumber),
+        _TextField("Рег. № образца керна", e.CoreNumber),
+        _TextField("Диаметр образца керна", e.Diameter),
+        _TextField("Диаметр образца керна", e.Diameter),
+        _TextField("Вес образца керна", e.Weight),
+        _TextField("Тензопатрон №", e.CartNumber),
+        _TextField("Партия тензопатронов №", e.PartNumber),
+        _TextField("Сопр. тензорезистора", "1) {0} Ом, 2) {1} Ом, 3) {2} Ом, 4) {3} Ом".format(e.R1, e.R2, e.R3, e.R4)),
+        _TextField("Сопр. компенсационного резистора", str(e.RComp) + ' Ом'),
+        _TextField("Коэф. чувств. тензодатчиков", e.Sensitivity),
+        _TextField("Замер времени прохождения продольных волн (ультразвуковое профилирование или др.)", "1) {0}, 2) {1}".format(e.TP1_1, e.TP1_2)),
+        _TextField("Замер времени прохождения продольных волн (между торцами или др.)", "1) {0}, 2) {1}".format(e.TP2_1, e.TP2_2)),
+        _TextField("Замер времени прохождения поверхностных волн", "1) {0}, 2) {1}".format(e.TR_1, e.TR_2)),
+        _TextField("Замер времени прохождения поперечных волн", "1) {0}, 2) {1}".format(e.TS_1, e.TS_2)),
+        _TextField("Статический коэффициент Пуассона", str(e.PuassonStatic)),
+        _TextField("Статический модуль Юнга", str(e.YungStatic)),
+        _TextField("Глубина взятия образца керна", str(e.CoreDepth)),
+        _TextField("Относительная деформация образца", "1) {0}, 2) {1}, 3) {2}, 4) {3}".format(e.E1, e.E2, e.E3, e.E4)),
+        _TextField("Угол коррекции направления напряжений", e.Rotate),
+        _TextField("Тип породы", e.RockType)
+    ]
+    return _Inspect(fields=fields, title=e.__str__(), parent=None)
 
-class _DischargeSeries_Inspect(_Inspect):
-    def _set_fields(self, e: database.DischargeSeries):
-        self._set_name("Серия замеров " + str(e.Name))
-        self._add_field("ID:", self._text_value(e.RID))
-        self._add_field("Набор образцов:", self._relation_value(e.orig_sample_set))
-        self._add_field("№ серии замеров:", self._text_value(e.Number))
-        self._add_field("Название:", self._text_value(e.Name))
-        self._add_field("Комментарий:", self._text_value(e.Comment))
-        self._add_field("Дата замера:", self._text_value(_date_modifier(e.MeasureDate)))
+def discharge_series_factory(e: database.DischargeSeries) -> _Inspect:
+    fields = [
+        _TextField("ID", e.RID),
+        _RelationField("Набор образцов", e.orig_sample_set),
+        _TextField("№ серии замеров", e.Number),
+        _TextField("Название", e.Name),
+        _TextField("Комментарий", e.Comment),
+        _TextField("Дата замера", e.MeasureDate)
+    ]
+    relations = [
+        ('Поразгрузочные замеры', e.discharge_measurements)
+    ]
+    return _Inspect(fields=fields, relations=relations, title="Серия замеров " + str(e.Name), parent=None)
 
-class _BoreHole_Inspect(_Inspect):
-    def _set_fields(self, e: database.BoreHole):
-        self._set_name("Скважина " + str(e.Name))
-        self._add_field("ID:", self._text_value(e.RID))
-        self._add_field("№ скважины:", self._text_value(e.Number))
-        self._add_field("Название:", self._text_value(e.Name))
-        self._add_field("Комментарий:", self._text_value(e.Comment))
-        self._add_field("Станция:", self._relation_value(e.station))
-        self._add_field("Горный объект:", self._relation_value(e.mine_object))
-        self._add_field("Координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X, e.Y, e.Z)))
-        self._add_field("Азимут:", self._text_value(e.Azimuth))
-        self._add_field("Наклон:", self._text_value(e.Tilt))
-        self._add_field("Диаметр:", self._text_value(str(e.Diameter) + 'м'))
-        self._add_field("Дата закладки / начала измерений:", self._text_value(_date_modifier(e.StartDate)))
-        self._add_field("Дата завершения измерений:", self._text_value(_date_modifier(e.EndDate) if e.EndDate != None else '<нет>'))
+def bore_hole_factory(e: database.BoreHole) -> _Inspect:
+    fields = [
+        _TextField("ID", e.RID),
+        _TextField("№ скважины", e.Number),
+        _TextField("Название:", e.Name),
+        _TextField("Комментарий:", e.Comment),
+        _RelationField("Станция:", e.station),
+        _RelationField("Горный объект:", e.mine_object),
+        _TextField("Координаты:", "X: {0}, Y: {1}, Z: {2}".format(e.X, e.Y, e.Z)),
+        _TextField("Азимут:", e.Azimuth),
+        _TextField("Наклон:", e.Tilt),
+        _TextField("Диаметр:", str(e.Diameter) + 'м'),
+        _TextField("Длина:", str(e.Length) + 'м'),
+        _TextField("Дата закладки / начала измерений:", e.StartDate),
+        _TextField("Дата завершения измерений:", e.EndDate)
+    ]
+    relations = [
+        ("Исходные наборы образцов", e.orig_sample_sets)
+    ]
+    return _Inspect(fields=fields, relations=relations, title="Скважина " + str(e.Name), supplied_data=e.supplied_data, parent=None)
 
-        self.supplied_data.set_data_owner(e)
+def coord_system_factory(e: database.CoordSystem) -> _Inspect:
+    fields = [
+        _TextField("ID:", e.RID),
+        _RelationField("Вышестоящая система координат:", e.parent),
+        _TextField("Уровень:", e.Level),
+        _TextField("Название:", e.Name),
+        _TextField("Комментарий:", e.Comment),
+        _TextField("Минимальные координаты:", "X: {0}, Y: {1}, Z: {2}".format(e.X_Min, e.Y_Min, e.Z_Min)),
+        _TextField("Максимальные координаты:", "X: {0}, Y: {1}, Z: {2}".format(e.X_Max, e.Y_Max, e.Z_Max)),
+        _TextField("Положение начала в вышестоящей системе координат:", "X: {0}, Y: {1}, Z: {2}".format(e.X_0, e.Y_0, e.Z_0))
+    ]
+    relations = [
+        ("Горные объекты", e.mine_objects)
+    ]
+    return _Inspect(fields=fields, relations=relations, title="Скважина " + str(e.Name), parent=None)
 
-class _CoordSystem_Inspect(_Inspect):
-    def _set_fields(self, e: database.DischargeMeasurement):
-        self._set_name("Система координат " + str(e.Name))
-        self._add_field("ID:", self._text_value(e.RID))
-        self._add_field("Вышестоящая система координат:", self._relation_value(e.parent) if e.parent != None else self._text_value("<нет>"))
-        self._add_field("Уровень системы координат:", self._text_value(str(e.Level)))
-        self._add_field("Название:", self._text_value(e.Name))
-        self._add_field("Комментарий:", self._text_value(e.Comment))
-        self._add_field("Минимальные координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X_Min, e.Y_Min, e.Z_Min)))
-        self._add_field("Максимальные координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X_Max, e.Y_Max, e.Z_Max)))
-        self._add_field("Положение начала в вышестоящей системе координат:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X_0, e.Y_0, e.Z_0)))
+def mine_object_factory(e: database.MineObject) -> _Inspect:
+    if e.Type == 'REGION':
+        type = 'Регион'
+    elif e.Type == 'ROCKS':
+        type = 'Горный массив'
+    elif e.Type == 'FIELD':
+        type = 'Месторождение'
+    elif e.Type == 'HORIZON':
+        type = 'Горизонт'
+    elif e.Type == 'EXCAVATION':
+        type = 'Выработка'
+    fields = [
+        _TextField("ID:", e.RID),
+        _RelationField("Вышестоящий горный объект:", e.parent),
+        _TextField("Уровень:", e.Level),
+        _TextField("Название:", e.Name),
+        _TextField("Комментарий:", e.Comment),
+        _RelationField("Система координат:", e.coord_system),
+        _TextField("Тип:", type),
+        _TextField("Минимальные координаты:", "X: {0}, Y: {1}, Z: {2}".format(e.X_Min, e.Y_Min, e.Z_Min)),
+        _TextField("Максимальные координаты:", "X: {0}, Y: {1}, Z: {2}".format(e.X_Max, e.Y_Max, e.Z_Max))
+    ]
+    relations = [
+        ("Исходные наборы образцов", e.orig_sample_sets),
+        ("Скважины", e.bore_holes),
+        ("Станции", e.stations)
+    ]
+    return _Inspect(fields=fields, relations=relations, title="Горный объект " + e.Name, supplied_data=e.supplied_data, parent=None)
 
-class _MineObject_Inspect(_Inspect):
-    def _set_fields(self, e: database.MineObject):
-        self._set_name("Горный объект " + str(e.Name))
-        self._add_field("ID:", self._text_value(e.RID))
-        self._add_field("Вышестоящий горный объект:", self._relation_value(e.parent) if e.parent != None else self._text_value("<нет>"))
-        self._add_field("Уровень системы координат:", self._text_value(str(e.Level)))
-        self._add_field("Название:", self._text_value(e.Name))
-        self._add_field("Комментарий:", self._text_value(e.Comment))
-        self._add_field("Система координат:", self._relation_value(e.coord_system))
-        if e.Type == 'REGION':
-            type = 'Регион'
-        elif e.Type == 'ROCKS':
-            type = 'Горный массив'
-        elif e.Type == 'FIELD':
-            type = 'Месторождение'
-        elif e.Type == 'HORIZON':
-            type = 'Горизонт'
-        elif e.Type == 'EXCAVATION':
-            type = 'Выработка'
-        self._add_field("Тип:", self._text_value(type))
-        self._add_field("Минимальные координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X_Min, e.Y_Min, e.Z_Min)))
-        self._add_field("Максимальные координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X_Max, e.Y_Max, e.Z_Max)))
-        
-        self.supplied_data.set_data_owner(e)
+def station_factory(e: database.Station) -> _Inspect:
+    fields = [
+        _TextField("ID:", e.RID),
+        _TextField("№ станции:", e.Number),
+        _TextField("Название:", e.Name),
+        _TextField("Комментарий:", e.Comment),
+        _RelationField("Горный объект:", e.mine_object),
+        _TextField("Координаты:", "X: {0}, Y: {1}, Z: {2}".format(e.X, e.Y, e.Z)),
+        _TextField("Дата закладки / начала измерений:", e.StartDate),
+        _TextField("Дата завершения измерений:", e.EndDate)
+    ]
+    relations = [
+        ("Скважины", e.bore_holes)
+    ]
+    return _Inspect(fields=fields, relations=relations, title="Станция " + e.Name, supplied_data=e.supplied_data, parent=None)
 
-class _OrigSampleSetInspect(_Inspect):
-    def _set_fields(self, e: database.DischargeMeasurement):
-        self._set_name("Набор образцов " + str(e.Name))
-        self._add_field("ID:", self._text_value(e.RID))
-        self._add_field("№ набора образцов:", self._text_value(e.Number))
-        self._add_field("Название:", self._text_value(e.Name))
-        self._add_field("Комментарий:", self._text_value(e.Comment))
-        if e.SampleType == 'CORE':
-            type = 'Керн'
-        elif e.SampleType == 'STUFF':
-            type = 'Штуф'
-        elif e.SampleType == 'DISPERCE':
-            type = 'Дисперсный материал'
-        self._add_field("Тип метариала", self._text_value(type))
-        self._add_field("Горный объект:", self._relation_value(e.mine_object))
-        self._add_field("Скважина:", self._relation_value(e.bore_hole))
-        self._add_field("Дата отбора:", self._text_value(_date_modifier(e.SetDate)))
-
-        self.supplied_data.set_data_owner(e)
-
-class _Station_Inspect(_Inspect):
-    def _set_fields(self, e: database.DischargeMeasurement):
-        self._set_name("Станция " + str(e.Name))
-        self._add_field("ID:", self._text_value(e.RID))
-        self._add_field("№ станции:", self._text_value(e.Number))
-        self._add_field("Название:", self._text_value(e.Name))
-        self._add_field("Комментарий:", self._text_value(e.Comment))
-        self._add_field("Горный объект:", self._relation_value(e.mine_object))
-        self._add_field("Координаты:", self._text_value("X: {0}, Y: {1}, Z: {2}".format(e.X, e.Y, e.Z)))
-        self._add_field("Дата закладки / начала измерений:", self._text_value(_date_modifier(e.StartDate)))
-        self._add_field("Дата завершения измерений:", self._text_value(_date_modifier(e.EndDate) if e.EndDate != None else '<нет>'))
-
-        self.supplied_data.set_data_owner(e)
+def orig_sample_set_factory(e: database.OrigSampleSet) -> _Inspect:
+    if e.SampleType == 'CORE':
+        type = 'Керн'
+    elif e.SampleType == 'STUFF':
+        type = 'Штуф'
+    elif e.SampleType == 'DISPERCE':
+        type = 'Дисперсный материал'
+    fields = [
+        _TextField("ID:", e.RID),
+        _TextField("№ набора образцов:", e.Number),
+        _TextField("Название:", e.Name),
+        _TextField("Комментарий:", e.Comment),
+        _TextField("Тип метариала", type),
+        _RelationField("Горный объект:", e.mine_object),
+        _RelationField("Скважина:", e.bore_hole),
+        _TextField("Дата отбора:", e.SetDate)
+    ]
+    relations = [
+        ("Серии замеров", e.discharge_series)
+    ]
+    return _Inspect(fields=fields, relations=relations, supplied_data=e.supplied_data, title="Набор образцов " + e.Name, parent=None)
 
 __MAPPING__ = {
-    database.DischargeMeasurement: _DischargeMeasurement_Inspect,
-    database.DischargeSeries: _DischargeSeries_Inspect,
-    database.BoreHole: _BoreHole_Inspect,
-    database.CoordSystem: _CoordSystem_Inspect,
-    database.MineObject: _MineObject_Inspect,
-    database.OrigSampleSet: _OrigSampleSetInspect,
-    database.Station: _Station_Inspect,
+    database.DischargeMeasurement: discharge_measurement_factory,
+    database.DischargeSeries: discharge_series_factory,
+    database.BoreHole: bore_hole_factory,
+    database.CoordSystem: coord_system_factory,
+    database.MineObject: mine_object_factory,
+    database.OrigSampleSet: orig_sample_set_factory,
+    database.Station: station_factory,
 }
 
 __windows: typing.Dict[database.Base, _Inspect] = {}
@@ -254,7 +290,7 @@ def cmd_show(e: database.Base):
     if e in __windows:
         __windows[e].Raise()
     else:
-        __windows[e] = __MAPPING__[e.__class__](e, parent=None)
+        __windows[e] = __MAPPING__[e.__class__](e)
         def _on_close(event):
             event.Skip()
             del __windows[e]
