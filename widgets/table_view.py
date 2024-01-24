@@ -371,7 +371,7 @@ class TableView(Ui_xControlTableView, typing.Generic[_T]):
         for row_index, e in enumerate(self._entities):
             self.list.InsertItem(row_index, "")
             for col_index, col in enumerate(self._cols):
-                _set_col(e, row_index, col_index, col, e.__dict__[col.name])
+                _set_col(e, row_index, col_index, col, getattr(e, col.name))
 
         for e in list(self._selected_entities):
             if e in self._entities:

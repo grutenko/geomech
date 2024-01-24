@@ -39,7 +39,7 @@ class TreeView(Ui_TreeView, typing.Generic[_T]):
     def __on_select(self, event):
         rid = self.tree.GetItemData(event.GetItem())
         def _find_selection_r(parent):
-            entities = self._entities if parent == None else parent.__dict__[self._childs_field];
+            entities = self._entities if parent == None else getattr(parent, self._childs_field)
             for e in entities:
                 if e.RID == rid:
                     return e

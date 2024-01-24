@@ -45,7 +45,8 @@ class _DataEditor_Dialog(UI_DataEditor_Dialog, mixins.OptionalFieldsMixin):
             self.field_Comment.Enable(True)
             self.field_Comment_enabled.SetValue(1)
         if self.__e.DataDate != None:
-            self.field_DataDate.SetValue(self.__e.DataDate)
+            data_date = self.__e.DataDate
+            self.field_DataDate.SetValue(wx.DateTime(data_date.day, data_date.month - 1, data_date.year))
             self.field_DataDate.Enable(True)
             self.field_DataDate_enabled.SetValue(1)
 
@@ -104,7 +105,8 @@ class _DataPartsEditor_Dialog(Ui_DataPartsEditor_Dialog, mixins.OptionalFieldsMi
             self.field_Comment.SetValue(self.__e.Comment)
             self.field_Comment_enabled.SetValue(1)
             self.field_Comment.Enable(True)
-        self.field_DataDate.SetValue(self.__e.DataDate)
+        data_date = self.__e.DataDate
+        self.field_DataDate.SetValue(wx.DateTime(data_date.day, data_date.month - 1, data_date.year))
         self.file_mime_type.SetValue(self.__e.DType)
         self.file_name.SetValue(self.__e.FileName)
 
