@@ -22,6 +22,8 @@ def read_version():
 __TARGET__ = "geomech-v{}".format(read_version())
 
 def main():
+    if not os.path.exists(__ROOT__ + "/build"):
+        os.mkdir(__ROOT__ + "/build")
     ret = run_cmd([
           "create-version-file",
           "{}/install/win32/version.yml".format(__ROOT__),
