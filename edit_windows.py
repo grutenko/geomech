@@ -20,7 +20,7 @@ from ui import (
 )
 import sqlalchemy
 from database import (
-    get_session,
+    session as dbsession,
     DischargeMeasurement,
     DischargeSeries,
     OrigSampleSet,
@@ -28,14 +28,13 @@ from database import (
     BoreHole,
     Station,
     CoordSystem,
-    dry_commit_changes
 )
 import widgets.relation_selector
 import mixins
 from form_validators import *
 from sqlalchemy import func
 
-from database import Base
+from database import Base, commit_all, dry_commit_all
 
 def _db_error_msg(e):
     dlg=wx.MessageDialog(None, "Ошибка: " + str(e.orig if hasattr(e, 'orig') else e), str(type(e)), wx.OK|wx.ICON_ERROR)
@@ -75,7 +74,7 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.Optional
         if event.is_new:
             return
         
-        max = (get_session().query(func.max(DischargeMeasurement.SNumber))
+        max = (dbsession().query(func.max(DischargeMeasurement.SNumber))
          .filter_by(DSID = event.entity.RID)
          .first())
         self.field_SNumber.SetValue(max[0] + 1 if max[0] != None else 1)
@@ -92,13 +91,12 @@ class DischargeMeasurementEditor(Ui_DischargeMeasurement_Editor, mixins.Optional
         self._entity = self.__write_entity(DischargeMeasurement() if self._entity == None else self._entity)
         self.Enable(False)
         try:
-            get_session().add(self._entity)
-            dry_commit_changes()
+            dbsession().add(self._entity)
+            dry_commit_all()
             if not self._on_save is None:
                 self._on_save(self._entity)
             self.Close()
-        except sqlalchemy.exc.SQLAlchemyError as e:
-            _db_error_msg(e)
+        
         finally:
             self.Enable(True)
 
@@ -273,13 +271,12 @@ class DischargeSeriesEditor(Ui_DischargeSeries_Editor, mixins.OptionalFieldsMixi
         self._entity = self.__write_entity(DischargeSeries() if self._entity == None else self._entity)
         self.Enable(False)
         try:
-            get_session().add(self._entity)
-            dry_commit_changes()
+            dbsession().add(self._entity)
+            dry_commit_all()
             if not self._on_save is None:
                 self._on_save(self._entity)
             self.Close()
-        except sqlalchemy.exc.SQLAlchemyError as e:
-            _db_error_msg(e)
+        
         finally:
             self.Enable(True)
 
@@ -401,13 +398,12 @@ class OrigSampleSets_Editor(Ui_OrigSampleSets_Editor, mixins.OptionalFieldsMixin
         self.__entity = self.__write_entity(OrigSampleSet() if self.__entity == None else self.__entity)
         self.Enable(False)
         try:
-            get_session().add(self.__entity)
-            dry_commit_changes()
+            dbsession().add(self.__entity)
+            dry_commit_all()
             if not self.__on_save is None:
                 self.__on_save(self.__entity)
             self.Close()
-        except sqlalchemy.exc.SQLAlchemyError as e:
-            _db_error_msg(e)
+        
         finally:
             self.Enable(True)
 
@@ -490,9 +486,8 @@ class StationsEditor(Ui_Stations_Editor, mixins.OptionalFieldsMixin):
         self.__entity = self.__write_entity(Station() if self.__entity == None else self.__entity)
         self.Enable(False)
         try:
-            dry_commit_changes()
-        except sqlalchemy.exc.SQLAlchemyError as e:
-            _db_error_msg(e)
+            dry_commit_all()
+        
         finally:
             self.Enable(True)
         if not self.__on_save is None:
@@ -643,10 +638,9 @@ class BoreHole_Editor(Ui_BoreHole_Editor, mixins.OptionalFieldsMixin):
         self.__entity = self.__write_entity(BoreHole() if self.__entity == None else self.__entity)
         self.Enable(False)
         try:
-            get_session().add(self.__entity)
-            dry_commit_changes()
-        except sqlalchemy.exc.SQLAlchemyError as e:
-            _db_error_msg(e)
+            dbsession().add(self.__entity)
+            dry_commit_all()
+        
         finally:
             self.Enable(True)
         if not self.__on_save is None:
@@ -695,10 +689,9 @@ class MineObjects_Editor(Ui_MineObjects_Editor, mixins.OptionalFieldsMixin):
         self.__entity = self.__write_entity(MineObject() if self.__entity == None else self.__entity)
         self.Enable(False)
         try:
-            get_session().add(self.__entity)
-            dry_commit_changes()
-        except sqlalchemy.exc.SQLAlchemyError as e:
-            _db_error_msg(e)
+            dbsession().add(self.__entity)
+            dry_commit_all()
+        
         finally:
             self.Enable(True)
         if not self.__on_save is None:
@@ -715,7 +708,6 @@ class MineObjects_Editor(Ui_MineObjects_Editor, mixins.OptionalFieldsMixin):
         _set('field_PID', RelationSelectorValidator())
         _set('field_Name', TextValidator(len_min=1, len_max=255))
         _set('field_Comment', TextValidator(len_min=1, len_max=255))
-        _set('field_Type', ChoiceValidator())
         _set('field_CSID', RelationSelectorValidator())
         _set('field_X_Min', NumericValidator())
         _set('field_Y_Min', NumericValidator())

@@ -92,7 +92,7 @@ class TreeView(Ui_TreeView, typing.Generic[_T]):
     def reload(self):
         self._entities = []
         self._items = []
-        items = database.get_session().query(self._table_class).filter((getattr(self._table_class, self._level_field) == 0)).all()
+        items = database.session().query(self._table_class).filter((getattr(self._table_class, self._level_field) == 0)).all()
         for item in items:
             self._entities.append(item)
         
@@ -106,6 +106,7 @@ class TreeView(Ui_TreeView, typing.Generic[_T]):
 
         _insert_r(None, self._root)
         self.tree.ExpandAll()
+        self.__update_controls_state()
 
     def __get_tree_item_by_entity(self, e: _T, parent = None):
         child, cookie = self.tree.GetFirstChild(self._root if parent == None else parent)

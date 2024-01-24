@@ -138,7 +138,7 @@ class RelationSelector(UI_RelationSelector, typing.Generic[_T]):
     def __on_click(self, event):
         if self._new_entity != None:
             return
-        entities = database.get_session().query(self._table_class).all()
+        entities = database.session().query(self._table_class).all()
         w = _RelationSelectorDialog(
             entities=entities,
             name_gen=self._name_gen,

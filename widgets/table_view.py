@@ -377,6 +377,8 @@ class TableView(Ui_xControlTableView, typing.Generic[_T]):
             if e in self._entities:
                 self.list.Select(self._entities.index(e))
 
+        self.__update_controls_state()
+
     def reload(self):
         if self._table_class == None:
             raise Exception("TableView dont initialized correctly. use set_table_class(), set_flags(), set_available_cols() for correct configure this widget.")

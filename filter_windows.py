@@ -3,7 +3,7 @@
 import wx
 from database import (
     DischargeSeries,
-    get_session
+    session as dbsession
 )
 from typing import (
     List
@@ -23,7 +23,7 @@ class DischargeMeasurement_Filter(Ui_DischargeMeasurement_Filter, mixins.Optiona
         mixins.OptionalFieldsMixin.__init__(self, self)
         self.__filter_by = filter_by
 
-        self.__series = get_session().query(DischargeSeries).all()
+        self.__series = dbsession().query(DischargeSeries).all()
         self.field_DSID.Append('-- Не выбрано --')
         for seria in self.__series:
             self.field_DSID.Append(seria.Name)

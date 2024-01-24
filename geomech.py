@@ -2,13 +2,15 @@
 
 import wx
 import sys, traceback
-import database
+from database import Credentials, configure as configure_database, session as database_session, DischargeMeasurement
 from sqlalchemy.exc import SQLAlchemyError
 import config
 import traceback
 import list_windows
 import util
 import logging
+import typing
+import dialogs
 from sys import exit
 
 logging.basicConfig(
@@ -17,45 +19,30 @@ logging.basicConfig(
     filemode="a",
     format="%(asctime)s %(levelname)s %(message)s")
 
-sys.excepthook = util.except_hook
+def except_hook(exception_type, exception_value, exception_traceback):
+    util.show_exception(exception_value)
 
-app = wx.App(0)
+sys.excepthook = except_hook
 
-def read_dsn() -> str:
-    return "postgresql://{0}:{1}@{2}:{3}/{4}".format(
-            config.read_option('database', 'user'), 
-            config.read_option('database', 'password'), 
-            config.read_option('database', 'ip'), 
-            config.read_option('database', 'port'), 
-            config.read_option('database', 'name'))
+class App(wx.App):
+    def OnInit(self):
+        logging.info("--- STARTED ---")
+        config.configure("geomech.ini")
+        if not config.has_section("database"):
+            credentials = util.ask_credentials()
+            if credentials == None:
+                exit()
+            config.write_database_credentials(credentials)
+        else:
+            credentials = config.read_database_credentials()
+        configure_database(credentials)
+        mainWindow = list_windows.cmd_show(DischargeMeasurement)
+        self.SetTopWindow(mainWindow)
+
+        return True
 
 def main():
-    config.init_config()
-
-    logging.info("--- STARTED ---")
-
-    if config.has_option('database', 'user') \
-            and config.has_option('database', 'password') \
-            and config.has_option('database', 'ip') \
-            and config.has_option('database', 'port') \
-            and config.has_option('database', 'name'):
-        try:
-            database.test_connection(read_dsn())
-        except (SQLAlchemyError, database.xDatabaseInitError) as e:
-            conn_success = False
-            util.except_hook(type(e), e, e.__traceback__)
-        else:
-            conn_success = True
-    else:
-        conn_success = False
-
-    if not conn_success:
-        if not util.ask_dsn():
-            exit()
-
-    database.init_database(read_dsn())
-    mainWindow = list_windows.cmd_show(database.DischargeMeasurement)
-    app.SetTopWindow(mainWindow)
+    app = App(0, useBestVisual=True)
     app.MainLoop()
 
 if __name__ == '__main__':

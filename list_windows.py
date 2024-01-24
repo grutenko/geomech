@@ -54,14 +54,14 @@ def _do_delete(
         if len(names) > 0:
             raise Exception("Удаление невозможно так как для некоторых обхектов есть связаные данные.")
         for e in entites:
-            database.get_session().delete(e)
-        database.commit_changes(parent)
+            database.session().delete(e)
+        database.commit_all()
         table.reload()
 
 def _do_edit(table: widgets.table_view.TableView, editor_class, parent, e = None):
     def _on_save(e):
-        database.get_session().add(e)
-        database.commit_changes(parent)
+        database.session().add(e)
+        database.commit_all()
         table.reload()
     w = editor_class(entity=e, on_save=_on_save, parent=parent)
     w.Show()
@@ -292,7 +292,7 @@ class OrigSampleSet_List(Base, ui.Ui_OrigSampleSets_List):
             def _gen_name_r(o, acc):
                 return _gen_name_r(o.parent, '/' + o.Name + acc) if not o.parent is None else o.Name + acc
             
-            return _gen_name_r(database.get_session().query(database.MineObject).get(moid), '')
+            return _gen_name_r(database.session().query(database.MineObject).get(moid), '')
 
         self.list.set_table_class(database.OrigSampleSet)
         self.list.set_available_cols([

@@ -16,4 +16,6 @@ class Settings(Ui_Settings):
         self.Close()
 
     def __on_edit_database_access(self, event):
-        util.ask_dsn(parent=self)
+        c = util.ask_credentials(config.read_database_credentials(), parent=self)
+        if c != None:
+            config.write_database_credentials(c)

@@ -2,7 +2,7 @@
 
 from dataclasses import (dataclass, field as dataclass_field)
 from database import Base
-from database import get_session
+from database import session
 from sqlalchemy.orm import Query
 from sqlalchemy import asc
 from sqlalchemy import desc
@@ -58,7 +58,7 @@ class OrderBy:
 _T = TypeVar('_T', bound=Base)
 
 def build_query(table_class: Type[_T], order_by: OrderBy, filter_by: FilterBy) -> Query[_T]:
-    q = get_session().query(table_class)
+    q = session().query(table_class)
 
     def _make_order_clause(o: OrderClause):
         return asc(getattr(table_class, o.field)) if o.direction == Direction.ASC else desc(getattr(table_class, o.field))

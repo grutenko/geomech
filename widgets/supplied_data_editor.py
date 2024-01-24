@@ -5,12 +5,13 @@ import mixins
 import form_validators
 import mimetypes
 import os
-from datetime import datetime
+from datetime import datetime, date
 from .ui.supplied_data_editor import (
     Ui_SuppliedData_Editor,
     UI_DataEditor_Dialog,
     Ui_DataPartsEditor_Dialog
 )
+from database import commit_all
 
 class _DataEditor_Dialog(UI_DataEditor_Dialog, mixins.OptionalFieldsMixin):
     __e: database.SuppliedData = None
@@ -59,16 +60,16 @@ class _DataEditor_Dialog(UI_DataEditor_Dialog, mixins.OptionalFieldsMixin):
             self.__e = database.SuppliedData()
             self.__e.OwnID = self.__owner.RID
             self.__e.OwnType = self.__owner.own_type
-            database.get_session().add(self.__e)
+            database.session().add(self.__e)
         self.__e.Name = self.field_Name.GetValue()
         self.__e.Number = self.field_Number.GetValue() if self.field_Number.IsEnabled() else None
         self.__e.Comment = self.field_Comment.GetValue() if self.field_Comment.IsEnabled() else None
         if self.field_DataDate.IsEnabled():
             date: wx.DateTime = self.field_DataDate.GetValue()
-            self.__e.DataDate =  datetime.date(date.GetYear(), date.GetMonth() + 1, date.GetDay())
+            self.__e.DataDate =  date(date.GetYear(), date.GetMonth() + 1, date.GetDay())
         else:
             self.__e.DataDate = None
-        database.commit_changes(self.GetParent())
+        commit_all()
         self.Close()
         
 
@@ -148,18 +149,17 @@ class _DataPartsEditor_Dialog(Ui_DataPartsEditor_Dialog, mixins.OptionalFieldsMi
         if self.__is_new:
             self.__e = database.SuppliedDataPart()
             self.__e.SDID = self.__data.RID
-            database.get_session().add(self.__e)
+            database.session().add(self.__e)
         self.__e.Name = self.field_Name.GetValue()
         self.__e.Comment = self.field_Comment.GetValue() if self.field_Comment.IsEnabled() else None
-        date: wx.DateTime = self.field_DataDate.GetValue()
-        self.__e.DataDate =  datetime.date(date.GetYear(), date.GetMonth() + 1, date.GetDay())
-        self.__e.DataDate = date
+        data_date: wx.DateTime = self.field_DataDate.GetValue()
+        self.__e.DataDate =  date(data_date.GetYear(), data_date.GetMonth() + 1, data_date.GetDay())
         if len(self.file_path.GetValue()) > 0:
             with open(self.file_path.GetValue(), 'rb') as file:
                 self.__e.DataContent = memoryview(file.read())
         self.__e.DType = self.file_mime_type.GetValue()
         self.__e.FileName = self.file_name.GetValue()
-        database.commit_changes(self.GetParent())
+        commit_all()
 
         self.Close()
 
@@ -265,8 +265,8 @@ class SuppliedDataEditor(Ui_SuppliedData_Editor):
         dial = wx.MessageDialog(None, msg, 'Подтвердите удаление', wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
         if dial.ShowModal() == wx.ID_YES:
             for item in self._selected_data:
-                database.get_session().delete(item)
-            database.commit_changes(self.GetParent())
+                database.session().delete(item)
+            commit_all()
         self._render()
 
     def __on_add_part(self, event):
@@ -284,7 +284,7 @@ class SuppliedDataEditor(Ui_SuppliedData_Editor):
         dial = wx.MessageDialog(None, msg, 'Подтвердите удаление', wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
         if dial.ShowModal() == wx.ID_YES:
             for item in self._selected_parts:
-                database.get_session().delete(item)
-            database.commit_changes(self.GetParent())
+                database.session().delete(item)
+            commit_all()
         self._selected_parts = []
         self.__load_parts()
