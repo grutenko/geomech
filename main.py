@@ -36,8 +36,15 @@ def excepthook(exception_type, exception_value, exception_traceback):
 
 sys.excepthook = excepthook
 
+
+class MyApp(wx.App):
+
+        def OnInit(self):
+                return True
+    
+
 if __name__ == "__main__":
-    app = wx.App(0)
+    app = MyApp(0)
 
     config.configure()
 

@@ -4,7 +4,7 @@ import wx
 from pony.orm import *
 
 from ui.widgets.tree import *
-from ui.icon import get_icon
+from ui.icon import get_icon, get_art
 
 from database import *
 from ui.widgets.tree.item import TreeNode
@@ -22,7 +22,7 @@ class _SelfProps_Node(TreeNode):
         return 'Свойства объекта: "%s"' % self.o.Name
 
     def get_icon(self):
-        return "w2k_info", get_icon("w2k_info", scale_to=16)
+        return wx.ART_INFORMATION, get_art(wx.ART_INFORMATION, 16)
 
     def is_leaf(self) -> bool:
         return True
@@ -42,10 +42,10 @@ class _RockBursts_Node(TreeNode):
         return "Горные удары"
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return "w2k_folder_closed", get_icon("w2k_folder_closed", scale_to=16)
+        return wx.ART_FOLDER, get_art(wx.ART_FOLDER, 16)
 
     def get_icon_open(self) -> Tuple[str | wx.Bitmap] | None:
-        return "w2k_folder_open", get_icon("w2k_folder_open", scale_to=16)
+        return wx.ART_FOLDER_OPEN, get_art(wx.ART_FOLDER_OPEN, 16)
 
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
@@ -69,7 +69,7 @@ class _RockBurst_Node(TreeNode):
         return self.o.Name
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return "w2k_text_document", get_icon("w2k_text_document", scale_to=16)
+        return wx.ART_NORMAL_FILE, get_art(wx.ART_NORMAL_FILE, 16)
 
     def is_leaf(self):
         return True
@@ -86,10 +86,10 @@ class _SampleSets_Node(TreeNode):
         return "[Физ. Мех. Свойства] Пробы"
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return "w2k_folder_closed", get_icon("w2k_folder_closed", scale_to=16)
+        return wx.ART_FOLDER, get_art(wx.ART_FOLDER, 16)
 
     def get_icon_open(self) -> Tuple[str | wx.Bitmap] | None:
-        return "w2k_folder_open", get_icon("w2k_folder_open", scale_to=16)
+        return wx.ART_FOLDER_OPEN, get_art(wx.ART_FOLDER_OPEN, 16)
 
     def __eq__(self, node):
         return isinstance(node, _SampleSets_Node) and node.o.RID == self.o.RID
@@ -110,10 +110,10 @@ class _SampleSet_Node(TreeNode):
         return "[Физ. Мех. Свойства] Пробы"
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return "w2k_folder_closed", get_icon("w2k_folder_closed", scale_to=16)
+        return wx.ART_FOLDER, get_art(wx.ART_FOLDER, 16)
 
     def get_icon_open(self) -> Tuple[str | wx.Bitmap] | None:
-        return "w2k_folder_open", get_icon("w2k_folder_open", scale_to=16)
+        return wx.ART_FOLDER_OPEN, get_art(wx.ART_FOLDER_OPEN, 16)
 
     def __eq__(self, node):
         return isinstance(node, _SampleSet_Node) and node.o.RID == self.o.RID
@@ -184,11 +184,11 @@ class MineObjectProperties(wx.Panel):
         if instance_class == RockBurst:
             dlg = CreateRockBurstDialog(self, self._current_object)
         elif instance_class == PMSampleSet:
-            dlg = CreatePmSampleSetDialog(self)
+            dlg = CreatePmSampleSetDialog(self, self._current_object)
         else:
             return
         if dlg.ShowModal() == wx.ID_OK:
-            self._tree.soft_reload_node(self._current_node)
+            self._tree.soft_reload_childrens(self._current_node)
             self._tree.select_node(self._create_node(dlg.o))
 
     def _delete_node(self, node):
@@ -197,7 +197,7 @@ class MineObjectProperties(wx.Panel):
         else:
             return
         if ui.delete_object.delete_object(node.o, relations):
-            self._tree.soft_reload_node(node.get_parent())
+            self._tree.soft_reload_childrens(node.get_parent())
 
     def _on_create_rock_burst(self, event):
         self._create_object(RockBurst)

@@ -3,6 +3,8 @@ import wx
 from typing import Protocol, List, Tuple
 
 class TreeNode(Protocol):
+    def self_reload(self):
+        ...
     def get_parent(self) -> 'TreeNode':
         raise NotImplementedError("Method get_parent() not implemented.")
     def get_name(self) -> str:

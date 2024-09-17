@@ -115,7 +115,34 @@ class Tree(wx.Panel):
         if item != None:
             self._soft_reload_native_item(item)
 
+    def get_current_node(self):
+        item = self._tree.GetSelection()
+        if item.IsOk():
+            context = self._tree.GetItemData(item)
+            if isinstance(context, Context):
+                return context.node
+            else:
+                return None
+        return None
+
     def _soft_reload_native_item(self, native_item: wx.TreeItemId):
+        context = self._tree.GetItemData(native_item)
+        if isinstance(context, Context):
+            context.node.self_reload()
+            self._tree.SetItemText(native_item, context.node.get_name())
+            icon = context.node.get_icon()
+            if icon != None:
+                self._tree.SetItemImage(native_item, self._apply_icon(icon[0], icon[1]), wx.TreeItemIcon_Normal)
+            icon = context.node.get_icon_open()
+            if icon != None:
+                self._tree.SetItemImage(native_item, self._apply_icon(icon[0], icon[1]), wx.TreeItemIcon_Expanded)
+
+    def soft_reload_childrens(self, node: TreeNode):
+        item = self._find_native_item(node)
+        if item != None:
+            self._soft_reload_native_item_childrens(item)
+
+    def _soft_reload_native_item_childrens(self, native_item: wx.TreeItemId):
         context = self._tree.GetItemData(native_item)
         if isinstance(context, Context):
             if not context.is_subnodes_loaded:

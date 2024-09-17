@@ -3,7 +3,7 @@ from wx.grid import Grid
 
 from .column import Column
 from .icons_options import IconsOptions
-from .model_proto import Model
+from .model_proto import ModelProto
 from .controller import Controller
 from .errors import Errors
 
@@ -58,7 +58,7 @@ class GridEditorFrame(wx.Frame):
         self.controller = None
         self.icons_options = icons
 
-    def start(self, model: Model):
+    def start(self, model: ModelProto):
         self.controller = Controller(
             model,
             self.grid,

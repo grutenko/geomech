@@ -4,7 +4,7 @@ from .column import Column
 from .cell_error import CellError
 
 
-class Model(Protocol):
+class ModelProto(Protocol):
     """
     Протокол модели данных для табличного редактора
     Должен описывать и возвращаеть столбцы для редактора значения для ячеек,

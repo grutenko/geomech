@@ -15,8 +15,12 @@ class _CoordSystem_Node(TreeNode):
         self.o = o
 
     @db_session
+    def self_reload(self):
+        self.o = CoordSystem[self.o.RID]
+
+    @db_session
     def get_parent(self) -> TreeNode:
-        return self.o.parent
+        return _CoordSystem_Node(self.o.parent)
 
     def get_name(self):
         return self.o.Name
@@ -70,24 +74,46 @@ class CoordSystemTree(Tree):
         menu = wx.Menu()
         item = menu.Append(wx.ID_ANY, "Добавить дочернюю систему")
         menu.Bind(wx.EVT_MENU, self._on_create_coord_system, item)
-        item = menu.Append(wx.ID_ANY, "Изменить")
-        menu.Bind(wx.EVT_MENU, self._on_create_coord_system, item)
         menu.AppendSeparator()
+        item = menu.Append(wx.ID_ANY, "Изменить")
+        menu.Bind(wx.EVT_MENU, self._on_edit_coord_system, item)
         item = menu.Append(wx.ID_ANY, "Удалить")
         menu.Bind(wx.EVT_MENU, self._on_delete_coord_system, item)
         self.PopupMenu(menu, event.point)
 
     def _on_create_coord_system(self, event):
-        dlg = CreateCoordSystemDialog(self, self._current_object)
-        if dlg.ShowModal() == wx.ID_YES:
-            self.soft_reload_node(self._current_node)
-            self.select_node(_CoordSystem_Node(dlg.o))
+        self._create_coord_system(self.get_current_node())
 
     def _on_delete_coord_system(self, event):
-        p = self._current_node.get_parent()
-        if delete_object(self._current_object, ['mine_objects', 'childrens']):
-            self.soft_reload_node(p)
+        self._delete_coord_system(self.get_current_node())
+
+    def _on_edit_coord_system(self, event):
+        self._edit_coord_system(self.get_current_node())
+
+    def _create_coord_system(self, node):
+        dlg = CreateCoordSystemDialog(self, node.o)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.soft_reload_childrens(node)
+            self.select_node(_CoordSystem_Node(dlg.o))
+
+    def _edit_coord_system(self, node):
+        dlg = CreateCoordSystemDialog(self, node.o, type='UPDATE')
+        if dlg.ShowModal() == wx.ID_OK:
+            self.soft_reload_node(node)
+
+    def _delete_coord_system(self, node):
+        p = node.get_parent()
+        if delete_object(node.o, ['mine_objects', 'childrens']):
+            self.soft_reload_childrens(p)
 
     def _on_node_activated(self, event):
-        dlg = CreateCoordSystemDialog(self, event.node.o, type='UPDATE')
-        dlg.ShowModal()
+        self._edit_coord_system(event.node)
+
+    def create_child_coord_system(self):
+        self._create_coord_system(self.get_current_node())
+
+    def edit_current_coord_system(self):
+        self._edit_coord_system(self.get_current_node())
+
+    def delete_current_coord_system(self):
+        self._delete_coord_system(self.get_current_node())

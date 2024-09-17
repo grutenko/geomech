@@ -8,7 +8,7 @@ from typing import List
 
 from .cell_error import CellError
 from .cell_type_proto import CellType
-from .model_proto import Model
+from .model_proto import ModelProto
 from .icons_options import IconsOptions
 from .commands import cmdAppendRows, cmdDeleteRows, cmdSetValue, cmdPaste
 
@@ -36,7 +36,7 @@ ID_COLSIZE_BY_VALUE = ID_SAVE + 18
 class Controller:
     def __init__(
         self,
-        model: Model,
+        model: ModelProto,
         view: Grid,
         toolbar: wx.ToolBar,
         statusbar: wx.StatusBar,

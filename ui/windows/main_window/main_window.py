@@ -13,6 +13,8 @@ from .supplied_data import MainWindowSuppliedData
 from .fastview import FastviewMainWindow
 from ui.windows.manage_coord_systems.manage_coord_systems_window import ManageCoordSystemsWindow
 from ui.windows.create_transf_matrix.create_transf_matrix_window import CreateTransfMatrixWindow
+from ui.windows.manage_pm_test_series.manage_pm_test_series_window import ManageTestSeriesWindow
+from ui.windows.manage_documents.manage_documents_window import ManageDocumentsWindow
 
 ID_FILE_EXIT = wx.ID_HIGHEST
 ID_OPTIONS_FIZMECH = ID_FILE_EXIT + 1
@@ -94,12 +96,11 @@ class MainFrame(wx.Frame):
         self.SetMenuBar(self.menu)
 
         menu = wx.Menu()
-        menu.Append(wx.ID_ANY, "Найти")
-        menu.Append(wx.ID_ANY, "Найти Далее")
-        self.menu.Append(menu, "Поиск")
+        self.menu.Append(menu, "Горные удары")
 
         menu = wx.Menu()
-        menu.Append(ID_OPTIONS_FIZMECH_SERIES, "Наборы испытаний")
+        item = menu.Append(ID_OPTIONS_FIZMECH_SERIES, "Наборы испытаний")
+        menu.Bind(wx.EVT_MENU, self._on_open_test_series)
         menu.AppendSeparator()
         menu.Append(ID_OPTIONS_FIZMECH_OPTIONS, "Типовые свойства")
         menu.Append(ID_OPTIONS_FIZMECH_METHODS, "Методы испытаний")
@@ -109,7 +110,8 @@ class MainFrame(wx.Frame):
 
         menu = wx.Menu()
         item = menu.Append(wx.ID_ANY, "Управление")
-        self.menu.Append(menu, "Документы-обоснования")
+        menu.Bind(wx.EVT_MENU, self._on_open_documents_manage, item)
+        self.menu.Append(menu, "Документы")
 
         menu = wx.Menu()
         item = menu.Append(wx.ID_ANY, "Управление")
@@ -136,6 +138,14 @@ class MainFrame(wx.Frame):
                 self.database_config["login"],
             )
         )
+
+    def _on_open_documents_manage(self, event):
+        w = ManageDocumentsWindow(self)
+        w.Show()
+
+    def _on_open_test_series(self, event):
+        w = ManageTestSeriesWindow(self)
+        w.Show()
 
     def _on_open_cs_matrix_find(self, event):
         w = CreateTransfMatrixWindow(self)

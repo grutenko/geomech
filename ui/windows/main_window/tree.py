@@ -4,7 +4,7 @@ from pony.orm import *
 
 from database import MineObject, Station, BoreHole, OrigSampleSet
 import ui.delete_object
-from ui.icon import get_icon
+from ui.icon import get_icon, get_art
 from ui.widgets.tree import *
 from ui.widgets.tree.item import TreeNode
 
@@ -38,10 +38,10 @@ class _MineObject_Node(TreeNode):
         return '[' + self._get_type_name() + "] " + self.o.Name
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return "w2k_folder_closed", get_icon("w2k_folder_closed", scale_to=16)
+        return wx.ART_FOLDER, get_art(wx.ART_FOLDER, 16)
 
     def get_icon_open(self) -> Tuple[str | wx.Bitmap] | None:
-        return "w2k_folder_open", get_icon("w2k_folder_open", scale_to=16)
+        return wx.ART_FOLDER_OPEN, get_art(wx.ART_FOLDER_OPEN, 16)
 
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
@@ -71,10 +71,10 @@ class _Station_Node(TreeNode):
         return "[Станция] " + self.o.Name
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return "w2k_folder_closed", get_icon("w2k_folder_closed", scale_to=16)
+        return wx.ART_FOLDER, get_art(wx.ART_FOLDER, 16)
 
     def get_icon_open(self) -> Tuple[str | wx.Bitmap] | None:
-        return "w2k_folder_open", get_icon("w2k_folder_open", scale_to=16)
+        return wx.ART_FOLDER_OPEN, get_art(wx.ART_FOLDER_OPEN, 16)
 
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
@@ -101,10 +101,10 @@ class _BoreHole_Node(TreeNode):
         return "[Скважина] " + self.o.Name
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return "w2k_folder_closed", get_icon("w2k_folder_closed", scale_to=16)
+        return wx.ART_FOLDER, get_art(wx.ART_FOLDER, 16)
 
     def get_icon_open(self) -> Tuple[str | wx.Bitmap] | None:
-        return "w2k_folder_open", get_icon("w2k_folder_open", scale_to=16)
+        return wx.ART_FOLDER_OPEN, get_art(wx.ART_FOLDER_OPEN, 16)
 
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
@@ -129,7 +129,7 @@ class _Core_Node(TreeNode):
         return "[Керн]"
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return "w2k_text_document", get_icon("w2k_text_document", scale_to=16)
+        return wx.ART_NORMAL_FILE, get_art(wx.ART_NORMAL_FILE, 16)
 
     def is_leaf(self) -> bool:
         return True
@@ -219,7 +219,7 @@ class MainWindowTree(Tree):
             dlg = DialogCreateCore(self, self._current_object)
         if dlg.ShowModal() == wx.ID_OK:
             # Элемент дерева - объект родителя перезагружается из базы данных
-            self.soft_reload_node(self._current_node)
+            self.soft_reload_childrens(self._current_node)
             self.select_node(self._create_node(dlg.o))
 
     def _on_create_mine_object(self, event):
@@ -249,7 +249,7 @@ class MainWindowTree(Tree):
             relations = ["discharge_series", "discharge_measurements"]
 
         if ui.delete_object.delete_object(node.o, relations):
-            self.soft_reload_node(node.get_parent())
+            self.soft_reload_childrens(node.get_parent())
 
     def _on_delete_mine_object(self, event):
         self._delete_object(self._current_node)

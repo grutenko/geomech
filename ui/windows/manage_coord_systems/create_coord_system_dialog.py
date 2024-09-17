@@ -1,4 +1,5 @@
 import wx
+import re
 
 from pony.orm import *
 
@@ -22,6 +23,7 @@ class CreateCoordSystemDialog(wx.Dialog):
             self.parent = o
         else:
             self._target = o
+            self.SetTitle("Система координат: %s" % self._target.Name)
         self._type = type
 
         top_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -34,13 +36,20 @@ class CreateCoordSystemDialog(wx.Dialog):
         self.field_name.SetValidator(TextValidator(lenMin=1, lenMax=256))
         main_sizer.Add(self.field_name, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
-        label = wx.StaticText(self, label="Комментарий")
-        main_sizer.Add(label, 0)
+        collpane = wx.CollapsiblePane(self, wx.ID_ANY, "Комментарий")
+        main_sizer.Add(collpane, 0, wx.GROW)
+
+        comment_pane = collpane.GetPane()
+        comment_sizer = wx.BoxSizer(wx.VERTICAL)
+        comment_pane.SetSizer(comment_sizer)
+
+        label = wx.StaticText(comment_pane, label="Комментарий")
+        comment_sizer.Add(label, 0)
         self.field_comment = wx.TextCtrl(
-            self, size=wx.Size(250, 100), style=wx.TE_MULTILINE
+            comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE
         )
         self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
-        main_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
+        comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
 
         label = wx.StaticText(self, label="Минимальные координаты")
@@ -97,7 +106,7 @@ class CreateCoordSystemDialog(wx.Dialog):
             self,
             size=wx.Size(250, 60),
             style=wx.TE_MULTILINE,
-            value="1.0; 0.0; 0.0\n0.0; 1.0; 0.0\n0.0; 0.0, 1.0",
+            value="1.0; 0.0; 0.0\n0.0; 1.0; 0.0\n0.0; 0.0; 1.0",
         )
         self.field_mat.SetValidator(_Mat3_Validator())
         _sizer.Add(self.field_mat, 1, wx.EXPAND)
@@ -121,7 +130,6 @@ class CreateCoordSystemDialog(wx.Dialog):
         main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.TOP, border=10)
 
         self.SetSizer(top_sizer)
-
         self.Layout()
         self.Fit()
 
@@ -144,8 +152,68 @@ class CreateCoordSystemDialog(wx.Dialog):
             % (o.X_X, o.X_Y, o.X_Z, o.Y_X, o.Y_Y, o.Y_Z, o.Z_X, o.Z_Y, o.Z_Z)
         )
 
+    def _set_coords(self, fields):
+        _min = re.split(r"\s*;\s*", self.field_vec_min.GetValue())
+        fields['X_Min'] = float(_min[0])
+        fields['Y_Min'] = float(_min[1])
+        fields['Z_Min'] = float(_min[2])
+        _max = re.split(r"\s*;\s*", self.field_vec_max.GetValue())
+        fields['X_Max'] = float(_max[0])
+        fields['Y_Max'] = float(_max[1])
+        fields['Z_Max'] = float(_max[2])
+        _zero = re.split(r"\s*;\s*", self.field_base.GetValue())
+        fields['X_0'] = float(_zero[0])
+        fields['Y_0'] = float(_zero[1])
+        fields['Z_0'] = float(_zero[2])
+        _mat = re.split(r"\s*\n\s*", self.field_mat.GetValue())
+        _mat0 = re.split(r"\s*;\s*", _mat[0])
+        fields['X_X'] = float(_mat0[0])
+        fields['X_Y'] = float(_mat0[1])
+        fields['X_Z'] = float(_mat0[2])
+        _mat1 = re.split(r"\s*;\s*", _mat[1])
+        fields['Y_X'] = float(_mat1[0])
+        fields['Y_Y'] = float(_mat1[1])
+        fields['Y_Z'] = float(_mat1[2])
+        _mat2 = re.split(r"\s*;\s*", _mat[2])
+        fields['Z_X'] = float(_mat2[0])
+        fields['Z_Y'] = float(_mat2[1])
+        fields['Z_Z'] = float(_mat2[2])
+        return fields
+
+    @db_session
     def _on_save(self, event):
         if not self.Validate():
             return
+        
+        if self._type == 'CREATE':
+            fields = {
+                "parent": CoordSystem[self.parent.RID],
+                "Level": self.parent.Level + 1,
+                "HCode": str(self.parent.RID).zfill(8) + '.' + str(self.parent.RID).zfill(19),
+                "Name": self.field_name.GetValue(),
+                "Comment": self.field_comment.GetValue(),
+            }
+            fields = self._set_coords(fields)
+
+            try:
+                self.o = CoordSystem(**fields)
+            except Exception as e:
+                wx.MessageBox(str(e))
+            else:
+                self.EndModal(wx.ID_OK)
+        else:
+            fields = {
+                "Name": self.field_name.GetValue(),
+                "Comment": self.field_comment.GetValue(),
+            }
+            fields = self._set_coords(fields)
+            try:
+                self.o = CoordSystem[self._target.RID]
+                self.o.set(**fields)
+            except Exception as e:
+                wx.MessageBox(str(e))
+            else:
+                self.EndModal(wx.ID_OK)
+
         
         

@@ -1,5 +1,5 @@
 from .frame import GridEditorFrame
-from .model_proto import Model
+from .model_proto import ModelProto
 from .cell_type_proto import CellType
 from .float_type import *
 from .string_type import *

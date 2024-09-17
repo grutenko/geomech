@@ -3,7 +3,7 @@ import wx
 from pony.orm import *
 
 from ui.widgets.tree import *
-from ui.icon import get_icon
+from ui.icon import get_icon, get_art
 
 from database import Station
 
@@ -16,7 +16,7 @@ class _SelfProps_Node(TreeNode):
         return 'Свойства объекта: "%s"' % self.o.Name
 
     def get_icon(self):
-        return "w2k_info", get_icon("w2k_info", scale_to=16)
+        return wx.ART_INFORMATION, get_art(wx.ART_INFORMATION, 16)
 
     def is_leaf(self) -> bool:
         return True

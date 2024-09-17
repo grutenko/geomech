@@ -24,9 +24,7 @@ def _getCoordSystems(rootSystem=None):
 
 class CsTransl(Ui_CsTransl):
     def __init__(self, parent):
-        super().__init__(parent, size=wx.Size(350, 350))
-        self.SetMaxSize((350, 800))
-        self.SetMinSize((350, 350))
+        super().__init__(parent, size=wx.Size(250, 350))
         self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
 
         self.Bind(wx.EVT_CLOSE, self._onClose)
@@ -51,7 +49,7 @@ class CsTransl(Ui_CsTransl):
 
         self.btn_calc.Bind(wx.EVT_BUTTON, self._on_calc)
 
-        self.SetSize(350, 350)
+        self.SetSize(250, 350)
         self.Center()
         self.Layout()
 

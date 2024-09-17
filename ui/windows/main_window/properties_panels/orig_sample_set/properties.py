@@ -5,7 +5,8 @@ from pony.orm import *
 from database import *
 
 from ui.widgets.tree import *
-from ui.icon import get_icon
+from ui.icon import get_icon, get_art
+from ui.windows.main_window.grid_windows.discharge_measurements import DischargeMeasurementsEditor
 
 from database import OrigSampleSet
 
@@ -18,7 +19,7 @@ class _SelfProps_Node(TreeNode):
         return 'Свойства объекта: "%s"' % self.o.Name
 
     def get_icon(self):
-        return "w2k_info", get_icon("w2k_info", scale_to=16)
+        return wx.ART_INFORMATION, get_art(wx.ART_INFORMATION, 16)
 
     def is_leaf(self) -> bool:
         return True
@@ -34,8 +35,8 @@ class _CoreBoxStorage_Node(TreeNode):
     def get_name(self) -> str:
         return "Раскладка керна по ящикам"
 
-    def get_icon(self):
-        return "w2k_text_document", get_icon("w2k_text_document", scale_to=16)
+    def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
+        return wx.ART_NORMAL_FILE, get_art(wx.ART_NORMAL_FILE, 16)
 
     def is_leaf(self) -> bool:
         return True
@@ -50,8 +51,8 @@ class _DiscargeSeries_Node(TreeNode):
     def get_name(self) -> str:
         return "[Разгрузка] Параметры серии замеров"
 
-    def get_icon(self):
-        return "w2k_text_document", get_icon("w2k_text_document", scale_to=16)
+    def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
+        return wx.ART_NORMAL_FILE, get_art(wx.ART_NORMAL_FILE, 16)
 
     def is_leaf(self) -> bool:
         return True
@@ -67,8 +68,8 @@ class _DischargeMeasurements_Node(TreeNode):
     def get_name(self) -> str:
         return "[Разгрузка] Замеры"
 
-    def get_icon(self):
-        return "w2k_text_document", get_icon("w2k_text_document", scale_to=16)
+    def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
+        return wx.ART_NORMAL_FILE, get_art(wx.ART_NORMAL_FILE, 16)
 
     def is_leaf(self) -> bool:
         return True
@@ -84,8 +85,8 @@ class _PMSamples_Node(TreeNode):
     def get_name(self) -> str:
         return "[Физ. Мех. Свойства] Образцы"
 
-    def get_icon(self):
-        return "w2k_text_document", get_icon("w2k_text_document", scale_to=16)
+    def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
+        return wx.ART_NORMAL_FILE, get_art(wx.ART_NORMAL_FILE, 16)
 
     def is_leaf(self) -> bool:
         return True
@@ -132,6 +133,7 @@ class CoreProperties(wx.Panel):
         self.Layout()
 
         self._tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self._on_node_selected)
+        self._tree.Bind(EVT_WIDGET_TREE_MENU, self._on_node_tree_menu)
 
         self._handler_properties_object_seleted = None
 
@@ -148,6 +150,20 @@ class CoreProperties(wx.Panel):
         self.Hide()
         self._tree.unbind_all()
         self.o = None
+
+    def _on_node_tree_menu(self, event):
+        if isinstance(event.node, _DischargeMeasurements_Node):
+            self._dm_context_menu(event.node, event.point)
+
+    def _dm_context_menu(self, node, point):
+        menu = wx.Menu()
+        item = menu.Append(wx.ID_ANY, "Открыть редактор")
+        menu.Bind(wx.EVT_MENU, self._on_open_dm_editor, item)
+        self.PopupMenu(menu, point)
+
+    def _on_open_dm_editor(self, event):
+        w = DischargeMeasurementsEditor(self)
+        w.Show()
 
     def _on_node_selected(self, event):
         object = None

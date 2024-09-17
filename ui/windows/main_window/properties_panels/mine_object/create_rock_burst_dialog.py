@@ -39,13 +39,20 @@ class CreateRockBurstDialog(wx.Dialog):
         self.field_name.SetValidator(TextValidator(lenMin=1, lenMax=256))
         main_sizer.Add(self.field_name, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
-        label = wx.StaticText(self, label="Комментарий")
-        main_sizer.Add(label, 0)
+        collpane = wx.CollapsiblePane(self, wx.ID_ANY, "Комментарий")
+        main_sizer.Add(collpane, 0, wx.GROW)
+
+        comment_pane = collpane.GetPane()
+        comment_sizer = wx.BoxSizer(wx.VERTICAL)
+        comment_pane.SetSizer(comment_sizer)
+
+        label = wx.StaticText(comment_pane, label="Комментарий")
+        comment_sizer.Add(label, 0)
         self.field_comment = wx.TextCtrl(
-            self, size=wx.Size(250, 100), style=wx.TE_MULTILINE
+            comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE
         )
         self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
-        main_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
+        comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(self, label="Дата события*")
         main_sizer.Add(label, 0)
