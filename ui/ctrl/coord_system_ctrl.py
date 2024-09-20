@@ -28,3 +28,8 @@ class CoordSystemCtrl(wx.Choice):
         if i != -1:
             return self._coord_systems[i]
         return None
+    
+    def SetValue(self, value):
+        for index, o in enumerate(self._coord_systems):
+            if o.RID == value.RID:
+                self.SetSelection(index)

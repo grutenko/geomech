@@ -4,6 +4,9 @@ from pony.orm import *
 
 from ui.widgets.tree import *
 from ui.icon import get_icon, get_art
+from ui.windows.main_window.create_dialogs.dialog_create_station import (
+    DialogCreateStation,
+)
 
 from database import Station
 
@@ -11,6 +14,10 @@ from database import Station
 class _SelfProps_Node(TreeNode):
     def __init__(self, o):
         self.o = o
+
+    @db_session
+    def self_reload(self):
+        self.o = Station[self.o.RID]
 
     def get_name(self) -> str:
         return 'Свойства объекта: "%s"' % self.o.Name
@@ -20,10 +27,9 @@ class _SelfProps_Node(TreeNode):
 
     def is_leaf(self) -> bool:
         return True
-    
+
     def __eq__(self, node):
         return isinstance(node, _SelfProps_Node) and node.o.RID == self.o.RID
-
 
 
 class _Root_Node(TreeNode):
@@ -43,7 +49,7 @@ class _Root_Node(TreeNode):
 
 
 class StationProperties(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, menubar, toolbar, statusbar):
         super().__init__(parent)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -55,12 +61,20 @@ class StationProperties(wx.Panel):
         self.Layout()
 
         self._handler_properties_object_seleted = None
+        self._handler_properties_target_updated = None
 
         self._tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self._on_node_selected)
+        self._tree.Bind(EVT_WIDGET_TREE_ACTIVATED, self._on_node_activated)
 
-    def start(self, o: Station, on_properties_object_selected=None):
+    def start(
+        self,
+        o: Station,
+        on_properties_object_selected=None,
+        on_properties_target_updated=None,
+    ):
         self.o = o
         self._handler_properties_object_seleted = on_properties_object_selected
+        self._handler_properties_target_updated = on_properties_target_updated
         self._tree.set_root_node(_Root_Node(o))
         self._tree.bind_all()
         self.Show()
@@ -72,6 +86,10 @@ class StationProperties(wx.Panel):
         self.Hide()
         self._tree.unbind_all()
 
+    def _on_node_activated(self, event):
+        if isinstance(event.node, _SelfProps_Node):
+            self.open_self_props_editor()
+
     def _on_node_selected(self, event):
         object = None
         bounds = None
@@ -82,3 +100,12 @@ class StationProperties(wx.Panel):
 
         if self._handler_properties_object_seleted != None and object != None:
             self._handler_properties_object_seleted(object, bounds)
+
+    @db_session
+    def open_self_props_editor(self):
+        dlg = DialogCreateStation(self, self.o, "UPDATE")
+        if dlg.ShowModal() == wx.ID_OK:
+            self._tree.soft_reload_node(_SelfProps_Node(self.o))
+            if self._handler_properties_target_updated != None:
+                self._handler_properties_target_updated(self.o)
+            self.o = Station[self.o.RID]

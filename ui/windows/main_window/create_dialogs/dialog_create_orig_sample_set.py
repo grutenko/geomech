@@ -8,11 +8,22 @@ import ui.datetimeutil
 
 
 class DialogCreateCore(wx.Dialog):
-    def __init__(self, parent, o=None):
+    @db_session
+    def __init__(self, parent, o=None, _type="CREATE"):
         super().__init__(parent, title="Добавить Керн", size=wx.Size(400, 600))
         self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
 
-        self.parent = o
+        self._type = _type
+        if _type == "CREATE":
+            self.parent = o
+        else:
+            self.SetTitle("Изменить: %s" % o.Name)
+            self._target = o
+            self.parent = (
+                MineObject[o.mine_object.RID]
+                if o.bore_hole == None
+                else BoreHole[o.bore_hole.RID]
+            )
 
         top_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -61,7 +72,11 @@ class DialogCreateCore(wx.Dialog):
         main_sizer.Add(line, 0, wx.EXPAND | wx.TOP, border=10)
 
         btn_sizer = wx.StdDialogButtonSizer()
-        self.btn_save = wx.Button(self, label="Создать")
+        if _type == 'CREATE':
+            label = 'Создать'
+        else:
+            label = 'Изменить'
+        self.btn_save = wx.Button(self, label=label)
         self.btn_save.Bind(wx.EVT_BUTTON, self._on_save)
         btn_sizer.Add(self.btn_save, 0)
         main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.TOP, border=10)
@@ -71,7 +86,20 @@ class DialogCreateCore(wx.Dialog):
         self.Layout()
         self.Fit()
 
-        self._apply_fields()
+        
+        if _type == 'UPDATE':
+            self._set_fields()
+        else:
+            self._apply_fields()
+
+    def _set_fields(self):
+        o = self._target
+        self.field_number.SetValue(o.Number)
+        self.field_name.SetValue(o.Name)
+        self.field_comment.SetValue(o.Comment)
+        self.field_start_date.SetValue(ui.datetimeutil.decode_date(o.StartSetDate))
+        if o.EndSetDate != None:
+            self.field_end_date.SetValue(ui.datetimeutil.decode_date(o.EndSetDate))
 
     def _apply_fields(self):
         self.field_name.SetValue("Керн:" + self.parent.Name)
@@ -81,17 +109,17 @@ class DialogCreateCore(wx.Dialog):
     def _on_save(self, event):
         if not self.Validate():
             return
-        
+
         fields = {
             "Number": self.field_number.GetValue(),
             "Name": self.field_name.GetValue(),
-            'Comment': self.field_comment.GetValue(),
-            'X': self.parent.X,
-            'Y': self.parent.Y,
-            'Z': self.parent.Z,
-            'SampleType': 'CORE',
-            'mine_object': MineObject[self.parent.mine_object.RID],
-            'bore_hole': BoreHole[self.parent.RID]
+            "Comment": self.field_comment.GetValue(),
+            "X": self.parent.X,
+            "Y": self.parent.Y,
+            "Z": self.parent.Z,
+            "SampleType": "CORE",
+            "mine_object": MineObject[self.parent.mine_object.RID],
+            "bore_hole": BoreHole[self.parent.RID],
         }
 
         fields["StartSetDate"] = ui.datetimeutil.encode_date(

@@ -39,9 +39,6 @@ class ManageCoordSystemsWindow(wx.Frame):
 
         self._tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self._on_selection_changed)
 
-    def _on_add_series(self, event):
-        ...
-
     def _on_selection_changed(self, event):
         self._menu_bar.Enable(wx.ID_ADD, event.node != None)
         self._menu_bar.Enable(wx.ID_EDIT, event.node != None)

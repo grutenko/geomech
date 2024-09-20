@@ -18,6 +18,10 @@ class _MineObject_Node(TreeNode):
     def __init__(self, o: MineObject):
         self.o = o
 
+    @db_session
+    def self_reload(self):
+        self.o = MineObject[self.o.RID]
+
     def get_parent(self) -> TreeNode:
         if self.o.parent != None:
             return _MineObject_Node(self.o.parent)
@@ -64,6 +68,10 @@ class _Station_Node(TreeNode):
     def __init__(self, o: Station):
         self.o = o
 
+    @db_session
+    def self_reload(self):
+        self.o = Station[self.o.RID]
+
     def get_parent(self) -> TreeNode:
         return _MineObject_Node(self.o.mine_object)
 
@@ -90,6 +98,10 @@ class _Station_Node(TreeNode):
 class _BoreHole_Node(TreeNode):
     def __init__(self, o: BoreHole):
         self.o = o
+
+    @db_session
+    def self_reload(self):
+        self.o = BoreHole[self.o.RID]
 
     def get_parent(self) -> TreeNode:
         if self.o.station != None:
@@ -121,6 +133,10 @@ class _BoreHole_Node(TreeNode):
 class _Core_Node(TreeNode):
     def __init__(self, o: OrigSampleSet):
         self.o = o
+
+    @db_session
+    def self_reload(self):
+        self.o = OrigSampleSet[self.o.RID]
 
     def get_parent(self) -> TreeNode:
         return _BoreHole_Node(self.o.bore_hole)
@@ -316,3 +332,13 @@ class MainWindowTree(Tree):
 
     def _on_node_context_menu(self, event):
         self._open_context_menu(event.node, event.point)
+
+    def reload_object(self, o):
+        if isinstance(o, MineObject):
+            self.soft_reload_node(_MineObject_Node(o))
+        elif isinstance(o, Station):
+            self.soft_reload_node(_Station_Node(o))
+        elif isinstance(o, BoreHole):
+            self.soft_reload_node(_BoreHole_Node(o))
+        elif isinstance(o, OrigSampleSet) and o.SampleType == 'CORE':
+            self.soft_reload_node(_Core_Node(o))

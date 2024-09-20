@@ -33,11 +33,17 @@ class ManageDocumentsWindow(wx.Frame):
         menu_bar.Append(menu, "Управление")
         self._menu_bar = menu_bar
 
+        self._tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self._on_node_selection_changed)
+
+    def _on_node_selection_changed(self, event):
+        self._menu_bar.Enable(wx.ID_EDIT, event.node != None)
+        self._menu_bar.Enable(wx.ID_DELETE, event.node != None)
+
     def _on_create(self, event):
-        ...
+        self._tree.create()
 
     def _on_edit(self, event):
-        ...
+        self._tree.update()
 
     def _on_delete(self, event):
-        ...
+        self._tree.delete()

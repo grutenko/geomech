@@ -87,11 +87,18 @@ class Controller:
         self._is_read_only = read_only
         self._supports_move = support_move
 
-        self._init_controls()
         self._render(initial=True)
         self._bind()
 
+        self._total_menus = 0
+        self._total_tools = 0
+        self._controls_initialized = False
+
     def _init_controls(self):
+        self._total_menus = 0
+        self._total_tools = 0
+        self._controls_initialized = True
+
         if not self._is_read_only:
             self._changes_menu = wx.Menu()
             item = self._changes_menu.Append(ID_SAVE, "&Сохранить\tCTRL+S")
@@ -103,7 +110,8 @@ class Controller:
             )
             item.Enable(False)
             item.SetBitmap(self._icons.save)
-            self._menubar.Append(self._changes_menu, "Файл")
+            self._menubar.Append(self._changes_menu, "Таблица: Файл")
+            self._total_menus += 1
 
         self._edit_menu = wx.Menu()
         item = self._edit_menu.Append(ID_COPY, "&Копировать\tCTRL+C")
@@ -121,7 +129,8 @@ class Controller:
             self._edit_menu.Bind(wx.EVT_MENU, self._on_paste, item)
             item.SetBitmap(self._icons.insert)
 
-        self._menubar.Append(self._edit_menu, "Правка")
+        self._menubar.Append(self._edit_menu, "Таблица: Правка")
+        self._total_menus += 1
 
         if not self._is_read_only:
             self._edit_menu.AppendSeparator()
@@ -171,7 +180,8 @@ class Controller:
 
         self._view_menu.AppendSubMenu(menu, "Масштаб")
 
-        self._menubar.Append(self._view_menu, "Вид")
+        self._menubar.Append(self._view_menu, "Таблица: Вид")
+        self._total_menus += 1
 
         self._row_menu = wx.Menu()
 
@@ -201,7 +211,8 @@ class Controller:
             self._row_menu.Bind(wx.EVT_MENU, self._on_row_move_down, item)
             self._row_menu.AppendSeparator()
 
-            self._menubar.Append(self._row_menu, "Строка")
+            self._menubar.Append(self._row_menu, "Таблица: Строка")
+            self._total_menus += 1
 
         if not self._is_read_only:
             self._range_menu = wx.Menu()
@@ -209,7 +220,8 @@ class Controller:
             item.Enable(False)
             self._range_menu.Bind(wx.EVT_MENU, self._on_click_set_value, item)
             item.SetBitmap(self._icons.write_text)
-            self._menubar.Append(self._range_menu, "Диапазон")
+            self._menubar.Append(self._range_menu, "Таблица: Диапазон")
+            self._total_menus += 1
 
         # TOOLBAR
         if not self._is_read_only:
@@ -220,6 +232,7 @@ class Controller:
                 "Сохранить изменения",
                 kind=wx.ITEM_DROPDOWN,
             )
+            self._total_tools += 1
             tool.Enable(False)
             self._toolbar.Bind(wx.EVT_TOOL, self._on_click_save, id=ID_SAVE)
             self._toolbar_save_menu = wx.Menu()
@@ -228,6 +241,7 @@ class Controller:
             item.SetBitmap(self._icons.save)
             tool.SetDropdownMenu(self._toolbar_save_menu)
             self._toolbar.AddSeparator()
+            self._total_tools += 1
             tool = self._toolbar.AddTool(
                 ID_ADD_ROWS,
                 "Добавить строки",
@@ -235,6 +249,7 @@ class Controller:
                 "Добавить строки",
                 kind=wx.ITEM_DROPDOWN,
             )
+            self._total_tools += 1
             self._toolbar.Bind(wx.EVT_TOOL, self._on_add_one_empty_row, id=ID_ADD_ROWS)
             menu = wx.Menu()
             for i in range(1, 21):
@@ -252,6 +267,7 @@ class Controller:
             tool = self._toolbar.AddTool(
                 ID_MOVE_UP, "Переместить выше", self._icons.up, "Переместить выше"
             )
+            self._total_tools += 1
             tool.Enable(False)
             self._toolbar.Bind(wx.EVT_TOOL, self._on_row_move_up, id=ID_MOVE_UP)
             tool = self._toolbar.AddTool(
@@ -260,24 +276,29 @@ class Controller:
                 self._icons.down,
                 "Переместить ниже",
             )
+            self._total_tools += 1
             tool.Enable(False)
             self._toolbar.Bind(wx.EVT_TOOL, self._on_row_move_down, id=ID_MOVE_UP)
             self._toolbar.AddSeparator()
+            self._total_tools += 1
             tool = self._toolbar.AddTool(
                 ID_SET_VALUE,
                 "Присвоить значение",
                 self._icons.write_text,
                 "Присвоить значение",
             )
+            self._total_tools += 1
             tool.Enable(False)
             self._toolbar.Bind(wx.EVT_TOOL, self._on_click_set_value, id=ID_SET_VALUE)
             self._toolbar.AddSeparator()
+            self._total_tools += 1
             tool = self._toolbar.AddTool(
                 ID_UNDO,
                 "Отменить",
                 self._icons.cancel,
                 "Отменить последнюю операцию",
             )
+            self._total_tools += 1
             tool.Enable(False)
             self._toolbar.Bind(wx.EVT_TOOL, self._on_undo, id=ID_UNDO)
             tool = self._toolbar.AddTool(
@@ -286,7 +307,10 @@ class Controller:
             tool.Enable(False)
             self._toolbar.Bind(wx.EVT_TOOL, self._on_redo, id=ID_REDO)
 
+            self._total_tools += 2
+
             self._toolbar.Realize()
+
 
     def _on_zoom_change_clicked(self, event: wx.MenuEvent):
         factor = event.GetId()
@@ -723,11 +747,11 @@ class Controller:
         for row_index in range(self._view.GetNumberRows()):
             self._view.SetRowSize(row_index, int(self._original_row_size * self._zoom))
 
-        font: wx.Font = self._view.GetDefaultCellFont()
-        info: wx.NativeFontInfo = font.GetNativeFontInfo()
-        info.SetFractionalPointSize(self._original_font_size * self._zoom)
-        font.SetNativeFontInfo(info)
-        self._view.SetDefaultCellFont(font)
+        #font: wx.Font = self._view.GetDefaultCellFont()
+        #info: wx.NativeFontInfo = font.GetNativeFontInfo()
+        #info.SetFractionalPointSize(self._original_font_size * self._zoom)
+        #font.SetNativeFontInfo(info)
+        #self._view.SetDefaultCellFont(font)
 
         if begin_batch:
             self._view.EndBatch()
@@ -746,8 +770,6 @@ class Controller:
 
     def _unbind(self):
         self._view.Unbind(EVT_GRID_SELECT_CELL, handler=self._on_change_selected_cell)
-        self._view.Unbind(wx.EVT_KILL_FOCUS, handler=self._on_kill_focus)
-        self._view.Unbind(wx.EVT_SET_FOCUS, handler=self._on_set_focus)
         self._view.Unbind(EVT_GRID_RANGE_SELECTED, handler=self._on_change_selection)
 
     def detach(self):
@@ -760,10 +782,22 @@ class Controller:
             self._view.DeleteCols(0, self._view.GetNumberCols())
         self._view.EndBatch()
 
-        while self._menubar.GetMenuCount() > 0:
-            self._menubar.Remove(0)
-        self._toolbar.ClearTools()
+        self.remove_controls()
+
+    def remove_controls(self):
+        for i in range(self._menubar.GetMenuCount() - 1, self._menubar.GetMenuCount() - self._total_menus - 1, -1):
+            menu: wx.Menu = self._menubar.Remove(i)
+            menu.Destroy()
+        self._menubar.Update()
+        for i in range(self._toolbar.GetToolsCount() - 1, self._toolbar.GetToolsCount() - self._total_tools - 1, -1):
+            self._toolbar.DeleteToolByPos(i)
         self._toolbar.Realize()
+        self._controls_initialized = False
+
+    def apply_controls(self):
+        if self._controls_initialized:
+            self.remove_controls()
+        self._init_controls()
 
     def _cmd_append_rows(self, number_rows):
         for i in range(number_rows):

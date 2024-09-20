@@ -77,6 +77,10 @@ class Tree(wx.Panel):
             return None
 
         p = root_native_item if root_native_item != None else self._tree.GetRootItem()
+        p_context = self._tree.GetItemData(p)
+        if isinstance(p_context, Context) and p_context.node.__eq__(node):
+            return p
+
         item, _ = self._tree.GetFirstChild(p)
 
         while item.IsOk():

@@ -14,35 +14,42 @@ from ui.windows.switch_coord_system.frame import CsTransl
 
 class DialogCreateStation(wx.Dialog):
     @db_session
-    def __init__(self, parent, o=None):
+    def __init__(self, parent, o=None, _type = 'CREATE'):
         super().__init__(
             parent, title="Добавить измерительную станцию", size=wx.Size(400, 600)
         )
         self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
 
-        self.parent = o
+        self._type = _type
+        if _type == 'CREATE':
+            self.parent = o
+        else:
+            self.SetTitle("Изменить: %s" % o.Name)
+            self._target = o
+            self.parent = MineObject[o.mine_object.RID]
 
         top_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         top_sizer.Add(main_sizer, 1, wx.EXPAND | wx.ALL, border=10)
 
-        autofill_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Поля для автозаполнения")
-        label = wx.StaticText(self, label="Числовой № станции")
-        autofill_sizer.Add(label, 0)
-        self.field_orig_no = wx.SpinCtrl(self, size=wx.Size(250, -1), min=0, max=100000)
-        self.field_orig_no.Bind(wx.EVT_KEY_UP, self._on_orig_no_updated)
-        autofill_sizer.Add(self.field_orig_no, 0, wx.EXPAND)
-        main_sizer.Add(autofill_sizer, 0, wx.EXPAND)
+        if _type == 'CREATE':
+            autofill_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Поля для автозаполнения")
+            label = wx.StaticText(self, label="Числовой № станции")
+            autofill_sizer.Add(label, 0)
+            self.field_orig_no = wx.SpinCtrl(self, size=wx.Size(250, -1), min=0, max=100000)
+            self.field_orig_no.Bind(wx.EVT_KEY_UP, self._on_orig_no_updated)
+            autofill_sizer.Add(self.field_orig_no, 0, wx.EXPAND)
+            main_sizer.Add(autofill_sizer, 0, wx.EXPAND)
 
         label = wx.StaticText(
-            self, label="Регистрационный номер (автом. из Числового №)*"
+            self, label="Регистрационный номер " + ("(автом. из Числового №)*" if _type == 'CREATE' else '*')
         )
         main_sizer.Add(label, 0, wx.EXPAND | wx.TOP, border=10)
         self.field_number = wx.TextCtrl(self, size=wx.Size(250, -1))
         self.field_number.SetValidator(TextValidator(lenMin=1, lenMax=32))
         main_sizer.Add(self.field_number, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
-        label = wx.StaticText(self, label="Название (автом. из Числового №)*")
+        label = wx.StaticText(self, label="Название " + ("(автом. из Числового №)*" if _type == 'CREATE' else '*'))
         main_sizer.Add(label, 0)
         self.field_name = wx.TextCtrl(self, size=wx.Size(250, -1))
         self.field_name.SetValidator(TextValidator(lenMin=1, lenMax=256))
@@ -93,19 +100,19 @@ class DialogCreateStation(wx.Dialog):
         coords_sizer.Add(self.open_cs_transf, 0, wx.EXPAND)
         self.open_cs_transf.Bind(wx.EVT_BUTTON, self._on_open_cs_transf)
 
-        label = wx.StaticText(coords_pane, label="X")
+        label = wx.StaticText(coords_pane, label="X (м)")
         coords_sizer.Add(label, 0)
         self.field_x = wx.SpinCtrlDouble(coords_pane, min=-100000000.0, max=10000000000.0)
         self.field_x.SetDigits(2)
         coords_sizer.Add(self.field_x, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
-        label = wx.StaticText(coords_pane, label="Y")
+        label = wx.StaticText(coords_pane, label="Y (м)")
         coords_sizer.Add(label, 0)
         self.field_y = wx.SpinCtrlDouble(coords_pane, min=-100000000.0, max=10000000000.0)
         self.field_y.SetDigits(2)
         coords_sizer.Add(self.field_y, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
-        label = wx.StaticText(coords_pane, label="Z")
+        label = wx.StaticText(coords_pane, label="Z (м)")
         coords_sizer.Add(label, 0)
         self.field_z = wx.SpinCtrlDouble(coords_pane, min=-100000000.0, max=10000000000.0)
         self.field_z.SetDigits(2)
@@ -115,7 +122,11 @@ class DialogCreateStation(wx.Dialog):
         main_sizer.Add(line, 0, wx.EXPAND | wx.TOP, border=10)
 
         btn_sizer = wx.StdDialogButtonSizer()
-        self.btn_save = wx.Button(self, label="Создать")
+        if _type == 'CREATE':
+            label = 'Создать'
+        else:
+            label = 'Изменить'
+        self.btn_save = wx.Button(self, label=label)
         self.btn_save.Bind(wx.EVT_BUTTON, self._on_save)
         btn_sizer.Add(self.btn_save, 0)
         main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.TOP, border=10)
@@ -124,6 +135,21 @@ class DialogCreateStation(wx.Dialog):
 
         self.Layout()
         self.Fit()
+
+        if _type == 'UPDATE':
+            self._set_fields()
+
+    def _set_fields(self):
+        o = self._target
+        self.field_number.SetValue(o.Number)
+        self.field_name.SetValue(o.Name)
+        self.field_comment.SetValue(o.Comment)
+        self.field_x.SetValue(o.X)
+        self.field_y.SetValue(o.Y)
+        self.field_z.SetValue(o.Z)
+        self.field_start_date.SetValue(ui.datetimeutil.decode_date(o.StartDate))
+        if o.EndDate != None:
+            self.field_end_date.SetValue(ui.datetimeutil.decode_date(o.EndDate))
 
     @db_session
     def _on_orig_no_updated(self, event):

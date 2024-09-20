@@ -10,33 +10,40 @@ from .properties_panels.orig_sample_set.properties import CoreProperties
 
 import wx.lib.newevent
 
-PropertiesPropertySelectedEvent, EVT_PROPERTIES_PROPERTY_SELECTED = wx.lib.newevent.NewEvent()
+PropertiesPropertySelectedEvent, EVT_PROPERTIES_PROPERTY_SELECTED = (
+    wx.lib.newevent.NewEvent()
+)
+PropertiesTargetUpdatedEvent, EVT_PROPERTIES_TARGET_UPDATED = wx.lib.newevent.NewEvent()
+
 
 class _Deputy(wx.Panel):
     def start(self, o):
         self.Show()
+
     def end(self):
         self.Hide()
 
-class MainWindowProperties(wx.Panel):
-    def __init__(self, parent):
-        super().__init__(parent)
 
+class MainWindowProperties(wx.Panel):
+    def __init__(self, parent, menubar, toolbar, statusbar):
+        super().__init__(parent)
+        self.menubar = menubar
+        self.toolbar = toolbar
+        self.statusbar = statusbar
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.main_sizer)
 
         self.properties = {
-            MineObject: MineObjectProperties(self),
-            Station: StationProperties(self),
-            BoreHole: BoreHoleProperties(self),
-            OrigSampleSet: CoreProperties(self)
+            MineObject: MineObjectProperties(self, menubar, toolbar, statusbar),
+            Station: StationProperties(self, menubar, toolbar, statusbar),
+            BoreHole: BoreHoleProperties(self, menubar, toolbar, statusbar),
+            OrigSampleSet: CoreProperties(self, menubar, toolbar, statusbar),
         }
         for p in self.properties.values():
             p.Hide()
 
         self._deputy_panel = _Deputy(self)
         self.main_sizer.Add(self._deputy_panel, 1, wx.EXPAND)
-
-        self.SetSizer(self.main_sizer)
         self.Layout()
 
     def start(self, o):
@@ -54,9 +61,20 @@ class MainWindowProperties(wx.Panel):
         old_panel.end()
         self.main_sizer.Detach(0)
         self.main_sizer.Add(panel, 1, wx.EXPAND)
-        panel.start(o, self._on_properties_object_selected)
+        panel.start(
+            o, self._on_properties_object_selected, self._on_properties_target_updated
+        )
         self.Layout()
 
-    def _on_properties_object_selected(self, object, bounds = None):
-        wx.PostEvent(self, PropertiesPropertySelectedEvent(object=object, bounds=bounds))
-        
+    def _on_properties_object_selected(self, object, bounds=None):
+        wx.PostEvent(
+            self, PropertiesPropertySelectedEvent(object=object, bounds=bounds)
+        )
+
+    def _on_properties_target_updated(self, object):
+        wx.PostEvent(self, PropertiesTargetUpdatedEvent(object=object))
+
+    def open_self_editor(self):
+        panel = self.main_sizer.GetItem(0).GetWindow()
+        if not isinstance(panel, _Deputy):
+            panel.open_self_props_editor()

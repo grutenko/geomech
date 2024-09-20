@@ -12,11 +12,18 @@ import ui.delete_object
 
 from .create_rock_burst_dialog import CreateRockBurstDialog
 from .create_pm_sample_set_dialog import CreatePmSampleSetDialog
+from ui.windows.main_window.create_dialogs.dialog_create_mine_object import (
+    DialogCreateMineObject,
+)
 
 
 class _SelfProps_Node(TreeNode):
     def __init__(self, o):
         self.o = o
+
+    @db_session
+    def self_reload(self):
+        self.o = MineObject[self.o.RID]
 
     def get_name(self) -> str:
         return 'Свойства объекта: "%s"' % self.o.Name
@@ -62,6 +69,14 @@ class _RockBurst_Node(TreeNode):
     def __init__(self, o):
         self.o = o
 
+    @db_session
+    def self_reload(self):
+        self.o = RockBurst[self.o.RID]
+
+    @db_session
+    def self_reload(self):
+        self.o = RockBurst[self.o.RID]
+
     def get_parent(self) -> TreeNode:
         return _RockBursts_Node(self.o.mine_object)
 
@@ -106,6 +121,10 @@ class _SampleSet_Node(TreeNode):
     def __init__(self, o):
         self.o = o
 
+    @db_session
+    def self_reload(self):
+        self.o = PMSampleSet[self.o.RID]
+
     def get_name(self) -> str:
         return "[Физ. Мех. Свойства] Пробы"
 
@@ -138,7 +157,7 @@ class _Root_Node(TreeNode):
 
 
 class MineObjectProperties(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, menubar, toolbar, statusbar):
         super().__init__(parent)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -151,13 +170,41 @@ class MineObjectProperties(wx.Panel):
         self.Layout()
 
         self._tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self._on_node_selected)
+        self._tree.Bind(EVT_WIDGET_TREE_ACTIVATED, self._on_tree_item_activated)
 
         self._current_node = None
         self._current_object = None
         self._handler_properties_object_seleted = None
+        self._handler_properties_target_updated = None
 
-    def start(self, o: MineObject, on_properties_object_selected=None):
+
+    def _on_tree_item_activated(self, event):
+        self._edit_node(event.node)
+
+    @db_session
+    def _edit_node(self, node):
+        if isinstance(node, _RockBurst_Node):
+            dlg = CreateRockBurstDialog(self, node.o, _type="UPDATE")
+        elif isinstance(node, _SelfProps_Node):
+            dlg = DialogCreateMineObject(self, node.o, _type="UPDATE")
+        else:
+            return
+        if dlg.ShowModal() == wx.ID_OK:
+            self._tree.soft_reload_node(node)
+            if isinstance(node, _SelfProps_Node):
+                if self._handler_properties_target_updated != None:
+                    self._handler_properties_target_updated(self.o)
+                self.o = MineObject[self.o.RID]
+
+
+    def start(
+        self,
+        o: MineObject,
+        on_properties_object_selected=None,
+        on_properties_target_updated=None,
+    ):
         self._handler_properties_object_seleted = on_properties_object_selected
+        self._handler_properties_target_updated = on_properties_target_updated
         self.o = o
         self._tree.set_root_node(_Root_Node(o))
         self._tree.bind_all()
@@ -231,7 +278,7 @@ class MineObjectProperties(wx.Panel):
             self._pm_sample_sets_context_menu(event.node, event.point)
         else:
             return
-        
+
     def _on_node_selected(self, event):
         object = None
         bounds = None
@@ -251,3 +298,6 @@ class MineObjectProperties(wx.Panel):
 
         if self._handler_properties_object_seleted != None and object != None:
             self._handler_properties_object_seleted(object, bounds)
+
+    def open_self_props_editor(self):
+        self._edit_node(_SelfProps_Node(self.o))

@@ -208,10 +208,10 @@ class SuppliedData(db.Entity):
     RID = PrimaryKey(int, auto=True, column="RID")
     OwnID = Required(int, column="OwnID")
     OwnType = Required(str, column="OwnType")
-    Number = Required(str, column="Number")
+    Number = Optional(str, column="Number")
     Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
-    DataDate = Required(int, column="DataDate", size=64)
+    DataDate = Optional(int, column="DataDate", size=64)
 
 
 class SuppliedDataPart(db.Entity):
