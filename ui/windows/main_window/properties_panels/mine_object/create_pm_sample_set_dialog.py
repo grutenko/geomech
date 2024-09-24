@@ -4,6 +4,7 @@ from wx.adv import DatePickerCtrl, DP_DEFAULT, DP_SHOWCENTURY, DP_ALLOWNONE
 from pony.orm import *
 
 from database import PMTestSeries
+from ui.icon import get_icon
 from ui.validators import *
 
 
@@ -11,7 +12,7 @@ class CreatePmSampleSetDialog(wx.Dialog):
     @db_session
     def __init__(self, parent, o):
         super().__init__(parent, title="Добавить Пробу", size=wx.Size(400, 600))
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
 
         self.parent = o
 

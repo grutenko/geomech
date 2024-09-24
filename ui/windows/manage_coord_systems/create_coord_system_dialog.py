@@ -6,6 +6,7 @@ from pony.orm import *
 from database import CoordSystem
 from ui.validators import *
 from ui.windows.create_transf_matrix.create_transf_matrix_window import CreateTransfMatrixWindow
+from ui.icon import get_icon
 
 
 class _Mat3_Validator(wx.Validator): ...
@@ -17,7 +18,7 @@ class _Vec3_Validator(wx.Validator): ...
 class CreateCoordSystemDialog(wx.Dialog):
     def __init__(self, parent, o=None, type="CREATE"):
         super().__init__(parent, title="Добавить Систему координат")
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
 
         if type == "CREATE":
             self.parent = o

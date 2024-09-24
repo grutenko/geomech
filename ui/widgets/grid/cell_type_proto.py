@@ -3,8 +3,17 @@ from wx.grid import GridCellRenderer, GridCellEditor
 
 
 class CellType(Protocol):
-    __typname__: str
-    __typdescr__: str
+    def get_type_name(self) -> str:
+        """
+        Return short name of this type
+        """
+        return "Тип"
+    
+    def get_type_descr(self) -> str:
+        """
+        Return type description
+        """
+        return "Тип"
 
     def test_repr(self, value) -> bool:
         """

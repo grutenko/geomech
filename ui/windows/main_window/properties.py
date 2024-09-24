@@ -25,19 +25,18 @@ class _Deputy(wx.Panel):
 
 
 class MainWindowProperties(wx.Panel):
-    def __init__(self, parent, menubar, toolbar, statusbar):
+    def __init__(self, parent, menubar, statusbar):
         super().__init__(parent)
         self.menubar = menubar
-        self.toolbar = toolbar
         self.statusbar = statusbar
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.main_sizer)
 
         self.properties = {
-            MineObject: MineObjectProperties(self, menubar, toolbar, statusbar),
-            Station: StationProperties(self, menubar, toolbar, statusbar),
-            BoreHole: BoreHoleProperties(self, menubar, toolbar, statusbar),
-            OrigSampleSet: CoreProperties(self, menubar, toolbar, statusbar),
+            MineObject: MineObjectProperties(self, menubar, statusbar),
+            Station: StationProperties(self, menubar, statusbar),
+            BoreHole: BoreHoleProperties(self, menubar, statusbar),
+            OrigSampleSet: CoreProperties(self, menubar, statusbar),
         }
         for p in self.properties.values():
             p.Hide()

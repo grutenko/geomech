@@ -49,7 +49,7 @@ class _Root_Node(TreeNode):
 
 
 class StationProperties(wx.Panel):
-    def __init__(self, parent, menubar, toolbar, statusbar):
+    def __init__(self, parent, menubar, statusbar):
         super().__init__(parent)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)

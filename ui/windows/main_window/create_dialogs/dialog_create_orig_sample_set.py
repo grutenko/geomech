@@ -5,13 +5,15 @@ from wx.adv import DatePickerCtrl, DP_ALLOWNONE, DP_DEFAULT, DP_SHOWCENTURY
 from ui.validators import *
 from database import *
 import ui.datetimeutil
+from ui.icon import get_icon
 
 
 class DialogCreateCore(wx.Dialog):
     @db_session
     def __init__(self, parent, o=None, _type="CREATE"):
         super().__init__(parent, title="Добавить Керн", size=wx.Size(400, 600))
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
+        self.CenterOnParent()
 
         self._type = _type
         if _type == "CREATE":
@@ -117,10 +119,12 @@ class DialogCreateCore(wx.Dialog):
             "X": self.parent.X,
             "Y": self.parent.Y,
             "Z": self.parent.Z,
-            "SampleType": "CORE",
-            "mine_object": MineObject[self.parent.mine_object.RID],
-            "bore_hole": BoreHole[self.parent.RID],
+            "SampleType": "CORE"
         }
+
+        if self._type == 'CREATE':
+            fields["mine_object"] = MineObject[self.parent.mine_object.RID]
+            fields["bore_hole"] = BoreHole[self.parent.RID]
 
         fields["StartSetDate"] = ui.datetimeutil.encode_date(
             self.field_start_date.GetValue()
@@ -131,7 +135,11 @@ class DialogCreateCore(wx.Dialog):
             fields["EndSetDate"] = ui.datetimeutil.encode_date(date)
 
         try:
-            self.o = OrigSampleSet(**fields)
+            if self._type == 'CREATE':
+                self.o = OrigSampleSet(**fields)
+            else:
+                self.o = OrigSampleSet[self._target.RID]
+                self.o.set(**fields)
         except Exception as e:
             wx.MessageBox(str(e))
         else:

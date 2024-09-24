@@ -3,6 +3,7 @@ import config
 from pony.orm import *
 
 from .validators import TextValidator
+from ui.icon import get_icon
 
 
 class StartDialog(wx.Dialog):
@@ -14,7 +15,7 @@ class StartDialog(wx.Dialog):
             size=wx.Size(350, -1),
             style=wx.CENTER | wx.DEFAULT_DIALOG_STYLE,
         )
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnScreen()
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)

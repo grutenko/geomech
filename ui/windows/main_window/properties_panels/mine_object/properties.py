@@ -84,7 +84,7 @@ class _RockBurst_Node(TreeNode):
         return self.o.Name
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return wx.ART_NORMAL_FILE, get_art(wx.ART_NORMAL_FILE, 16)
+        return wx.ART_HELP_PAGE, get_art(wx.ART_HELP_PAGE, 16)
 
     def is_leaf(self):
         return True
@@ -157,7 +157,7 @@ class _Root_Node(TreeNode):
 
 
 class MineObjectProperties(wx.Panel):
-    def __init__(self, parent, menubar, toolbar, statusbar):
+    def __init__(self, parent, menubar, statusbar):
         super().__init__(parent)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)

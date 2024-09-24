@@ -6,12 +6,14 @@ from database import MineObject, CoordSystem
 from ui.validators import *
 from ui.windows.switch_coord_system.frame import CsTransl
 from ui.ctrl.coord_system_ctrl import CoordSystemCtrl
+from ui.icon import get_icon
 
 class DialogCreateMineObject(wx.Dialog):
     @db_session
     def __init__(self, parent, o = None, _type = 'CREATE'):
         super().__init__(parent, title="Добавить горный объект")
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
+        self.CenterOnParent()
         self._type = _type
         if _type == 'CREATE':
             self.parent = o
@@ -152,7 +154,7 @@ class DialogCreateMineObject(wx.Dialog):
         
         fields = {}
 
-        if self._target == 'CREATE':
+        if self._type == 'CREATE':
             if self.parent != None:
                 m = {
                     "REGION": "Регион",

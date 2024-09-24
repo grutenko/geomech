@@ -1,46 +1,51 @@
 from .cell_type_proto import CellType
-import wx
-from wx.grid import (
-    GridCellEditor,
-    GridCellRenderer,
-    GridCellStringRenderer,
-    GridCellAutoWrapStringEditor,
-)
+from wx.grid import GridCellEditor, GridCellRenderer, GridCellFloatEditor, GridCellFloatRenderer
 
-
-class StringCellType(CellType):
-    __typname__ = "string"
-    __typdescr__ = "Строка"
-
+class FloatCellType(CellType):
     def __init__(self) -> None:
         super().__init__()
-        self.GRID_CELL_STRING_RENDERER = GridCellStringRenderer()
-        self.GRID_CELL_STRING_EDITOR = GridCellAutoWrapStringEditor()
+        self.GRID_CELL_FLOAT_EDITOR = GridCellFloatEditor()
+        self.GRID_CELL_FLOAT_RENDERER = GridCellFloatRenderer()
+
+    def get_type_name(self):
+        return "float"
+    
+    def get_type_descr(self) -> str:
+        return "Число с плавающей запятой"
 
     def test_repr(self, value) -> bool:
-        return True
+        ret = True
+        try:
+            float_value = float(value)
+        except ValueError:
+            try:
+                float_value = float(value.replace(',', '.'))
+            except ValueError:
+                ret = False
+
+        return ret
 
     def from_string(self, value: str):
-        return value
+        try:
+            floatValue = float(value)
+        except ValueError as e:
+            try:
+                float_value = float(value.replace(',', '.'))
+            except ValueError as e2:
+                raise e
+
+        return float_value
 
     def to_string(self, value) -> str:
-        return value
+        return str(value)
 
     def get_grid_renderer(self) -> GridCellRenderer:
-        self.GRID_CELL_STRING_RENDERER.IncRef()
-        return self.GRID_CELL_STRING_RENDERER
+        self.GRID_CELL_FLOAT_RENDERER.IncRef()
+        return self.GRID_CELL_FLOAT_RENDERER
 
     def get_grid_editor(self) -> GridCellEditor:
-        self.GRID_CELL_STRING_EDITOR.IncRef()
-        return self.GRID_CELL_STRING_EDITOR
-
-    def open_editor(self, parent, value: str) -> str:
-        dlg = wx.TextEntryDialog(
-            parent, "Значение ячеек", "Веедите новое значения для выбраных ячеек", value
-        )
-        if dlg.ShowModal() == wx.ID_OK:
-            return dlg.GetValue()
-        return None
-
+        self.GRID_CELL_FLOAT_EDITOR.IncRef()
+        return self.GRID_CELL_FLOAT_EDITOR
+    
     def __eq__(self, value: object) -> bool:
-        return type(value) == StringCellType
+        return type(value) == FloatCellType

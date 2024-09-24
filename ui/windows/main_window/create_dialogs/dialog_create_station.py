@@ -7,6 +7,7 @@ from pony.orm import *
 import wx.adv
 from database import Station, MineObject
 import ui.datetimeutil
+from ui.icon import get_icon
 
 from ui.validators import *
 from ui.windows.switch_coord_system.frame import CsTransl
@@ -18,7 +19,8 @@ class DialogCreateStation(wx.Dialog):
         super().__init__(
             parent, title="Добавить измерительную станцию", size=wx.Size(400, 600)
         )
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
+        self.CenterOnParent()
 
         self._type = _type
         if _type == 'CREATE':
@@ -180,7 +182,6 @@ class DialogCreateStation(wx.Dialog):
             return
 
         fields = {
-            "mine_object": self.parent,
             "Name": self.field_name.GetValue(),
             "Number": self.field_number.GetValue(),
             "Comment": self.field_comment.GetValue(),
@@ -193,12 +194,20 @@ class DialogCreateStation(wx.Dialog):
         fields["StartDate"] = ui.datetimeutil.encode_date(
             self.field_start_date.GetValue()
         )
+
+        if self._type == 'CREATE':
+            fields["mine_object"] = self.parent
+
         date: wx.DateTime = self.field_end_date.GetValue()
         if date.IsValid():
             fields["EndDate"] = ui.datetimeutil.encode_date(date)
 
         try:
-            self._create_object(fields)
+            if self._type == 'CREATE':
+                self._create_object(fields)
+            else:
+                self.o = Station[self._target.RID]
+                self.o.set(**fields)
         except Exception as e:
             wx.MessageBox(str(e))
         else:

@@ -1,6 +1,8 @@
 import wx
 import numpy as np
 
+from ui.icon import get_icon
+
 
 class CreateTransfMatrixWindow(wx.Frame):
     def __init__(self, parent):
@@ -10,7 +12,7 @@ class CreateTransfMatrixWindow(wx.Frame):
             style=wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX | wx.FRAME_FLOAT_ON_PARENT,
             size=wx.Size(250, 380),
         )
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon('logo@16')))
         self.CenterOnParent()
         self.SetBackgroundColour(wx.NullColour)
 

@@ -1,5 +1,6 @@
 import wx
 
+from ui.icon import get_icon
 from .tree import *
 
 class ManageDocumentsWindow(wx.Frame):
@@ -9,7 +10,7 @@ class ManageDocumentsWindow(wx.Frame):
             title="Документы",
             style=wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX | wx.FRAME_FLOAT_ON_PARENT,
         )
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnParent()
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)

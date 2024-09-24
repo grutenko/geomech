@@ -4,6 +4,7 @@ from pony.orm import *
 
 from database import *
 from ui.validators import *
+from ui.icon import get_icon
 
 
 class CreateDischargeSeries(wx.Dialog):
@@ -12,7 +13,7 @@ class CreateDischargeSeries(wx.Dialog):
         super().__init__(
             parent, title="Добавить [Разгрузка] Набор замеров", size=wx.Size(400, 600)
         )
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
 
         self._type = _type
         if _type == "CREATE":

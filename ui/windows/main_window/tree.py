@@ -145,7 +145,7 @@ class _Core_Node(TreeNode):
         return "[Керн]"
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return wx.ART_NORMAL_FILE, get_art(wx.ART_NORMAL_FILE, 16)
+        return wx.ART_HELP_PAGE, get_art(wx.ART_HELP_PAGE, 16)
 
     def is_leaf(self) -> bool:
         return True
@@ -170,6 +170,8 @@ class _Root_Node(TreeNode):
 
     def __eq__(self, o):
         return isinstance(o, _Root_Node)
+    
+OpenSelfEditorEvent, EVT_TREE_OPEN_SELF_EDITOR = wx.lib.newevent.NewEvent()
 
 
 class MainWindowTree(Tree):
@@ -219,6 +221,8 @@ class MainWindowTree(Tree):
         item = subnode_menu.Append(wx.ID_ANY, "Скважину")
         subnode_menu.Bind(wx.EVT_MENU, self._on_create_bore_hole, item)
         menu.AppendSubMenu(subnode_menu, "Добавить")
+        item = menu.Append(wx.ID_ANY, "Изменить")
+        menu.Bind(wx.EVT_MENU, self._on_open_self_editor, item)
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Удалить")
         menu.Bind(wx.EVT_MENU, self._on_delete_mine_object, item)
@@ -276,6 +280,8 @@ class MainWindowTree(Tree):
         item = subnode_menu.Append(wx.ID_ANY, "Скважину")
         subnode_menu.Bind(wx.EVT_MENU, self._on_create_bore_hole, item)
         menu.AppendSubMenu(subnode_menu, "Добавить")
+        item = menu.Append(wx.ID_ANY, "Изменить")
+        menu.Bind(wx.EVT_MENU, self._on_open_self_editor, item)
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Удалить")
         menu.Bind(wx.EVT_MENU, self._on_delete_bore_hole, item)
@@ -297,6 +303,8 @@ class MainWindowTree(Tree):
             item = subnode_menu.Append(wx.ID_ANY, "Привязать Керн")
             subnode_menu.Bind(wx.EVT_MENU, self._on_create_core, item)
         menu.AppendSubMenu(subnode_menu, "Добавить")
+        item = menu.Append(wx.ID_ANY, "Изменить")
+        menu.Bind(wx.EVT_MENU, self._on_open_self_editor, item)
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Удалить")
         menu.Bind(wx.EVT_MENU, self._on_delete_bore_hole, item)
@@ -311,6 +319,8 @@ class MainWindowTree(Tree):
     def _core_context_menu(self, node: _Core_Node, point: wx.Point):
         self._current_object = node.o
         menu = wx.Menu()
+        item = menu.Append(wx.ID_ANY, "Изменить")
+        menu.Bind(wx.EVT_MENU, self._on_open_self_editor, item)
         item = menu.Append(wx.ID_ANY, "Удалить")
         menu.Bind(wx.EVT_MENU, self._on_delete_core, item)
         self.PopupMenu(menu, point)
@@ -342,3 +352,6 @@ class MainWindowTree(Tree):
             self.soft_reload_node(_BoreHole_Node(o))
         elif isinstance(o, OrigSampleSet) and o.SampleType == 'CORE':
             self.soft_reload_node(_Core_Node(o))
+
+    def _on_open_self_editor(self, event):
+        wx.PostEvent(self, OpenSelfEditorEvent(target=self._current_object))

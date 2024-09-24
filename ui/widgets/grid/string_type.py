@@ -9,13 +9,16 @@ from wx.grid import (
 
 
 class StringCellType(CellType):
-    __typname__ = "string"
-    __typdescr__ = "Строка"
-
     def __init__(self) -> None:
         super().__init__()
         self.GRID_CELL_STRING_RENDERER = GridCellStringRenderer()
         self.GRID_CELL_STRING_EDITOR = GridCellAutoWrapStringEditor()
+
+    def get_type_name(self):
+        return "string"
+    
+    def get_type_descr(self) -> str:
+        return "Строка"
 
     def test_repr(self, value) -> bool:
         return True

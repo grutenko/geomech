@@ -8,6 +8,7 @@ from pony.orm import *
 import wx.adv
 from database import Station, MineObject, BoreHole
 import ui.datetimeutil
+from ui.icon import get_icon
 
 from ui.validators import *
 from ui.windows.switch_coord_system.frame import CsTransl
@@ -17,7 +18,8 @@ class DialogCreateBoreHole(wx.Dialog):
     @db_session
     def __init__(self, parent, o=None, _type="CREATE"):
         super().__init__(parent, title="Добавить Скважину", size=wx.Size(400, 600))
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
+        self.CenterOnParent()
 
         self._type = _type
         if _type == "CREATE":
@@ -281,13 +283,14 @@ class DialogCreateBoreHole(wx.Dialog):
             "Length": self.field_length.GetValue(),
         }
 
-        if isinstance(self.parent, MineObject):
-            fields["mine_object"] = MineObject[self.parent.RID]
-            fields["station"] = None
-        else:
-            station = Station[self.parent.RID]
-            fields["mine_object"] = station.mine_object
-            fields["station"] = station
+        if self._type == 'CREATE':
+            if isinstance(self.parent, MineObject):
+                fields["mine_object"] = MineObject[self.parent.RID]
+                fields["station"] = None
+            else:
+                station = Station[self.parent.RID]
+                fields["mine_object"] = station.mine_object
+                fields["station"] = station
 
         fields["StartDate"] = ui.datetimeutil.encode_date(
             self.field_start_date.GetValue()
@@ -302,7 +305,11 @@ class DialogCreateBoreHole(wx.Dialog):
             fields["DestroyDate"] = ui.datetimeutil.encode_date(date)
 
         try:
-            self.o = BoreHole(**fields)
+            if self._type == 'CREATE':
+                self.o = BoreHole(**fields)
+            else:
+                self.o = BoreHole[self._target.RID]
+                self.o.set(**fields)
         except Exception as e:
             wx.MessageBox(str(e))
         else:

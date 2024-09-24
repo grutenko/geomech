@@ -4,6 +4,7 @@ from wx.adv import DatePickerCtrl, DP_ALLOWNONE, DP_DEFAULT, DP_SHOWCENTURY, Tim
 
 from ui.validators import *
 from database import *
+from ui.icon import get_icon
 import ui.datetimeutil
 from ui.windows.switch_coord_system.frame import CsTransl
 from ui.datetimeutil import decode_datetime, encode_datetime
@@ -12,7 +13,7 @@ class CreateRockBurstDialog(wx.Dialog):
     @db_session
     def __init__(self, parent, o, _type = 'CREATE'):
         super().__init__(parent, title="Добавить Горный удар", size=wx.Size(400, 600))
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
         self._type = _type
 
         if _type == 'CREATE':

@@ -3,13 +3,16 @@ from wx.grid import GridCellEditor, GridCellRenderer, GridCellNumberRenderer, Gr
 
 
 class NumberCellType(CellType):
-    __typname__ = "number"
-    __typdescr__ = "Целое число"
-
     def __init__(self) -> None:
         super().__init__()
         self.GRID_CELL_NUMBER_EDITOR = GridCellNumberEditor()
         self.GRID_CELL_NUMBER_RENDERER = GridCellNumberRenderer()
+
+    def get_type_name(self):
+        return "number"
+    
+    def get_type_descr(self) -> str:
+        return "Целое число"
 
     def test_repr(self, value: str) -> bool:
         ret = True

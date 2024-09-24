@@ -17,18 +17,25 @@ from ui.windows.manage_pm_test_series.manage_pm_test_series_window import (
 )
 from ui.windows.manage_documents.manage_documents_window import ManageDocumentsWindow
 from ui.windows.switch_coord_system.frame import CsTransl
-from ui.icon import get_art
+from ui.icon import get_art, get_icon
+from ui.class_config_provider import ClassConfigProvider
 
-from .tree import MainWindowTree
+from .tree import MainWindowTree, EVT_TREE_OPEN_SELF_EDITOR
 from .properties import (
     MainWindowProperties,
     EVT_PROPERTIES_PROPERTY_SELECTED,
     EVT_PROPERTIES_TARGET_UPDATED,
 )
-from .notebook import MainWindowNotebook
+from .notebook import (
+    MainWindowNotebook,
+    EVT_NOTEBOOK_PAGE_COUNT_CHANGED,
+    EVT_NOTEBOOK_PAGE_SELECTION_CHANGED,
+)
 from .supplied_data import MainWindowSuppliedData
 from .fastview import FastviewMainWindow
-from .config_provider import ConfigProvider
+from .notebook_help_page import HelpPage
+
+
 ID_FILE_EXIT = wx.ID_HIGHEST + 100
 ID_OPTIONS_FIZMECH = ID_FILE_EXIT + 1
 ID_OPTIONS_COORD_SYSTEMS = ID_FILE_EXIT + 2
@@ -43,6 +50,13 @@ ID_CS_TRANSF_UTLITY = ID_FILE_EXIT + 10
 ID_OPTIONS_FIZMECH_SERIES = ID_FILE_EXIT + 11
 ID_TOGGLE_FASTVIEW = ID_FILE_EXIT + 12
 ID_TOGGLE_SUPPLIED_DATA = ID_FILE_EXIT + 13
+ID_CLOSE_TAB = ID_FILE_EXIT + 14
+ID_TOGGLE_OBJECTS = ID_FILE_EXIT + 15
+ID_TOGGLE_PROPERTIES = ID_FILE_EXIT + 16
+ID_NEXT_TAB = ID_FILE_EXIT + 17
+ID_PREV_TAB = ID_FILE_EXIT + 18
+
+__CONFIG_VERSION__ = 9
 
 
 class MainFrame(wx.Frame):
@@ -50,12 +64,15 @@ class MainFrame(wx.Frame):
         super().__init__(None, title='База данных "Геомеханика".')
         self.SetSize(1280, 600)
         self.CenterOnScreen()
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
+        self.SetMinSize(wx.Size(600, 300))
 
         self.database_config = database_config
-        self._config_provider = ConfigProvider()
+        self._config_provider = ClassConfigProvider(
+            __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
+        )
 
-        o = self._config_provider.get_window_options()
+        o = self._config_provider["window"]
         if o != None:
             self.SetSize(o["x"], o["y"], o["width"], o["height"])
 
@@ -71,13 +88,15 @@ class MainFrame(wx.Frame):
         i.Name("objects")
         i.Left()
         i.Caption("Объекты")
-        i.CloseButton(False)
+        i.MaximizeButton(True)
+        i.CloseButton(True)
         i.MinSize(250, 150)
+        i.Hide()
         self.tree_pane = MainWindowTree(self)
         self.tree_pane.Bind(
             EVT_WIDGET_TREE_SEL_CHANGED, self._on_tree_node_selection_changed
         )
-        self.tree_pane.Bind(EVT_WIDGET_TREE_ACTIVATED, self._on_node_activated)
+        self.tree_pane.Bind(EVT_TREE_OPEN_SELF_EDITOR, self._on_open_self_editor)
         self.mgr.AddPane(self.tree_pane, i)
 
         self._init_controls()
@@ -86,9 +105,11 @@ class MainFrame(wx.Frame):
         i.Caption("Связаные данные")
         i.Name("properties")
         i.Left()
-        i.CloseButton(False)
+        i.MaximizeButton(True)
+        i.CloseButton(True)
         i.MinSize(300, 150)
-        self.properties = MainWindowProperties(self, self.menu, self.toolbar, self.statusbar)
+        i.Hide()
+        self.properties = MainWindowProperties(self, self.menu, self.statusbar)
         self.properties.Bind(
             EVT_PROPERTIES_PROPERTY_SELECTED, self._on_property_selected
         )
@@ -103,7 +124,10 @@ class MainFrame(wx.Frame):
         i.CenterPane()
         i.CloseButton(False)
         self.notebook = MainWindowNotebook(self)
+        self.notebook.Bind(EVT_NOTEBOOK_PAGE_COUNT_CHANGED, self._on_page_count_changed)
+        self.notebook.Bind(EVT_NOTEBOOK_PAGE_SELECTION_CHANGED, self._on_page_selection_changed)
         self.mgr.AddPane(self.notebook, i)
+        self.notebook.add_page(HelpPage(self.notebook.notebook))
 
         i = wx.aui.AuiPaneInfo()
         i.Name("fastview")
@@ -112,6 +136,8 @@ class MainFrame(wx.Frame):
         i.MaximizeButton(True)
         i.MinSize(250, 150)
         i.BestSize(250, 400)
+        i.Hide()
+        i.Float()
         self.fastview = FastviewMainWindow(self)
         self.mgr.AddPane(self.fastview, i)
 
@@ -122,15 +148,22 @@ class MainFrame(wx.Frame):
         i.MaximizeButton(True)
         i.MinSize(300, 150)
         i.BestSize(1024, 200)
+        i.Float()
+        i.Hide()
         self.supplied_data = MainWindowSuppliedData(self)
         self.mgr.AddPane(self.supplied_data, i)
 
-        perspective = self._config_provider.get_perspective()
+        perspective = self._config_provider["perspective"]
         if perspective != None:
             try:
                 self.mgr.LoadPerspective(perspective, False)
             except:
                 pass
+
+        self.mgr.GetPane('objects').Icon(get_art(wx.ART_HARDDISK, scale_to=16))
+        self.mgr.GetPane('properties').Icon(get_art(wx.ART_HELP_BOOK, scale_to=16))
+        self.mgr.GetPane('fastview').Icon(get_art(wx.ART_HELP_PAGE, scale_to=16))
+        self.mgr.GetPane('supplied_data').Icon(get_art(wx.ART_FOLDER_OPEN, scale_to=16))
 
         self.mgr.Update()
 
@@ -139,31 +172,56 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self._on_close)
 
     def _init_controls(self):
-
         self.menu = wx.MenuBar()
         file = wx.Menu()
-        item = file.Append(ID_FILE_EXIT, "Выход")
+        item = file.Append(wx.ID_FIND, "Найти\tCTRL+F")
+        item.SetBitmap(get_art(wx.ART_FIND, scale_to=16))
+        item = file.Append(wx.ID_PREVIEW_NEXT, "Найти далее\tCTRL+SHIFT+F")
+        item.SetBitmap(get_art(wx.ART_FIND, scale_to=16))
+        item.Enable(False)
+        file.AppendSeparator()
+        item = file.Append(ID_NEXT_TAB, "Следующая вкладка\tCTRL+RIGHT")
+        item.SetBitmap(get_art(wx.ART_GO_FORWARD, scale_to=16))
+        item.Enable(False)
+        file.Bind(wx.EVT_MENU, self._on_next_tab, item)
+        item = file.Append(ID_PREV_TAB, "Предыдущая вкладка\tCTRL+LEFT")
+        item.SetBitmap(get_art(wx.ART_GO_BACK, scale_to=16))
+        item.Enable(False)
+        file.Bind(wx.EVT_MENU, self._on_prev_tab, item)
+        item = file.Append(ID_CLOSE_TAB, "Закрыть вкладку\tCTRL+W")
         item.SetBitmap(get_art(wx.ART_CLOSE, scale_to=16))
+        item.Enable(False)
+        file.Bind(wx.EVT_MENU, self._on_close_tab, item)
+        file.AppendSeparator()
+        item = file.Append(ID_FILE_EXIT, "Выход\tCTRL+ALT+E")
+        file.Bind(wx.EVT_MENU, self._on_exit, item)
         self.menu.Append(file, "Файл")
         self.SetMenuBar(self.menu)
 
         menu = wx.Menu()
-        item = menu.Append(wx.ID_FIND, "Найти")
-        item = menu.Append(wx.ID_PREVIEW_NEXT, "Найти далее")
-        self.menu.Append(menu, "Поиск")
-
-        menu = wx.Menu()
         item = menu.AppendCheckItem(
-            ID_TOGGLE_FASTVIEW, "Показать/Скрыть панель быстрого просмотра"
+            ID_TOGGLE_OBJECTS, "Показать/Скрыть панель объектов\tCTRL+ALT+B"
         )
-        menu.Check(ID_TOGGLE_FASTVIEW, self._config_provider.get_toggle_fastview())
+        toggle = self._config_provider["toggle_objects"]
+        menu.Check(ID_TOGGLE_OBJECTS, toggle if toggle != None else False)
+        menu.Bind(wx.EVT_MENU, self._on_toggle_objects, item)
+        item = menu.AppendCheckItem(
+            ID_TOGGLE_PROPERTIES, "Показать/Скрыть панель связаных данных\tCTRL+ALT+R"
+        )
+        toggle = self._config_provider["toggle_properties"]
+        menu.Check(ID_TOGGLE_PROPERTIES, toggle if toggle != None else False)
+        menu.Bind(wx.EVT_MENU, self._on_toggle_properties, item)
+        item = menu.AppendCheckItem(
+            ID_TOGGLE_FASTVIEW, "Показать/Скрыть панель быстрого просмотра\tCTRL+ALT+F"
+        )
+        toggle = self._config_provider["toggle_fastview"]
+        menu.Check(ID_TOGGLE_FASTVIEW, toggle if toggle != None else False)
         menu.Bind(wx.EVT_MENU, self._on_toggle_fastview, item)
         item = menu.AppendCheckItem(
-            ID_TOGGLE_SUPPLIED_DATA, "Показать/Скрыть панель сопутствующи материалов"
+            ID_TOGGLE_SUPPLIED_DATA, "Показать/Скрыть панель сопутствующи материалов\tCTRL+ALT+D"
         )
-        menu.Check(
-            ID_TOGGLE_SUPPLIED_DATA, self._config_provider.get_toggle_supplied_data()
-        )
+        toggle = self._config_provider["toggle_supplied_data"]
+        menu.Check(ID_TOGGLE_SUPPLIED_DATA, toggle if toggle != None else False)
         menu.Bind(wx.EVT_MENU, self._on_toggle_supplied_data, item)
         self.menu.Append(menu, "Вид")
 
@@ -196,11 +254,9 @@ class MainFrame(wx.Frame):
         utils.Bind(wx.EVT_MENU, self._on_open_cs_transf, item)
         self.menu.Append(utils, "Системы координат")
 
-        self.toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL | wx.TB_HORZ_LAYOUT | wx.TB_FLAT)
-        self.toolbar.AddTool(wx.ID_FIND, "Найти далее", get_art(wx.ART_FIND, scale_to=16))
-        self.toolbar.AddSeparator()
-        self.toolbar.Realize()
-        self.SetToolBar(self.toolbar)
+        menu = wx.Menu()
+        item = menu.Append(wx.ID_ABOUT, "О программе")
+        self.menu.Append(menu, "?")
 
         self.statusbar = wx.StatusBar(self)
         self.SetStatusBar(self.statusbar)
@@ -214,7 +270,27 @@ class MainFrame(wx.Frame):
             )
         )
 
-    def _on_node_activated(self, event):
+    def _on_page_selection_changed(self, event):
+        self._update_controls_state()
+
+    def _update_controls_state(self):
+        self.menu.Enable(ID_NEXT_TAB, self.notebook.can_go_next())
+        self.menu.Enable(ID_PREV_TAB, self.notebook.can_go_prev())
+        self.menu.Enable(ID_CLOSE_TAB, self.notebook.get_page_count() > 0)
+
+    def _on_next_tab(self, event):
+        self.notebook.go_next()
+
+    def _on_prev_tab(self, event):
+        self.notebook.go_prev()
+
+    def _on_page_count_changed(self, event):
+        self._update_controls_state()
+
+    def _on_close_tab(self, event):
+        self.notebook.close_current_page()
+
+    def _on_open_self_editor(self, event):
         self.properties.open_self_editor()
 
     def _on_toggle_fastview(self, event: wx.MenuEvent):
@@ -222,7 +298,30 @@ class MainFrame(wx.Frame):
             self.mgr.GetPane("fastview").Show()
         else:
             self.mgr.GetPane("fastview").Hide()
-        self._config_provider.toggle_fastview(self.menu.IsChecked(ID_TOGGLE_FASTVIEW))
+        self._config_provider["toggle_fastview"] = self.menu.IsChecked(
+            ID_TOGGLE_FASTVIEW
+        )
+        self._config_provider.flush()
+        self.mgr.Update()
+
+    def _on_toggle_objects(self, event: wx.MenuEvent):
+        if self.menu.IsChecked(ID_TOGGLE_OBJECTS):
+            self.mgr.GetPane("objects").Show()
+        else:
+            self.mgr.GetPane("objects").Hide()
+        self._config_provider["toggle_objects"] = self.menu.IsChecked(ID_TOGGLE_OBJECTS)
+        self._config_provider.flush()
+        self.mgr.Update()
+
+    def _on_toggle_properties(self, event: wx.MenuEvent):
+        if self.menu.IsChecked(ID_TOGGLE_PROPERTIES):
+            self.mgr.GetPane("properties").Show()
+        else:
+            self.mgr.GetPane("properties").Hide()
+        self._config_provider["toggle_properties"] = self.menu.IsChecked(
+            ID_TOGGLE_PROPERTIES
+        )
+        self._config_provider.flush()
         self.mgr.Update()
 
     def _on_toggle_supplied_data(self, event):
@@ -230,18 +329,25 @@ class MainFrame(wx.Frame):
             self.mgr.GetPane("supplied_data").Show()
         else:
             self.mgr.GetPane("supplied_data").Hide()
-        self._config_provider.toggle_supplied_data(
-            self.menu.IsChecked(ID_TOGGLE_SUPPLIED_DATA)
+        self._config_provider["toggle_supplied_data"] = self.menu.IsChecked(
+            ID_TOGGLE_SUPPLIED_DATA
         )
+        self._config_provider.flush()
         self.mgr.Update()
 
     def _on_panel_closed(self, event: wx.aui.AuiManagerEvent):
         if event.GetPane().name == "fastview":
             self.menu.Check(ID_TOGGLE_FASTVIEW, False)
-            self._config_provider.toggle_fastview(False)
+            self._config_provider["toggle_fastview"] = False
         elif event.GetPane().name == "supplied_data":
             self.menu.Check(ID_TOGGLE_SUPPLIED_DATA, False)
-            self._config_provider.toggle_supplied_data(False)
+            self._config_provider["toggle_supplied_data"] = False
+        elif event.GetPane().name == "objects":
+            self.menu.Check(ID_TOGGLE_OBJECTS, False)
+            self._config_provider["toggle_objects"] = False
+        elif event.GetPane().name == "properties":
+            self.menu.Check(ID_TOGGLE_PROPERTIES, False)
+            self._config_provider["toggle_properties"] = False
 
     def _on_open_documents_manage(self, event):
         w = ManageDocumentsWindow(self)
@@ -295,12 +401,21 @@ class MainFrame(wx.Frame):
 
         self.supplied_data.start(o, _type)
 
+    def _on_exit(self, event):
+        self.Close()
+
     def _on_close(self, event):
-        self._config_provider.set_perspective(self.mgr.SavePerspective())
+        if self.notebook.close_all():
+            event.Skip()
+
+        self._config_provider["perspective"] = self.mgr.SavePerspective()
         x, y = self.GetScreenPosition().Get()
         size: wx.Size = self.GetSize()
-        self._config_provider.set_window_options(
-            {"x": x, "y": y, "width": size.GetWidth(), "height": size.GetHeight()}
-        )
+        self._config_provider["window"] = {
+            "x": x,
+            "y": y,
+            "width": size.GetWidth(),
+            "height": size.GetHeight(),
+        }
         self._config_provider.flush()
-        event.Skip()
+        wx.App.GetInstance().ExitMainLoop()

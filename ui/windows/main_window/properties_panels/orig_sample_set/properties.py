@@ -69,7 +69,7 @@ class _DiscargeSeries_Node(TreeNode):
         return "[Разгрузка] Параметры серии замеров"
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return wx.ART_NORMAL_FILE, get_art(wx.ART_NORMAL_FILE, 16)
+        return wx.ART_HELP_PAGE, get_art(wx.ART_HELP_PAGE, 16)
 
     def is_leaf(self) -> bool:
         return True
@@ -165,11 +165,10 @@ TOOL_ADD_DISCHARGE_SERIES = 1
 
 
 class CoreProperties(wx.Panel):
-    def __init__(self, parent, menubar, toolbar, statusbar):
+    def __init__(self, parent, menubar, statusbar):
         super().__init__(parent)
 
         self.menubar = menubar
-        self.toolbar = toolbar
         self.statusbar = statusbar
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -268,14 +267,17 @@ class CoreProperties(wx.Panel):
 
     def _on_open_dm_editor(self, event=None):
         notebook = MainWindowNotebook.get_instance()
-        w = DischargeMeasurementsEditor(
-            notebook._native_,
-            self._tree.get_current_node().o,
-            self.menubar,
-            self.toolbar,
-            self.statusbar,
+        identity = DischargeMeasurementsEditor.make_identity(
+            self._tree.get_current_node().o
         )
-        notebook.add_page(w)
+        if not notebook.select_by_identity(identity):
+            w = DischargeMeasurementsEditor(
+                notebook._native_,
+                self._tree.get_current_node().o,
+                self.menubar,
+                self.statusbar,
+            )
+            notebook.add_page(w)
 
     def _on_node_selected(self, event):
         object = None

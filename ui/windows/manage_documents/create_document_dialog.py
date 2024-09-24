@@ -4,11 +4,12 @@ from pony.orm import *
 
 from database import FoundationDocument
 from ui.validators import *
+from ui.icon import get_icon
 
 class CreateDocumentDialog(wx.Dialog):
     def __init__(self, parent, o=None, type="CREATE"):
         super().__init__(parent, title="Добавить Документ")
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
 
         if type == "CREATE":
             self.parent = o

@@ -5,6 +5,7 @@ import numpy as np
 from pony.orm import *
 from database import CoordSystem
 from .ui import Ui_CsTransl
+from ui.icon import get_icon
 
 
 @db_session
@@ -25,7 +26,7 @@ def _getCoordSystems(rootSystem=None):
 class CsTransl(Ui_CsTransl):
     def __init__(self, parent):
         super().__init__(parent, size=wx.Size(250, 350))
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
 
         self.Bind(wx.EVT_CLOSE, self._onClose)
 

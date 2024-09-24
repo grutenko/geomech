@@ -1,6 +1,7 @@
 import wx
 
 from ui.widgets.supplied_data.widget import SuppliedDataWidget
+from ui.icon import get_icon
 from .tree import TestSeriesTree, EVT_WIDGET_TREE_SEL_CHANGED
 
 
@@ -12,7 +13,7 @@ class ManageTestSeriesWindow(wx.Frame):
             style=wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX | wx.FRAME_FLOAT_ON_PARENT,
             size=wx.Size(350, 400)
         )
-        self.SetIcon(wx.Icon("./icons/logo@16.jpg"))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnParent()
 
         top_sizer = wx.BoxSizer(wx.VERTICAL)
