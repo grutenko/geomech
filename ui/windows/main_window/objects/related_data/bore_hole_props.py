@@ -109,3 +109,9 @@ class BoreHoleProperties(wx.Panel):
         if dlg.ShowModal() == wx.ID_OK:
             self._tree.soft_reload_node(_SelfProps_Node(self.o))
             self.o = BoreHole[self.o.RID]
+
+    def get_current_object(self):
+        node = self._tree.get_current_node()
+        if node != None:
+            return node.o, node.target
+        return None

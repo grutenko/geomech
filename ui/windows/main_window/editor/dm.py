@@ -357,3 +357,6 @@ class DMEditor(wx.Panel):
                 except:
                     return False
         return True
+    
+    def is_read_only(self):
+        return False

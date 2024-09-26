@@ -110,8 +110,8 @@ class StringCellType(CellType):
 class FloatCellType(CellType):
     def __init__(self) -> None:
         super().__init__()
-        self.GRID_CELL_FLOAT_EDITOR = wx.grid.GridCellFloatEditor()
-        self.GRID_CELL_FLOAT_RENDERER = wx.grid.GridCellFloatRenderer()
+        self.GRID_CELL_FLOAT_EDITOR = wx.grid.GridCellFloatEditor(precision=2, format=wx.grid.GRID_FLOAT_FORMAT_FIXED)
+        self.GRID_CELL_FLOAT_RENDERER = wx.grid.GridCellFloatRenderer(precision=2, format=wx.grid.GRID_FLOAT_FORMAT_FIXED)
 
     def get_type_name(self):
         return "float"

@@ -1,1 +1,1 @@
-from .widget import RelatedData
+from .widget import RelatedData, EVT_PROPERTIES_PROPERTY_SELECTED, EVT_PROPERTIES_TARGET_UPDATED

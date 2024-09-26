@@ -7,6 +7,7 @@ ID_OBJECTS_TOGGLE = ID_FIND_NEXT + 1
 ID_FASTVIEW_TOGGLE = ID_FIND_NEXT + 2
 ID_SUPPLIED_DATA_TOGGLE = ID_FIND_NEXT + 3
 ID_OPEN_START_TAB = ID_FIND_NEXT + 4
+ID_COORD_SYSTEMS_TOGGLE = ID_FIND_NEXT + 5
 
 class MainMenu(wx.MenuBar):
     def __init__(self):
@@ -64,5 +65,6 @@ class MainMenu(wx.MenuBar):
 
         menu = wx.Menu()
         item = menu.Append(wx.ID_ABOUT, "О программе")
-        item = menu.Append(ID_OPEN_START_TAB, "Открыть \"Начало работы\"")
+        item = menu.AppendCheckItem(ID_OPEN_START_TAB, "Открыть \"Начало работы\"")
+        item.Check(True)
         self.Append(menu, "?")

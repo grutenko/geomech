@@ -2,16 +2,19 @@ import wx
 import wx.aui
 import wx.aui
 
+from database import *
 from ui.icon import get_icon
 from ui.class_config_provider import ClassConfigProvider
 from .objects import Objects, EVT_OBJECT_SELECTED
 from .editor import *
 from .editor.help import HelpPage
-from .editor.widget import EVT_ENB_STATE_CHANGED
+from .editor.widget import EVT_ENB_STATE_CHANGED, EVT_ENB_EDITOR_CLOSED
 from .fastview import FastView
 from .supplied_data import SuppliedData
 from .main_menu import *
 from .main_toolbar import *
+from .mgr_panel_toolbar import *
+from .identity import Identity
 
 __CONFIG_VERSION__ = 1
 
@@ -32,11 +35,23 @@ class MainFrame(wx.Frame):
 
         self.menu_bar = MainMenu()
         self.SetMenuBar(self.menu_bar)
+
         self.toolbar = MainToolbar(self)
         self.SetToolBar(self.toolbar)
 
+        main_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.mgr_panel_toolbar = MgrPanelToolbar(self)
+        main_sizer.Add(self.mgr_panel_toolbar, 0, wx.EXPAND)
+        mgr_panel = wx.Panel(self)
+        self.mgr_panel = mgr_panel
+        main_sizer.Add(mgr_panel, 1, wx.EXPAND)
+
+        self.mgr_panel_toolbar.Realize()
+
+        self.SetSizer(main_sizer)
+
         self.mgr = wx.aui.AuiManager(
-            self, flags=wx.aui.AUI_MGR_DEFAULT | wx.aui.AUI_MGR_LIVE_RESIZE
+            mgr_panel, flags=wx.aui.AUI_MGR_DEFAULT | wx.aui.AUI_MGR_LIVE_RESIZE
         )
 
         self.statusbar = wx.StatusBar(self)
@@ -51,7 +66,9 @@ class MainFrame(wx.Frame):
         i.Caption("Объекты")
         i.MinSize(300, 300)
         i.BestSize(300, 600)
-        self.objects = Objects(self, self.menu_bar, self.toolbar, self.statusbar)
+        i.MaxSize(600, 900)
+        i.Icon(get_art(wx.ART_HELP_BOOK, scale_to=16))
+        self.objects = Objects(mgr_panel, self.menu_bar, self.toolbar, self.statusbar)
         info = self.objects.get_pane_info()
         if info != None:
             self.mgr.LoadPaneInfo(info, i)
@@ -62,7 +79,10 @@ class MainFrame(wx.Frame):
         i = wx.aui.AuiPaneInfo()
         i.CenterPane()
         i.Name("editors")
-        self.editors = EditorNotebook(self, self.menu_bar, self.statusbar, self.toolbar)
+        i.Icon(get_art(wx.ART_INFORMATION, scale_to=16))
+        self.editors = EditorNotebook(
+            mgr_panel, self.menu_bar, self.statusbar, self.toolbar
+        )
         info = self.editors.get_pane_info()
         if info != None:
             self.mgr.LoadPaneInfo(info, i)
@@ -76,9 +96,10 @@ class MainFrame(wx.Frame):
         i.CloseButton(True)
         i.Name("fastview")
         i.Caption("Быстрый просмотр")
+        i.Icon(get_art(wx.ART_INFORMATION, scale_to=16))
         i.MinSize(300, 300)
         i.BestSize(300, 600)
-        self.fastview = FastView(self)
+        self.fastview = FastView(mgr_panel)
         i.Hide()
         info = self.fastview.get_pane_info()
         if info != None:
@@ -96,7 +117,8 @@ class MainFrame(wx.Frame):
         i.MinSize(300, 200)
         i.BestSize(600, 200)
         i.Hide()
-        self.supplied_data = SuppliedData(self)
+        i.Icon(get_art(wx.ART_FOLDER, scale_to=16))
+        self.supplied_data = SuppliedData(mgr_panel)
         info = self.supplied_data.get_pane_info()
         if info != None:
             self.mgr.LoadPaneInfo(info, i)
@@ -110,7 +132,8 @@ class MainFrame(wx.Frame):
         self._bind_all()
         self._update_controls_state()
         self.Show()
-        self.editors.add_editor(HelpPage(self.editors))
+        self._start_tab = HelpPage(self.editors)
+        self.editors.add_editor(self._start_tab)
 
     def _bind_all(self):
         menu = self.menu_bar
@@ -128,6 +151,7 @@ class MainFrame(wx.Frame):
         menu.Bind(wx.EVT_MENU, self._on_exit, id=wx.ID_EXIT)
         menu.Bind(wx.EVT_MENU, self._on_toggle_objects, id=ID_OBJECTS_TOGGLE)
         menu.Bind(wx.EVT_MENU, self._on_toggle_fastview, id=ID_FASTVIEW_TOGGLE)
+        menu.Bind(wx.EVT_MENU, self._on_toggle_start, id=ID_OPEN_START_TAB)
         menu.Bind(
             wx.EVT_MENU, self._on_toggle_supplied_data, id=ID_SUPPLIED_DATA_TOGGLE
         )
@@ -138,33 +162,49 @@ class MainFrame(wx.Frame):
         tb.Bind(wx.EVT_TOOL, self._on_editor_paste, id=wx.ID_PASTE)
         tb.Bind(wx.EVT_TOOL, self._on_editor_undo, id=wx.ID_UNDO)
         tb.Bind(wx.EVT_TOOL, self._on_editor_redo, id=wx.ID_REDO)
+        mgrtb = self.mgr_panel_toolbar
+        mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_objects, id=ID_TOGGLE_OBJECTS)
+        mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_fastview, id=ID_TOGGLE_FASTVIEW)
+        mgrtb.Bind(
+            wx.EVT_TOOL, self._on_toggle_supplied_data, id=ID_TOGGLE_SUPPLIED_DATA
+        )
         self.Bind(wx.EVT_CLOSE, self._on_close)
-        # self.editors.Bind(EVT_NOTEBOOK_PAGE_COUNT_CHANGED, self._on_page_count_changed)
-        # self.editors.Bind(EVT_NOTEBOOK_PAGE_SELECTION_CHANGED, self._on_notebook_selection_changed)
-        # self.editors.Bind(EVT_NOTEBOOK_STATE_CHANGED, self._on_notebook_state_changed)
-        self.Bind(wx.aui.EVT_AUI_PANE_CLOSE, self._on_pane_closed)
-        self.Bind(wx.aui.EVT_AUI_PANE_RESTORE, self._on_pane_restored)
+        self.mgr_panel.Bind(wx.aui.EVT_AUI_PANE_CLOSE, self._on_pane_closed)
+        self.mgr_panel.Bind(wx.aui.EVT_AUI_PANE_RESTORE, self._on_pane_restored)
         self.editors.Bind(EVT_ENB_STATE_CHANGED, self._on_editors_state_changed)
         self.objects.Bind(EVT_OBJECT_SELECTED, self._on_object_selected)
+        self.editors.Bind(EVT_ENB_EDITOR_CLOSED, self._on_editor_closed)
+
+    def _on_editor_closed(self, event):
+        if event.identity == "help_page":
+            self.menu_bar.Check(ID_OPEN_START_TAB, False)
+            self._start_tab = None
+
+    def _on_toggle_start(self, event):
+        if self._start_tab != None:
+            self.editors.close_editor(self._start_tab)
+        else:
+            self._start_tab = HelpPage(self.editors)
+            self.editors.add_editor(self._start_tab)
 
     def _on_find(self, event): ...
 
     def _on_find_next(self, event): ...
 
     def _on_pane_closed(self, event):
-        if event.GetPane().name == 'objects':
+        if event.GetPane().name == "objects":
             self._update_controls_state(objects_shown=False)
-        elif event.GetPane().name == 'fastview':
+        elif event.GetPane().name == "fastview":
             self._update_controls_state(fastview_shown=False)
-        elif event.GetPane().name == 'supplied_data':
+        elif event.GetPane().name == "supplied_data":
             self._update_controls_state(supplied_data_shown=False)
 
     def _on_pane_restored(self, event):
-        if event.GetPane().name == 'objects':
+        if event.GetPane().name == "objects":
             self._update_controls_state(objects_shown=True)
-        elif event.GetPane().name == 'fastview':
+        elif event.GetPane().name == "fastview":
             self._update_controls_state(fastview_shown=True)
-        elif event.GetPane().name == 'supplied_data':
+        elif event.GetPane().name == "supplied_data":
             self._update_controls_state(supplied_data_shown=True)
 
     def _on_editors_state_changed(self, event):
@@ -213,29 +253,35 @@ class MainFrame(wx.Frame):
         self.Close()
 
     def _on_object_selected(self, event):
-        _id = event.identity
+        _id: Identity = event.identity
         self.fastview.start(_id)
+        if _id.rel_data_target != None:
+            return
+        self.supplied_data.start(_id.rel_data_o)
 
-    def _on_toggle_objects(self, event):
-        if self.menu_bar.IsChecked(ID_OBJECTS_TOGGLE):
+    def _on_toggle_objects(self, event: wx.CommandEvent):
+        if event.IsChecked():
             self.mgr.GetPane("objects").Show()
         else:
             self.mgr.GetPane("objects").Hide()
         self.mgr.Update()
+        self._update_controls_state()
 
     def _on_toggle_fastview(self, event):
-        if self.menu_bar.IsChecked(ID_FASTVIEW_TOGGLE):
+        if event.IsChecked():
             self.mgr.GetPane("fastview").Show()
         else:
             self.mgr.GetPane("fastview").Hide()
         self.mgr.Update()
+        self._update_controls_state()
 
     def _on_toggle_supplied_data(self, event):
-        if self.menu_bar.IsChecked(ID_SUPPLIED_DATA_TOGGLE):
+        if event.IsChecked():
             self.mgr.GetPane("supplied_data").Show()
         else:
             self.mgr.GetPane("supplied_data").Hide()
         self.mgr.Update()
+        self._update_controls_state()
 
     def _on_close(self, event):
         i = self.mgr.GetPane("objects")
@@ -249,35 +295,49 @@ class MainFrame(wx.Frame):
         event.Skip()
 
     def _update_controls_state(
-        self, objects_shown=None, fastview_shown=None, supplied_data_shown=None
+        self,
+        objects_shown=None,
+        fastview_shown=None,
+        supplied_data_shown=None,
+        coord_systems_shown=None,
     ):
         self.menu_bar.Enable(wx.ID_CLOSE, self.editors.can_close())
         self.menu_bar.Enable(wx.ID_PREVIEW_NEXT, self.editors.can_go_next_editor())
         self.menu_bar.Enable(wx.ID_PREVIEW_PREVIOUS, self.editors.can_go_prev_editor())
+        object_state = (
+            self.mgr.GetPane("objects").IsShown()
+            if objects_shown == None
+            else objects_shown
+        )
+        fastview_state = (
+            self.mgr.GetPane("fastview").IsShown()
+            if fastview_shown == None
+            else fastview_shown
+        )
+        sd_state = (
+            self.mgr.GetPane("supplied_data").IsShown()
+            if supplied_data_shown == None
+            else supplied_data_shown
+        )
         self.menu_bar.Check(
             ID_OBJECTS_TOGGLE,
-            (
-                self.mgr.GetPane("objects").IsShown()
-                if objects_shown == None
-                else objects_shown
-            ),
+            object_state,
         )
         self.menu_bar.Check(
             ID_FASTVIEW_TOGGLE,
-            (
-                self.mgr.GetPane("fastview").IsShown()
-                if fastview_shown == None
-                else fastview_shown
-            ),
+            fastview_state,
         )
-        self.menu_bar.Check(
-            ID_SUPPLIED_DATA_TOGGLE,
-            (
-                self.mgr.GetPane("supplied_data").IsShown()
-                if supplied_data_shown == None
-                else supplied_data_shown
-            ),
-        )
+        self.menu_bar.Check(ID_SUPPLIED_DATA_TOGGLE, sd_state)
+        mgrtb = self.mgr_panel_toolbar
+        if (
+            mgrtb.GetToolState(ID_TOGGLE_OBJECTS) != object_state
+            or mgrtb.GetToolState(ID_TOGGLE_FASTVIEW) != fastview_state
+            or mgrtb.GetToolState(ID_TOGGLE_SUPPLIED_DATA) != sd_state
+        ):
+            mgrtb.ToggleTool(ID_TOGGLE_OBJECTS, object_state)
+            mgrtb.ToggleTool(ID_TOGGLE_FASTVIEW, fastview_state)
+            mgrtb.ToggleTool(ID_TOGGLE_SUPPLIED_DATA, sd_state)
+            mgrtb.Realize()
         self.toolbar.EnableTool(wx.ID_SAVE, self.editors.can_save())
         self.toolbar.EnableTool(wx.ID_COPY, self.editors.can_copy())
         self.toolbar.EnableTool(wx.ID_CUT, self.editors.can_cut())

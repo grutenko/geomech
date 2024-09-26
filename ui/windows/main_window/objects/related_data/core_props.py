@@ -1,3 +1,4 @@
+from typing import List
 import wx
 import wx
 
@@ -6,6 +7,7 @@ from database import *
 
 from ui.widgets.tree import *
 from ui.icon import get_icon, get_art
+from ui.widgets.tree.item import TreeNode
 from ui.windows.main_window.dialogs.dialog_create_orig_sample_set import (
     DialogCreateCore,
 )
@@ -58,6 +60,34 @@ class _CoreBoxStorage_Node(TreeNode):
         return isinstance(node, _CoreBoxStorage_Node) and node.o.RID == self.o.RID
 
 
+class _DG_Node(TreeNode):
+    def __init__(self, o):
+        self.o = o
+        self.target = "DG"
+
+    def get_name(self) -> str:
+        return "Разгрузка"
+
+    def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
+        return wx.ART_FOLDER, get_art(wx.ART_FOLDER, scale_to=16)
+
+    @db_session
+    def get_subnodes(self) -> List[TreeNode]:
+        nodes = []
+        series = select(
+            o for o in DischargeSeries if o.orig_sample_set == self.o
+        ).first()
+        if series != None:
+            nodes.append(_DiscargeSeries_Node(series))
+        nodes += [
+            _DischargeMeasurements_Node(self.o),
+        ]
+        return nodes
+
+    def __eq__(self, node):
+        return isinstance(node, _DG_Node) and node.o.RID == self.o.RID
+
+
 class _DiscargeSeries_Node(TreeNode):
     def __init__(self, o):
         self.o = o
@@ -68,7 +98,7 @@ class _DiscargeSeries_Node(TreeNode):
         self.o = DischargeSeries[self.o.RID]
 
     def get_name(self) -> str:
-        return "[Разгрузка] Параметры серии замеров"
+        return "Параметры серии замеров"
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
         return wx.ART_HELP_PAGE, get_art(wx.ART_HELP_PAGE, 16)
@@ -106,7 +136,7 @@ class _DischargeMeasurements_Node(TreeNode):
         self.target = DischargeMeasurement
 
     def get_name(self) -> str:
-        return "[Разгрузка] Замеры"
+        return "Замеры"
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
         return wx.ART_REPORT_VIEW, get_art(wx.ART_REPORT_VIEW, 16)
@@ -147,17 +177,7 @@ class _Root_Node(TreeNode):
 
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
-        nodes = [
-            _SelfProps_Node(self.o),
-        ]
-        series = select(
-            o for o in DischargeSeries if o.orig_sample_set == self.o
-        ).first()
-        if series != None:
-            nodes.append(_DiscargeSeries_Node(series))
-        nodes += [
-            _DischargeMeasurements_Node(self.o),
-        ]
+        nodes = [_SelfProps_Node(self.o), _DG_Node(self.o)]
         if OrigSampleSet[self.o.RID].bore_hole.station == None:
             nodes += [_PMSamples_Node(self.o), _PMStructWeakening_Node(self.o)]
         return nodes
@@ -179,19 +199,6 @@ class CoreProperties(wx.Panel):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(main_sizer)
-
-        self._toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL | wx.TB_HORZ_TEXT)
-        self._toolbar.AddTool(
-            TOOL_ADD_DISCHARGE_SERIES,
-            "Добавить [Разгрузка] Набор замеров",
-            get_art(wx.ART_PLUS),
-        )
-        self._toolbar.Bind(
-            wx.EVT_TOOL, self._on_create_ds, id=TOOL_ADD_DISCHARGE_SERIES
-        )
-        self._toolbar.EnableTool(TOOL_ADD_DISCHARGE_SERIES, False)
-        main_sizer.Add(self._toolbar, 0, wx.EXPAND)
-        self._toolbar.Realize()
 
         self._tree = Tree(self)
         main_sizer.Add(self._tree, 1, wx.EXPAND)
@@ -252,6 +259,21 @@ class CoreProperties(wx.Panel):
             self._dm_context_menu(event.node, event.point)
         elif isinstance(event.node, _DiscargeSeries_Node):
             self._ds_context_menu(event.node, event.point)
+        elif isinstance(event.node, _DG_Node):
+            self._dg_context_menu(event.node, event.point)
+
+    @db_session
+    def _dg_context_menu(self, node, point):
+        menu = wx.Menu()
+        ds = select(o for o in DischargeSeries if o.orig_sample_set == self.o).first()
+        if ds != None:
+            label = "[Привязано] Привязать серию замеров"
+        else:
+            label = "Привязать серию замеров"
+        item = menu.Append(wx.ID_ANY, label)
+        item.Enable(ds == None)
+        menu.Bind(wx.EVT_MENU, self._on_create_ds, item)
+        self.PopupMenu(menu, point)
 
     def _ds_context_menu(self, node, point):
         menu = wx.Menu()
@@ -272,15 +294,18 @@ class CoreProperties(wx.Panel):
         self.PopupMenu(menu, point)
 
     def _on_open_dm_editor(self, event=None):
-        EditorNotebook.get_instance().add_editor(
-            DMEditor(
-                EditorNotebook.get_instance(),
-                Identity(self.o, self.o, DischargeMeasurement),
-                self.menubar,
-                self.toolbar,
-                self.statusbar,
+        _id = Identity(self.o, self.o, DischargeMeasurement)
+        n = EditorNotebook.get_instance()
+        if not n.select_by_identity(_id):
+            n.add_editor(
+                DMEditor(
+                    n,
+                    _id,
+                    self.menubar,
+                    self.toolbar,
+                    self.statusbar,
+                )
             )
-        )
 
     def _on_node_selected(self, event):
         object = None

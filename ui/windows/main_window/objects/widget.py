@@ -5,7 +5,7 @@ from ui.class_config_provider import ClassConfigProvider
 from ui.windows.main_window.identity import Identity
 
 from .tree import TreeWidget, EVT_WIDGET_TREE_SEL_CHANGED, EVT_TREE_OPEN_SELF_EDITOR
-from .related_data import RelatedData
+from .related_data import RelatedData, EVT_PROPERTIES_PROPERTY_SELECTED
 
 __CONFIG_VERSION__ = 1
 
@@ -34,7 +34,7 @@ class Objects(wx.Panel):
         self.tree.Bind(EVT_TREE_OPEN_SELF_EDITOR, self._on_open_self_editor)
         self.tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self._on_object_selected)
         self.related_data.Bind(
-            EVT_WIDGET_TREE_SEL_CHANGED, self._on_rel_data_sel_changed
+            EVT_PROPERTIES_PROPERTY_SELECTED, self._on_rel_data_sel_changed
         )
 
     def get_pane_info(self) -> str | None:
@@ -50,6 +50,7 @@ class Objects(wx.Panel):
     def _on_rel_data_sel_changed(self, event):
         o_node = self.tree.get_current_node()
         rel_data_o, rel_data_target = self.related_data.get_current_object()
+        print(rel_data_o)
         wx.PostEvent(
             self,
             ObjectSelectedEvent(

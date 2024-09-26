@@ -20,7 +20,7 @@ class SuppliedDataWidget(wx.Panel):
             label="Недоступны для этого объекта",
             style=wx.ST_ELLIPSIZE_MIDDLE,
         )
-        deputy_sizer.Add(label, 1, wx.EXPAND)
+        deputy_sizer.Add(label, 1, wx.CENTER | wx.ALL, border=20)
         self._deputy.SetSizer(deputy_sizer)
         main_sizer.Add(self._deputy, 1, wx.EXPAND)
 

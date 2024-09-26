@@ -48,7 +48,7 @@ class BasicEditor(wx.Panel):
 
     def get_title(self) -> str:
         return self._title
-    
+
     def get_icon(self):
         return None
 
@@ -78,13 +78,18 @@ class BasicEditor(wx.Panel):
     def redo(self): ...
     def on_select(self): ...
     def on_deselect(self): ...
-    def on_close(self) -> bool: ...
+    def on_close(self) -> bool:
+        return True
 
     def is_changed(self) -> bool:
         return False
 
+    def is_read_only(self) -> bool:
+        return False
+
 
 EditorNBStateChangedEvent, EVT_ENB_STATE_CHANGED = wx.lib.newevent.NewEvent()
+EditorClosedEvent, EVT_ENB_EDITOR_CLOSED = wx.lib.newevent.NewEvent()
 
 
 class EditorNotebook(wx.Panel):
@@ -121,11 +126,22 @@ class EditorNotebook(wx.Panel):
         self.__class__._instance = self
 
         self._bind_all()
+        self._closed_page_identity = None
 
     def _bind_all(self):
         self.notebook.Bind(EVT_FLATNOTEBOOK_PAGE_CHANGED, self._on_page_changed)
         self.notebook.Bind(EVT_FLATNOTEBOOK_PAGE_CLOSING, self._on_page_closing)
         self.notebook.Bind(EVT_FLATNOTEBOOK_PAGE_CLOSED, self._on_page_closed)
+
+    def select_by_identity(self, _id):
+        for i in range(self._native_.GetPageCount()):
+            page = self._native_.GetPage(i)
+            if page.get_identity() == _id:
+                old_index = self._native_.GetSelection()
+                self._native_.SetSelection(i)
+                self._notify_selection_changed(i, old_index)
+                return True
+        return False
 
     def get_native(self) -> FlatNotebook:
         return self._native_
@@ -144,9 +160,13 @@ class EditorNotebook(wx.Panel):
                 event.Veto()
             else:
                 self.notebook.GetPage(index).on_deselect()
+                self._closed_page_identity = self.notebook.GetPage(index).get_identity()
 
     def _on_page_closed(self, event):
         wx.PostEvent(self, EditorNBStateChangedEvent(target=self))
+        wx.PostEvent(
+            self, EditorClosedEvent(target=self, identity=self._closed_page_identity)
+        )
 
     def _on_page_changed(self, event):
         self._notify_selection_changed(event.GetSelection(), event.GetOldSelection())
@@ -167,19 +187,24 @@ class EditorNotebook(wx.Panel):
         icon = editor.get_icon()
         # if icon != None:
         #    self._native_.SetPageImage(index, self._apply_icon(icon[0], icon[1]))
-        self._native_.SetPageText(
-            index,
-            (
-                editor.get_title()
-                if len(editor.get_title()) < 30
-                else editor.get_title()[:30] + "..."
-            ),
+        title = (
+            editor.get_title()
+            if len(editor.get_title()) < 50
+            else editor.get_title()[:50] + "..."
         )
+        if editor.is_read_only():
+            title = "[Чтение] " + title
+        self._native_.SetPageText(index, title)
         if editor.is_changed():
             self._native_.SetPageText(index, "[*] " + self._native_.GetPageText(index))
             self._native_.SetPageTextColour(index, wx.Colour(40, 150, 40))
         else:
             self._native_.SetPageTextColour(index, wx.Colour(20, 20, 20))
+
+    def close_editor(self, editor: EditorProto):
+        index = self._native_.GetPageIndex(editor)
+        if index != -1:
+            self._native_.DeletePage(index)
 
     def add_editor(self, editor: EditorProto):
         self._native_.AddPage(editor, "Вкладка")

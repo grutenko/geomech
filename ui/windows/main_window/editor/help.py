@@ -1,5 +1,7 @@
 import wx
 import wx.html
+
+from ui.windows.main_window.identity import Identity
 from .widget import BasicEditor
 
 class HelpPage(BasicEditor):
@@ -15,3 +17,9 @@ class HelpPage(BasicEditor):
 
         self.SetSizer(main_sizer)
         self.Layout()
+
+    def get_identity(self) -> Identity | None:
+        return "help_page"
+    
+    def is_read_only(self) -> bool:
+        return True

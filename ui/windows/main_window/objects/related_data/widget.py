@@ -15,6 +15,14 @@ PropertiesTargetUpdatedEvent, EVT_PROPERTIES_TARGET_UPDATED = wx.lib.newevent.Ne
 
 
 class _Deputy(wx.Panel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        label = wx.StaticText(self, label="Не выбран объект")
+        main_sizer.Add(label, 1, wx.CENTER | wx.ALL, border=20)
+        self.SetSizer(main_sizer)
+        self.Layout()
+
     def start(self, o):
         self.Show()
 
