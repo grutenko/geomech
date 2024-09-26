@@ -105,7 +105,7 @@ class Tree(wx.Panel):
         if first_item.IsOk():
             deputy_context = self._tree.GetItemData(first_item)
             if isinstance(deputy_context, DeputyContext):
-                wx.CallAfter(self._tree.Delete, first_item)
+                self._tree.Delete(first_item)
         for subnode in context.subnodes:
             self._append_node(native_item, subnode)
 
@@ -217,11 +217,12 @@ class Tree(wx.Panel):
         i = 0
         self._synthetic_expand = True
         try:
-            while item.IsOk() and i < 1:
+            while item.IsOk() and i < 2:
                 self._tree.Expand(item)
                 item, _ = self._tree.GetFirstChild(item)
                 i += 1
         finally:
+            print('end')
             self._synthetic_expand = False
 
     def _on_native_item_selection_changed(self, event: wx.TreeEvent):

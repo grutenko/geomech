@@ -8,7 +8,7 @@ import logging
 import os
 
 import options
-import ui.windows.main_window.main_window
+import ui.windows.main_window.main
 from ui.start import StartDialog
 from pony.orm import *
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     _conf = config.get('database')
     database.init(_conf)
 
-    main_frame = ui.windows.main_window.main_window.MainFrame(_conf)
+    main_frame = ui.windows.main_window.main.MainFrame(_conf)
     app.SetTopWindow(main_frame)
 
     app.MainLoop()
