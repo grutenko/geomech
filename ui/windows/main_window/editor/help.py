@@ -1,6 +1,7 @@
 import wx
 import wx.html
 
+from ui.resourcelocation import resource_path
 from ui.windows.main_window.identity import Identity
 from .widget import BasicEditor
 
@@ -11,7 +12,7 @@ class HelpPage(BasicEditor):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.viewer = wx.html.HtmlWindow(self)
         main_sizer.Add(self.viewer, 1, wx.EXPAND)
-        with open("html/help_page.html", 'r') as f:
+        with open(resource_path("html/help_page.html"), 'r') as f:
             data = f.read().encode('WINDOWS-1251')
         self.viewer.SetPage(data)
 

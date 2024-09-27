@@ -1,7 +1,8 @@
 import wx
 import wx.aui
-import wx.aui
+import wx.adv
 
+from version import __GEOMECH_VERSION__
 from database import *
 from ui.icon import get_icon
 from ui.class_config_provider import ClassConfigProvider
@@ -148,6 +149,7 @@ class MainFrame(wx.Frame):
         menu.Bind(wx.EVT_MENU, self._on_editor_next, id=wx.ID_PREVIEW_NEXT)
         menu.Bind(wx.EVT_MENU, self._on_editor_prev, id=wx.ID_PREVIEW_PREVIOUS)
         menu.Bind(wx.EVT_MENU, self._on_editor_close, id=wx.ID_CLOSE)
+        menu.Bind(wx.EVT_MENU, self._on_about_dialog, id=wx.ID_ABOUT)
         menu.Bind(wx.EVT_MENU, self._on_exit, id=wx.ID_EXIT)
         menu.Bind(wx.EVT_MENU, self._on_toggle_objects, id=ID_OBJECTS_TOGGLE)
         menu.Bind(wx.EVT_MENU, self._on_toggle_fastview, id=ID_FASTVIEW_TOGGLE)
@@ -174,6 +176,15 @@ class MainFrame(wx.Frame):
         self.editors.Bind(EVT_ENB_STATE_CHANGED, self._on_editors_state_changed)
         self.objects.Bind(EVT_OBJECT_SELECTED, self._on_object_selected)
         self.editors.Bind(EVT_ENB_EDITOR_CLOSED, self._on_editor_closed)
+
+    def _on_about_dialog(self, event):
+        aboutInfo = wx.adv.AboutDialogInfo()
+        aboutInfo.SetName("База данных \"Геомеханики\"")
+        aboutInfo.SetVersion(__GEOMECH_VERSION__)
+        aboutInfo.SetDescription("Интерфейс базы данных \"Геомеханики\"")
+        aboutInfo.SetCopyright("(C) 2024")
+
+        wx.adv.AboutBox(aboutInfo)
 
     def _on_editor_closed(self, event):
         if event.identity == "help_page":
@@ -293,6 +304,7 @@ class MainFrame(wx.Frame):
         i = self.mgr.GetPane("supplied_data")
         self.supplied_data.save_pane_info(self.mgr.SavePaneInfo(i))
         event.Skip()
+        wx.GetApp().ExitMainLoop()
 
     def _update_controls_state(
         self,

@@ -1,6 +1,7 @@
 import wx
 import config
 from pony.orm import *
+import os
 
 from .validators import TextValidator
 from ui.icon import get_icon
@@ -97,9 +98,21 @@ class StartDialog(wx.Dialog):
         self.btn_login.Bind(wx.EVT_BUTTON, self._on_login)
 
     def _init(self):
-        self.field_host.SetValue("127.0.0.1")
-        self.field_port.SetValue(5432)
-        self.field_database.SetValue("geomech")
+        if "GEOMECH_DEFAULT_HOST" in os.environ:
+            host = os.environ["GEOMECH_DEFAULT_HOST"]
+        else:
+            host = "127.0.0.1"
+        if "GEOMECH_DEFAULT_PORT" in os.environ:
+            port = os.environ["GEOMECH_DEFAULT_PORT"]
+        else:
+            port = 5432
+        if "GEOMECH_DEFAULT_DATABASE" in os.environ:
+            database = os.environ["GEOMECH_DEFAULT_DATABASE"]
+        else:
+            database = "geomech"
+        self.field_host.SetValue(host)
+        self.field_port.SetValue(port)
+        self.field_database.SetValue(database)
         data = config.get("database")
         if data != None:
             self.field_login.SetValue(data.login)
@@ -111,7 +124,7 @@ class StartDialog(wx.Dialog):
     def _on_login(self, event):
         if not self.Validate():
             return
-        
+
         self.btn_login.Disable()
 
         data = {
@@ -134,7 +147,7 @@ class StartDialog(wx.Dialog):
             db.disconnect()
         except Exception as e:
             wx.MessageBox(
-                "Введены неверные доступы к базе данных.",
+                "Введены неверные доступы к базе данных.\n%s" % str(e),
                 "Ошибка подключения к базе данных.",
                 style=wx.ICON_ERROR | wx.OK | wx.OK_DEFAULT,
             )

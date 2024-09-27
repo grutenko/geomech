@@ -8,6 +8,7 @@ import logging
 import os
 
 import options
+import version
 import ui.windows.main_window.main
 from ui.start import StartDialog
 from pony.orm import *

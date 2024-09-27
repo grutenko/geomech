@@ -271,6 +271,7 @@ class CoreProperties(wx.Panel):
         else:
             label = "Привязать серию замеров"
         item = menu.Append(wx.ID_ANY, label)
+        item.SetBitmap(get_art(wx.ART_PLUS, scale_to=16))
         item.Enable(ds == None)
         menu.Bind(wx.EVT_MENU, self._on_create_ds, item)
         self.PopupMenu(menu, point)
@@ -278,6 +279,7 @@ class CoreProperties(wx.Panel):
     def _ds_context_menu(self, node, point):
         menu = wx.Menu()
         item = menu.Append(wx.ID_ANY, "Удалить")
+        item.SetBitmap(get_art(wx.ART_DELETE, scale_to=16))
         menu.Bind(wx.EVT_MENU, self._delete_ds, item)
         self.PopupMenu(menu, point)
 
@@ -290,6 +292,7 @@ class CoreProperties(wx.Panel):
     def _dm_context_menu(self, node, point):
         menu = wx.Menu()
         item = menu.Append(wx.ID_ANY, "Открыть редактор")
+        item.SetBitmap(get_art(wx.ART_FILE_OPEN, scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_open_dm_editor, item)
         self.PopupMenu(menu, point)
 

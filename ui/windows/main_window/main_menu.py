@@ -1,6 +1,7 @@
 import wx
 
 from ui.icon import get_art
+from version import __GEOMECH_VERSION__
 
 ID_FIND_NEXT = wx.ID_HIGHEST + 1
 ID_OBJECTS_TOGGLE = ID_FIND_NEXT + 1
@@ -64,6 +65,9 @@ class MainMenu(wx.MenuBar):
         self.Append(menu, "Вид")
 
         menu = wx.Menu()
+        item = menu.Append(wx.ID_ANY, "Версия: " + __GEOMECH_VERSION__)
+        item.Enable(False)
+        menu.AppendSeparator()
         item = menu.Append(wx.ID_ABOUT, "О программе")
         item = menu.AppendCheckItem(ID_OPEN_START_TAB, "Открыть \"Начало работы\"")
         item.Check(True)
