@@ -16,6 +16,7 @@ from .main_menu import *
 from .main_toolbar import *
 from .mgr_panel_toolbar import *
 from .identity import Identity
+from ui.windows.pm_settings.main import PmSettingsWindow
 
 __CONFIG_VERSION__ = 1
 
@@ -136,6 +137,8 @@ class MainFrame(wx.Frame):
         self._start_tab = HelpPage(self.editors)
         self.editors.add_editor(self._start_tab)
 
+        self._pm_settings_window = PmSettingsWindow(self)
+
     def _bind_all(self):
         menu = self.menu_bar
         menu.Bind(wx.EVT_MENU, self._on_find, id=wx.ID_FIND)
@@ -154,6 +157,7 @@ class MainFrame(wx.Frame):
         menu.Bind(wx.EVT_MENU, self._on_toggle_objects, id=ID_OBJECTS_TOGGLE)
         menu.Bind(wx.EVT_MENU, self._on_toggle_fastview, id=ID_FASTVIEW_TOGGLE)
         menu.Bind(wx.EVT_MENU, self._on_toggle_start, id=ID_OPEN_START_TAB)
+        menu.Bind(wx.EVT_MENU, self._on_open_pm_settings_window, id=ID_SETTINGS_PM)
         menu.Bind(
             wx.EVT_MENU, self._on_toggle_supplied_data, id=ID_SUPPLIED_DATA_TOGGLE
         )
@@ -176,6 +180,12 @@ class MainFrame(wx.Frame):
         self.editors.Bind(EVT_ENB_STATE_CHANGED, self._on_editors_state_changed)
         self.objects.Bind(EVT_OBJECT_SELECTED, self._on_object_selected)
         self.editors.Bind(EVT_ENB_EDITOR_CLOSED, self._on_editor_closed)
+
+    def _on_open_pm_settings_window(self, event):
+        if self._pm_settings_window.IsShown():
+            self._pm_settings_window.Raise()
+        else:
+            self._pm_settings_window.Show()
 
     def _on_about_dialog(self, event):
         aboutInfo = wx.adv.AboutDialogInfo()

@@ -9,6 +9,8 @@ from ui.icon import get_art
 from .widget import *
 from dataclasses import dataclass, field
 
+from .base_editor import BaseEditor
+
 __CONFIG_VERSION__ = 1
 
 import re
@@ -18,6 +20,7 @@ from wx.grid import (
     GridCellRenderer,
     GridCellEditor,
 )
+
 
 @dataclass
 class _Row:
@@ -88,126 +91,126 @@ class DMModel(Model):
             Column(
                 "Diameter",
                 FloatCellType(),
-                "Диаметр",
+                "Диаметр\n(м)",
                 "Диаметр образца керна",
                 self._get_column_width("Diameter"),
             ),
             Column(
                 "Length",
                 FloatCellType(),
-                "Длина",
+                "Длина\n(м)",
                 "Длина образца керна",
                 self._get_column_width("Length"),
             ),
             Column(
                 "Weight",
                 FloatCellType(),
-                "Вес",
-                "Вес образца керна",
+                "Вес\n(г)",
+                "Вес образца\nкерна",
                 self._get_column_width("Weight"),
             ),
             Column(
                 "CoreDepth",
                 FloatCellType(),
-                "Глубина взятия",
+                "Глубина\nвзятия (м)",
                 "Глубина взятия образца керна",
                 self._get_column_width("CoreDepth"),
             ),
             Column(
                 "E",
                 VecCellType(FloatCellType(), min_count=1, max_count=4),
-                "Относит. деформ",
+                "Относит.\nдеформ",
                 "Относительная деформация образца",
                 self._get_column_width("E"),
             ),
             Column(
                 "Rotate",
                 FloatCellType(),
-                "Угол корр. напряж.",
+                "Угол корр.\nнапряж.\n(град.)",
                 "Угол коррекции направления напряжений",
                 self._get_column_width("Rotate"),
             ),
             Column(
                 "PartNumber",
                 StringCellType(),
-                "№ партии тензодат",
+                "№ партии\nтензодат",
                 "Номер партии тензодатчиков",
                 self._get_column_width("PartNumber"),
             ),
             Column(
                 "RTens",
                 FloatCellType(),
-                "Сопрот. Тезодат.",
+                "Сопрот.\nТезодат. (Ом)",
                 "Сопротивление тензодатчиков",
                 self._get_column_width("RTens"),
             ),
             Column(
                 "Sensitivity",
                 FloatCellType(),
-                "Чувств. Тезодат.",
+                "Чувств.\nТезодат.",
                 "Коэффициент чувствительности тензодатчиков",
                 self._get_column_width("Sensitivity"),
             ),
             Column(
                 "TP1",
                 VecCellType(FloatCellType(), 0, 2),
-                "Время продоль.",
+                "Время\nпродоль.\n(мс)",
                 "Замер времени прохождения продольных волн (ультразвуковое профилирование или др.)",
                 self._get_column_width("TP1"),
             ),
             Column(
                 "TP2",
                 VecCellType(FloatCellType(), 0, 2),
-                "Время продоль. (торц.)",
+                "Время продоль.\n(торц.) (мс)",
                 "Замер времени прохождения продольных волн (торц.)",
                 self._get_column_width("TP2"),
             ),
             Column(
                 "PWSpeed",
                 FloatCellType(),
-                "Скорость продоль.",
+                "Скорость\nпродоль.\n(м/с)",
                 "Коэффициент чувствительности тензодатчиков",
                 self._get_column_width("PWSpeed"),
             ),
             Column(
                 "TR",
                 VecCellType(FloatCellType(), 0, 2),
-                "Время поверхност.",
+                "Время\nповерхност.",
                 "Замер времени прохождения поверхностных волн",
                 self._get_column_width("TR"),
             ),
             Column(
                 "RWSpeed",
                 FloatCellType(),
-                "Скорость поверхност.",
+                "Скорость\nповерхност.\n(мс)",
                 "Скорость поверхностны волн",
                 self._get_column_width("RWSpeed"),
             ),
             Column(
                 "TS",
                 VecCellType(FloatCellType(), 0, 2),
-                "t попереч.",
+                "t попереч.\n(мс)",
                 "Замер времени прохождения поперечных волн",
                 self._get_column_width("TS"),
             ),
             Column(
                 "SWSpeed",
                 FloatCellType(),
-                "Скорость попереч.",
+                "Скорость\nпопереч.\n(м/с)",
                 "Скорость поперечных волн",
                 self._get_column_width("SWSpeed"),
             ),
             Column(
                 "PuassonStatic",
                 FloatCellType(),
-                "Пуассон статич.",
+                "Пуассон\nстатич.",
                 "Статический коэффициент Пуассона",
                 self._get_column_width("PuassonStatic"),
             ),
             Column(
                 "YungStatic",
                 FloatCellType(),
-                "Юнг статич.",
+                "Юнг\nстатич.",
                 "Статический модуль Юнга",
                 self._get_column_width("YungStatic"),
             ),
@@ -255,108 +258,25 @@ class DMModel(Model):
         return False
 
 
-class DMEditor(wx.Panel):
+class DMEditor(BaseEditor):
     def __init__(self, parent, identity, menubar, toolbar, statusbar):
-        super().__init__(parent.get_native())
         self._config_provider = ClassConfigProvider(
             __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
         )
         self._config_provider.flush()
-        self.o = identity.o
-        self._identity = identity
-        self._title = "Редактор: [Разгрузка] замеры для " + identity.o.Name
-
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.editor = GridEditor(self, DMModel(self._config_provider), menubar, toolbar, statusbar)
-        main_sizer.Add(self.editor, 1, wx.EXPAND)
-        self.SetSizer(main_sizer)
-
-        self.Layout()
-
-        self._bind_all()
-
-    def _bind_all(self):
-        self.editor.Bind(EVT_GRID_EDITOR_STATE_CHANGED, self._on_editor_state_changed)
+        super().__init__(
+            parent,
+            "Редактор: [Разгрузка] замеры для " + identity.o.Name,
+            identity,
+            DMModel(self._config_provider),
+            menubar,
+            toolbar,
+            statusbar,
+        )
         self.editor.Bind(EVT_GRID_COLUMN_RESIZED, self._on_editor_column_resized)
 
     def _on_editor_column_resized(self, event):
-        if self._config_provider['column_width'] == None:
-            self._config_provider['column_width'] = {}
-        self._config_provider['column_width'][event.column.id] = event.size
+        if self._config_provider["column_width"] == None:
+            self._config_provider["column_width"] = {}
+        self._config_provider["column_width"][event.column.id] = event.size
         self._config_provider.flush()
-
-    def _on_editor_state_changed(self, event):
-        wx.PostEvent(self, EditorNBStateChangedEvent(target=self))
-
-    def get_identity(self) -> Identity | None:
-        return self._identity
-
-    def get_title(self) -> str:
-        return self._title
-
-    def get_icon(self):
-        return wx.ART_REPORT_VIEW, get_art(wx.ART_REPORT_VIEW, scale_to=16)
-
-    def can_save(self) -> bool:
-        return self.editor.can_save()
-
-    def can_copy(self) -> bool:
-        return self.editor.can_copy()
-
-    def can_cut(self) -> bool:
-        return self.editor.can_cut()
-
-    def can_paste(self) -> bool:
-        return self.editor.can_paste()
-
-    def can_undo(self) -> bool:
-        return self.editor.can_undo()
-
-    def can_redo(self) -> bool:
-        return self.editor.can_redo()
-
-    def save(self):
-        self.editor.save()
-
-    def copy(self):
-        self.editor.copy()
-
-    def cut(self):
-        self.editor.cut()
-
-    def paste(self):
-        self.editor.paste()
-
-    def undo(self):
-        self.editor.undo()
-
-    def redo(self):
-        self.editor.redo()
-
-    def is_changed(self) -> bool:
-        return self.editor.is_changed()
-
-    def on_select(self):
-        self.editor.apply_controls()
-
-    def on_deselect(self):
-        self.editor.remove_controls()
-
-    def on_close(self) -> bool:
-        if self.can_save():
-            ret = wx.MessageBox(
-                "Редактор имеет нехосраненные изменения. Сохранить?",
-                "Подтвердите закрытие",
-                style=wx.YES | wx.NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_INFORMATION,
-            )
-            if ret == wx.CANCEL:
-                return False
-            elif ret == wx.YES:
-                try:
-                    self.save()
-                except:
-                    return False
-        return True
-    
-    def is_read_only(self):
-        return False

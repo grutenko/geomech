@@ -8,10 +8,10 @@ def init(config):
     global db
     db.bind(
         provider="postgres",
-        user=config['login'],
-        password=config['password'],
-        host=config['host'],
-        database=config['database'],
+        user=config["login"],
+        password=config["password"],
+        host=config["host"],
+        database=config["database"],
     )
     db.generate_mapping(create_tables=False)
 
@@ -252,6 +252,7 @@ class CoreBoxStorage(db.Entity):
     StartPosition = Required(int, column="StartPosition")
     EndPosition = Required(int, column="EndPosition")
 
+
 class Petrotype(db.Entity):
     _table_ = "Petrotypes"
 
@@ -261,8 +262,9 @@ class Petrotype(db.Entity):
     Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
 
+
 class PetrotypeStruct(db.Entity):
-    _table_ = 'PetrotypeStructs'
+    _table_ = "PetrotypeStructs"
 
     petrotype = Required(Petrotype, column="PTID")
     pm_sample_sets = Set("PMSampleSet")
@@ -270,6 +272,7 @@ class PetrotypeStruct(db.Entity):
     RID = PrimaryKey(int, auto=True, column="RID")
     Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
+
 
 class PMTestSeries(db.Entity):
     _table_ = "PMTestSeries"
@@ -282,6 +285,7 @@ class PMTestSeries(db.Entity):
     Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
     Location = Optional(str, column="Location")
+
 
 class PMSampleSet(db.Entity):
     _table_ = "PMSampleSets"
@@ -301,11 +305,13 @@ class PMSampleSet(db.Entity):
     RealDetails = Required(bool, column="RealDetails")
     SampleCount = Optional(int, column="SampleCount")
 
+
 class PMSample(db.Entity):
-    _table_ = 'PMSamples'
+    _table_ = "PMSamples"
 
     pm_sample_set = Required(PMSampleSet, column="SSID")
     orig_sample_set = Required(OrigSampleSet, column="OSSID")
+    pm_sample_property_values = Set("PmSamplePropertyValue")
 
     RID = PrimaryKey(int, auto=True, column="RID")
     Number = Required(str, column="Number")
@@ -328,3 +334,66 @@ class PMSample(db.Entity):
     DeclineModulus = Optional(float, column="DeclineModulus")
     PuassonCoeff = Optional(float, column="PuassonCoeff")
     DiffStrength = Optional(float, column="DiffStrength")
+
+
+class PmTestMethod(db.Entity):
+    _table_ = "PMTestMethods"
+
+    pm_sample_property_values = Set("PmSamplePropertyValue")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+    Name = Required(str, column="Name")
+    Comment = Optional(str, column="Comment")
+    StartDate = Required(int, column="StartDate", size=64)
+    EndDate = Optional(int, column="EndDate", size=64)
+    Analytic = Optional(bool, column="Analytic")
+
+
+class PmTestEquipment(db.Entity):
+    _table_ = "PMTestEquipment"
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+    Name = Required(str, column="Name")
+    Comment = Optional(str, column="Comment")
+    SerialNo = Optional(str, column="SerialNo")
+    StartDate = Required(int, column="StartDate", size=64)
+
+
+class PmPropertyClass(db.Entity):
+    _table_ = "PMPropertyClasses"
+
+    pm_properties = Set("PmProperty")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+    Name = Required(str, column="Name")
+    Comment = Optional(str, column="Comment")
+
+
+class PmProperty(db.Entity):
+    _table_ = "PMProperties"
+
+    pm_property_class = Required(PmPropertyClass, column="PCID")
+    pm_sample_property_values = Set("PmSamplePropertyValue")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+    Name = Required(str, column="Name")
+    Comment = Optional(str, column="Comment")
+    Unit = Optional(str, column="Unit")
+
+
+class PmSamplePropertyValue(db.Entity):
+    _table_ = "PMSamplePropertyValues"
+
+    pm_sample = Required(PMSample, column="RSID")
+    pm_test_method = Required(PmTestMethod, column="TMID")
+    pm_property = Required(PmProperty, column="PRID")
+
+    RID = PrimaryKey(int, auto=True, column="rid")
+    Value = Required(float, column="Value")
+
+class PmPerformedTasks(db.Entity):
+    _table_ = "PMPerformedTasks"
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+    Name = Required(str, column="Name")
+    Comment = Optional(str, column="Comment")

@@ -103,7 +103,7 @@ class StartDialog(wx.Dialog):
         else:
             host = "127.0.0.1"
         if "GEOMECH_DEFAULT_PORT" in os.environ:
-            port = os.environ["GEOMECH_DEFAULT_PORT"]
+            port = str(os.environ["GEOMECH_DEFAULT_PORT"])
         else:
             port = 5432
         if "GEOMECH_DEFAULT_DATABASE" in os.environ:

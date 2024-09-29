@@ -26,16 +26,19 @@ WidgetTreeSelChanged, EVT_WIDGET_TREE_SEL_CHANGED = wx.lib.newevent.NewEvent()
 
 
 class Tree(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, use_icons = True):
         super().__init__(parent)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._tree = wx.TreeCtrl(
             self, style=wx.TR_DEFAULT_STYLE | wx.TR_HIDE_ROOT | wx.BORDER_NONE
         )
-        self._icons = {}
-        self._image_list = wx.ImageList(16, 16)
-        self._tree.AssignImageList(self._image_list)
+        self._use_icons = use_icons
+
+        if self._use_icons:
+            self._icons = {}
+            self._image_list = wx.ImageList(16, 16)
+            self._tree.AssignImageList(self._image_list)
         main_sizer.Add(self._tree, 1, wx.EXPAND)
 
         self.SetSizer(main_sizer)
@@ -190,16 +193,17 @@ class Tree(wx.Panel):
             item = self._tree.InsertItem(
                 parent_native_item, index, node.get_name(), data=Context(node)
             )
-        icon = node.get_icon()
-        if icon != None:
-            self._tree.SetItemImage(item, self._apply_icon(icon[0], icon[1]))
-        icon_open = node.get_icon_open()
-        if icon_open != None:
-            self._tree.SetItemImage(
-                item,
-                self._apply_icon(icon_open[0], icon_open[1]),
-                wx.TreeItemIcon_Expanded,
-            )
+        if self._use_icons:
+            icon = node.get_icon()
+            if icon != None:
+                self._tree.SetItemImage(item, self._apply_icon(icon[0], icon[1]))
+            icon_open = node.get_icon_open()
+            if icon_open != None:
+                self._tree.SetItemImage(
+                    item,
+                    self._apply_icon(icon_open[0], icon_open[1]),
+                    wx.TreeItemIcon_Expanded,
+                )
         if node.is_name_bold():
             self._tree.SetItemBold(item)
         if not node.is_leaf():

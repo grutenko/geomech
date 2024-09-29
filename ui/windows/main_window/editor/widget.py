@@ -110,13 +110,13 @@ class EditorNotebook(wx.Panel):
         self.toolbar = toolbar
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        # self._image_list = wx.ImageList(16, 16)
+        self._image_list = wx.ImageList(16, 16)
         self._icons = {}
         self.notebook = FlatNotebook(
             self,
-            agwStyle=FNB_X_ON_TAB | FNB_SMART_TABS,
+            agwStyle=FNB_X_ON_TAB | FNB_FANCY_TABS | FNB_NO_X_BUTTON | FNB_NO_NAV_BUTTONS,
         )
-        # self.notebook.AssignImageList(self._image_list)
+        self.notebook.AssignImageList(self._image_list)
         self._native_ = self.notebook
         main_sizer.Add(self.notebook, 1, wx.EXPAND)
         self.SetSizer(main_sizer)
@@ -129,9 +129,9 @@ class EditorNotebook(wx.Panel):
         self._closed_page_identity = None
 
     def _bind_all(self):
-        self.notebook.Bind(EVT_FLATNOTEBOOK_PAGE_CHANGED, self._on_page_changed)
-        self.notebook.Bind(EVT_FLATNOTEBOOK_PAGE_CLOSING, self._on_page_closing)
-        self.notebook.Bind(EVT_FLATNOTEBOOK_PAGE_CLOSED, self._on_page_closed)
+        self.notebook.Bind(EVT_FLATNOTEBOOK_PAGE_CHANGED, self._on_page_changed, self.notebook)
+        self.notebook.Bind(EVT_FLATNOTEBOOK_PAGE_CLOSING, self._on_page_closing, self.notebook)
+        self.notebook.Bind(EVT_FLATNOTEBOOK_PAGE_CLOSED, self._on_page_closed, self.notebook)
 
     def select_by_identity(self, _id):
         for i in range(self._native_.GetPageCount()):
@@ -185,8 +185,8 @@ class EditorNotebook(wx.Panel):
 
     def _apply_editor(self, index, editor):
         icon = editor.get_icon()
-        # if icon != None:
-        #    self._native_.SetPageImage(index, self._apply_icon(icon[0], icon[1]))
+        if icon != None:
+            self._native_.SetPageImage(index, self._apply_icon(icon[0], icon[1]))
         title = (
             editor.get_title()
             if len(editor.get_title()) < 50

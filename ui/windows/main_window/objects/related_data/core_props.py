@@ -16,6 +16,7 @@ from .create_discharge_series_dialog import CreateDischargeSeries
 from ui.delete_object import delete_object
 from ui.windows.main_window.editor import EditorNotebook
 from ui.windows.main_window.editor.dm import DMEditor
+from ui.windows.main_window.editor.pm_samples import PmSamplesEditor
 
 from database import OrigSampleSet
 
@@ -108,7 +109,27 @@ class _DiscargeSeries_Node(TreeNode):
 
     def __eq__(self, node):
         return isinstance(node, _DiscargeSeries_Node) and node.o.RID == self.o.RID
+    
+class _PM_Node(TreeNode):
+    def __init__(self, o):
+        self.o = o
+        self.target = "PM"
 
+    def get_name(self) -> str:
+        return "Физ. мех. свойства"
+
+    def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
+        return wx.ART_FOLDER, get_art(wx.ART_FOLDER, scale_to=16)
+
+    @db_session
+    def get_subnodes(self) -> List[TreeNode]:
+        nodes = [
+            _PMSamples_Node(self.o), _PMStructWeakening_Node(self.o)
+        ]
+        return nodes
+
+    def __eq__(self, node):
+        return isinstance(node, _DG_Node) and node.o.RID == self.o.RID
 
 class _PMStructWeakening_Node(TreeNode):
     def __init__(self, o):
@@ -116,7 +137,7 @@ class _PMStructWeakening_Node(TreeNode):
         self.target = None
 
     def get_name(self) -> str:
-        return "[Физ. Мех. Свойства] Коэффициент структурного ослабления"
+        return "Коэффициент структурного ослабления"
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
         return wx.ART_REPORT_VIEW, get_art(wx.ART_REPORT_VIEW, 16)
@@ -156,7 +177,7 @@ class _PMSamples_Node(TreeNode):
         self.target = PMSample
 
     def get_name(self) -> str:
-        return "[Физ. Мех. Свойства] Образцы"
+        return "Образцы"
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
         return wx.ART_REPORT_VIEW, get_art(wx.ART_REPORT_VIEW, 16)
@@ -179,7 +200,7 @@ class _Root_Node(TreeNode):
     def get_subnodes(self) -> List[TreeNode]:
         nodes = [_SelfProps_Node(self.o), _DG_Node(self.o)]
         if OrigSampleSet[self.o.RID].bore_hole.station == None:
-            nodes += [_PMSamples_Node(self.o), _PMStructWeakening_Node(self.o)]
+            nodes += [_PM_Node(self.o)]
         return nodes
 
     def __eq__(self, node):
@@ -226,11 +247,6 @@ class CoreProperties(wx.Panel):
         self._tree.bind_all()
         self.Show()
         self._tree.select_node(_SelfProps_Node(self.o))
-        if (
-            select(o for o in DischargeSeries if o.orig_sample_set == self.o).first()
-            == None
-        ):
-            self._toolbar.EnableTool(TOOL_ADD_DISCHARGE_SERIES, True)
 
     def end(self):
         self._handler_properties_object_seleted = None
@@ -245,6 +261,8 @@ class CoreProperties(wx.Panel):
             self._on_open_ds_editor(event.node)
         elif isinstance(event.node, _SelfProps_Node):
             self.open_self_props_editor()
+        elif isinstance(event.node, _PMSamples_Node):
+            self._on_open_pm_samples_editor()
 
     def _on_create_ds(self, event):
         dlg = CreateDischargeSeries(self, self.o, _type="CREATE")
@@ -287,7 +305,6 @@ class CoreProperties(wx.Panel):
         node = self._tree.get_current_node()
         if delete_object(node.o):
             self._tree.soft_reload_childrens(_Root_Node())
-            self._toolbar.EnableTool(TOOL_ADD_DISCHARGE_SERIES, True)
 
     def _dm_context_menu(self, node, point):
         menu = wx.Menu()
@@ -307,6 +324,20 @@ class CoreProperties(wx.Panel):
                     self.menubar,
                     self.toolbar,
                     self.statusbar,
+                )
+            )
+
+    def _on_open_pm_samples_editor(self, event=None):
+         _id = Identity(self.o, self.o, PMSample)
+         n = EditorNotebook.get_instance()
+         if not n.select_by_identity(_id):
+            n.add_editor(
+                PmSamplesEditor(
+                    n,
+                    _id,
+                    self.menubar,
+                    self.toolbar,
+                    self.statusbar
                 )
             )
 
