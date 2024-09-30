@@ -212,29 +212,33 @@ class Column:
         return type(value) == Column and value.id == self.id
 
 
-class CellView(wx.Panel):
-    def __init__(self, parent):
-        super().__init__(parent)
+from ui.icon import get_icon
 
-        top_sizer = wx.BoxSizer(wx.VERTICAL)
-        self._main_notebook = wx.lib.agw.flatnotebook.FlatNotebook(
-            self, agwStyle=wx.lib.agw.flatnotebook.FNB_NO_NAV_BUTTONS
+
+class CellView(wx.Dialog):
+    def __init__(self, parent, column, row, value):
+        colname = column.name_short.replace("\n", " ")
+        super().__init__(
+            parent,
+            title="Свойства ячейки: Строка: %d, Cтолбец: %s" % (row, colname),
+            size=wx.Size(400, 250),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
-        top_sizer.Add(self._main_notebook, 1, wx.EXPAND)
-        main_panel = wx.Panel(self._main_notebook)
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
+        self.CenterOnParent()
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self._notebook = wx.Notebook(main_panel)
+        self._notebook = wx.Notebook(self)
         self._cell_pane = wx.Panel(self._notebook)
         self._col_pane = wx.Panel(self._notebook)
         self._type_pane = wx.Panel(self._notebook)
-        self._notebook.AddPage(self._cell_pane, "Ячейка")
+        self._notebook.AddPage(self._cell_pane, "Значение")
         self._notebook.AddPage(self._col_pane, "Столбец")
         self._notebook.AddPage(self._type_pane, "Тип данных")
         main_sizer.Add(self._notebook, 1, wx.EXPAND)
-        main_panel.SetSizer(main_sizer)
-        self._main_notebook.AddPage(main_panel, "Информация", True)
-        self.SetSizer(top_sizer)
+        self.SetSizer(main_sizer)
+
+        self.Layout()
 
 
 class ErrorsView(wx.Panel):
@@ -345,8 +349,8 @@ ID_ADD_ROW = wx.ID_HIGHEST + 50
 ID_REMOVE_ROW = ID_ADD_ROW + 1
 ID_SELECT_ALL = ID_ADD_ROW + 2
 ID_CANCEL_SELECTION = ID_ADD_ROW + 3
-ID_TOGGLE_INFO = ID_ADD_ROW + 4
 ID_TOGGLE_ERRORS = ID_ADD_ROW + 5
+ID_COPY_HEADERS = ID_ADD_ROW + 6
 
 
 class GridEditor(wx.Panel):
@@ -375,7 +379,7 @@ class GridEditor(wx.Panel):
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT)
         )
         self._view.SetRowLabelSize(30)
-        self._view.SetColLabelSize(60)
+        self._view.SetColLabelSize(50)
         self._view.CreateGrid(0, 0)
         self._view.EnableEditing(True)
         self._zoom = 1
@@ -396,8 +400,6 @@ class GridEditor(wx.Panel):
         font.SetNativeFontInfo(info)
         self._view.SetLabelFont(font)
 
-        self._cell_view = CellView(self._hor_splitter)
-        self._cell_view.Hide()
         self._hor_splitter.SetSashGravity(1)
         self._hor_splitter.SetMinimumPaneSize(250)
         self._hor_splitter.Initialize(self._view)
@@ -441,19 +443,22 @@ class GridEditor(wx.Panel):
         self._view.Bind(wx.grid.EVT_GRID_CELL_CHANGING, self._on_cell_changing)
         self._view.Bind(wx.grid.EVT_GRID_CELL_RIGHT_CLICK, self._on_cell_context_menu)
         self._view.GetGridWindow().Bind(wx.EVT_RIGHT_DOWN, self._on_right_click)
-        self._errors_view._main_notebook.Bind(wx.lib.agw.flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
-            self._on_errors_view_closing,
-            self._errors_view._main_notebook,)
-        self._cell_view._main_notebook.Bind(
+        self._view.Bind(wx.grid.EVT_GRID_LABEL_RIGHT_CLICK, self._on_label_context_menu)
+        self._errors_view._main_notebook.Bind(
             wx.lib.agw.flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
-            self._on_cell_view_closing,
-            self._cell_view._main_notebook,
+            self._on_errors_view_closing,
+            self._errors_view._main_notebook,
         )
 
-    def _on_cell_view_closing(self, event):
-        self._hor_splitter.Unsplit(self._cell_view)
-        self._update_controls_state()
-        event.Veto()
+    def _on_label_context_menu(self, event):
+        menu = wx.Menu()
+        item = menu.Append(wx.ID_INFO, "Свойства столбца")
+        #menu.Bind(wx.EVT_MENU, self._on_copy_headers, item)
+        item.SetBitmap(get_art(wx.ART_INFORMATION))
+        item = menu.Append(ID_COPY_HEADERS, "Копировать заголовки")
+        menu.Bind(wx.EVT_MENU, self._on_copy_headers, item)
+        item.SetBitmap(get_art(wx.ART_COPY))
+        self.PopupMenu(menu, event.GetPosition())
 
     def _on_errors_view_closing(self, event):
         self._splitter.Unsplit(self._errors_view)
@@ -461,8 +466,7 @@ class GridEditor(wx.Panel):
         event.Veto()
 
     def _on_right_click(self, event):
-        x, y = self._view.CalcUnscrolledPosition(event.GetX(),
-                                                  event.GetY())
+        x, y = self._view.CalcUnscrolledPosition(event.GetX(), event.GetY())
         row, col = self._view.XYToCell(x, y)
         if row != -1 and col != -1:
             event.Skip()
@@ -475,7 +479,7 @@ class GridEditor(wx.Panel):
         submenu = wx.Menu()
         for i in range(1, 21):
             item = submenu.Append(i, str(i))
-        item  = menu.AppendSubMenu(submenu, "Добавить строки")
+        item = menu.AppendSubMenu(submenu, "Добавить строки")
         submenu.Bind(wx.EVT_MENU, self._on_add_rows)
         item.SetBitmap(get_art(wx.ART_PLUS))
         self.PopupMenu(menu, event.GetPosition())
@@ -485,19 +489,22 @@ class GridEditor(wx.Panel):
         self._command_processor.Submit(cmdAppendRows(self, count))
         self._update_controls_state()
 
-
     def _on_cell_context_menu(self, event: wx.grid.GridEvent):
         self._view.SetGridCursor(event.GetRow(), event.GetCol())
         menu = wx.Menu()
+        item = menu.Append(wx.ID_PROPERTIES, "Свойства ячейки")
+        item.SetBitmap(get_art(wx.ART_QUESTION))
+        menu.Bind(wx.EVT_MENU, self._on_open_cell_info, item)
+        menu.AppendSeparator()
         item = menu.Append(wx.ID_COPY, "Копировать")
         item.SetBitmap(get_art(wx.ART_COPY))
-        item.Enable(self._state['can_copy'])
+        item.Enable(self._state["can_copy"])
         item = menu.Append(wx.ID_CUT, "Вырезать")
         item.SetBitmap(get_art(wx.ART_CUT))
-        item.Enable(self._state['can_cut'])
+        item.Enable(self._state["can_cut"])
         item = menu.Append(wx.ID_PASTE, "Вставить")
         item.SetBitmap(get_art(wx.ART_PASTE))
-        item.Enable(self._state['can_paste'])
+        item.Enable(self._state["can_paste"])
         menu.AppendSeparator()
         global_enable = not self._in_edit_mode
         item = menu.Append(ID_ADD_ROW, "Добавить строку\tCTRL+R")
@@ -507,13 +514,35 @@ class GridEditor(wx.Panel):
         submenu = wx.Menu()
         for i in range(1, 21):
             item = submenu.Append(i, str(i))
-        item  = menu.AppendSubMenu(submenu, "Добавить строки")
+        item = menu.AppendSubMenu(submenu, "Добавить строки")
         submenu.Bind(wx.EVT_MENU, self._on_add_rows)
         item.SetBitmap(get_art(wx.ART_PLUS))
         item = menu.Append(ID_REMOVE_ROW, "Удалить строку\tDEL")
         item.Enable(False)
         menu.Bind(wx.EVT_MENU, self._on_delete_row, item)
         self.PopupMenu(menu, event.GetPosition())
+
+    def _on_copy_headers(self, event):
+        header = []
+        for column in self._columns:
+            header.append(column.name_short)
+
+        buffer = io.StringIO()
+        writer = csv.writer(buffer, dialect="excel-tab")
+        writer.writerows([header])
+
+        if not wx.TheClipboard.IsOpened():
+            if not wx.TheClipboard.Open():
+                return
+
+        wx.TheClipboard.SetData(wx.TextDataObject(buffer.getvalue()))
+        wx.TheClipboard.Close()
+
+    def _on_open_cell_info(self, event):
+        column = self._columns[self._view.GetGridCursorCol()]
+        row = self._view.GetGridCursorRow()
+        dlg = CellView(self, column, row, "")
+        dlg.ShowModal()
 
     def _render(self, initial=False):
         """
@@ -858,10 +887,6 @@ class GridEditor(wx.Panel):
         menu: wx.Menu = self.menubar.GetMenu(2)
 
         self._sep_2 = menu.AppendSeparator()
-        self._item_4 = menu.AppendCheckItem(
-            ID_TOGGLE_INFO, "[Таблица:Информация] показать/скрыть\tCTRL+ALT+I"
-        )
-        menu.Bind(wx.EVT_MENU, self._on_toggle_info, self._item_4)
         self._item_5 = menu.AppendCheckItem(
             ID_TOGGLE_ERRORS, "[Таблица:Ошибки] показать/скрыть\tCTRL+ALT+E"
         )
@@ -884,14 +909,9 @@ class GridEditor(wx.Panel):
         if self._splitter.GetWindow2() != None:
             self._splitter.Unsplit(None)
         else:
-            self._splitter.SplitHorizontally(self._hor_splitter, self._errors_view, -200)
-        self._update_controls_state()
-
-    def _on_toggle_info(self, event):
-        if self._hor_splitter.GetWindow2() != None:
-            self._hor_splitter.Unsplit(None)
-        else:
-            self._hor_splitter.SplitVertically(self._view, self._cell_view, -160)
+            self._splitter.SplitHorizontally(
+                self._hor_splitter, self._errors_view, -200
+            )
         self._update_controls_state()
 
     def _on_select_all(self, event):
@@ -921,7 +941,6 @@ class GridEditor(wx.Panel):
         menu.Remove(self._item_2).Destroy()
         menu.Remove(self._item_3).Destroy()
         menu = self.menubar.GetMenu(2)
-        menu.Remove(self._item_4).Destroy()
         menu.Remove(self._item_5).Destroy()
         menu.Remove(self._sep_2).Destroy()
         self.toolbar.DeleteToolByPos(self.toolbar.GetToolsCount() - 3)
@@ -973,7 +992,6 @@ class GridEditor(wx.Panel):
         self.menubar.Enable(ID_REMOVE_ROW, global_enable and is_rows_selected)
         self.toolbar.EnableTool(ID_REMOVE_ROW, global_enable and is_rows_selected)
 
-        self.menubar.Check(ID_TOGGLE_INFO, self._hor_splitter.GetWindow2() != None)
         self.menubar.Check(ID_TOGGLE_ERRORS, self._splitter.GetWindow2() != None)
 
         self.toolbar.Realize()

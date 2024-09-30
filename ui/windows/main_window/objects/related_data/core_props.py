@@ -52,7 +52,7 @@ class _CoreBoxStorage_Node(TreeNode):
         return "Раскладка керна по ящикам"
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return wx.ART_NORMAL_FILE, get_art(wx.ART_NORMAL_FILE, 16)
+        return wx.ART_REPORT_VIEW, get_art(wx.ART_REPORT_VIEW, 16)
 
     def is_leaf(self) -> bool:
         return True
@@ -198,7 +198,11 @@ class _Root_Node(TreeNode):
 
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
-        nodes = [_SelfProps_Node(self.o), _DG_Node(self.o)]
+        nodes = [
+            _SelfProps_Node(self.o),
+            _CoreBoxStorage_Node(self.o),
+            _DG_Node(self.o)
+        ]
         if OrigSampleSet[self.o.RID].bore_hole.station == None:
             nodes += [_PM_Node(self.o)]
         return nodes
