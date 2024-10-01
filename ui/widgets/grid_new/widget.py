@@ -225,7 +225,6 @@ class CellView(wx.Dialog):
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
         self.SetIcon(wx.Icon(get_icon("logo@16")))
-        self.CenterOnParent()
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self._notebook = wx.Notebook(self)
@@ -378,6 +377,7 @@ class GridEditor(wx.Panel):
         self._view.SetSelectionBackground(
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT)
         )
+        self._view.EnableDragRowSize(True)
         self._view.SetRowLabelSize(30)
         self._view.SetColLabelSize(50)
         self._view.CreateGrid(0, 0)
@@ -449,16 +449,21 @@ class GridEditor(wx.Panel):
             self._on_errors_view_closing,
             self._errors_view._main_notebook,
         )
+        self._view.GetGridWindow()
+
+    def _on_scroll(self, event):
+        event.Veto()
 
     def _on_label_context_menu(self, event):
-        menu = wx.Menu()
-        item = menu.Append(wx.ID_INFO, "Свойства столбца")
-        #menu.Bind(wx.EVT_MENU, self._on_copy_headers, item)
-        item.SetBitmap(get_art(wx.ART_INFORMATION))
-        item = menu.Append(ID_COPY_HEADERS, "Копировать заголовки")
-        menu.Bind(wx.EVT_MENU, self._on_copy_headers, item)
-        item.SetBitmap(get_art(wx.ART_COPY))
-        self.PopupMenu(menu, event.GetPosition())
+        if event.GetRow() == -1:
+            menu = wx.Menu()
+            item = menu.Append(wx.ID_INFO, "Свойства столбца")
+            #menu.Bind(wx.EVT_MENU, self._on_copy_headers, item)
+            item.SetBitmap(get_art(wx.ART_INFORMATION))
+            item = menu.Append(ID_COPY_HEADERS, "Копировать заголовки")
+            menu.Bind(wx.EVT_MENU, self._on_copy_headers, item)
+            item.SetBitmap(get_art(wx.ART_COPY))
+            self.PopupMenu(menu, event.GetPosition())
 
     def _on_errors_view_closing(self, event):
         self._splitter.Unsplit(self._errors_view)

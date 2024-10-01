@@ -215,7 +215,7 @@ class DialogCreateBoreHole(wx.Dialog):
         o = self._target
         self.field_number.SetValue(o.Number)
         self.field_name.SetValue(o.Name)
-        self.field_comment.SetValue(o.Comment)
+        self.field_comment.SetValue(o.Comment if o.Comment != None else '')
         self.field_x.SetValue(o.X)
         self.field_y.SetValue(o.Y)
         self.field_z.SetValue(o.Z)

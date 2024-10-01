@@ -16,6 +16,7 @@ from .main_menu import *
 from .main_toolbar import *
 from .mgr_panel_toolbar import *
 from .identity import Identity
+from .pm_contracts.widget import PmContractsWidget
 from ui.windows.cs_settings.manage_coord_systems_window import ManageCoordSystemsWindow
 from ui.windows.pm_settings.main import PmSettingsWindow
 
@@ -25,12 +26,14 @@ __CONFIG_VERSION__ = 1
 class MainFrame(wx.Frame):
     def __init__(self, config):
         super().__init__(None)
-        self.SetMinSize(wx.Size(600, 300))
-        self.SetSize(1280, 700)
+        self.SetMinSize(wx.Size(int(300 * 1.618), 300))
+        self.SetSize(int(1080 * 1.618), 1080)
         self.SetTitle('База даных "Геомеханики"')
         self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnScreen()
         self._config = config
+
+        self._disable_controls = False
 
         self._config_provider = ClassConfigProvider(
             __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
@@ -71,6 +74,7 @@ class MainFrame(wx.Frame):
         i.BestSize(300, 600)
         i.MaxSize(600, 900)
         i.Icon(get_art(wx.ART_HELP_BOOK, scale_to=16))
+        i.Hide()
         self.objects = Objects(mgr_panel, self.menu_bar, self.toolbar, self.statusbar)
         info = self.objects.get_pane_info()
         if info != None:
@@ -78,6 +82,24 @@ class MainFrame(wx.Frame):
         else:
             self.objects.save_pane_info(self.mgr.SavePaneInfo(i))
         self.mgr.AddPane(self.objects, i)
+
+        i = wx.aui.AuiPaneInfo()
+        i.Left()
+        i.MaximizeButton(True)
+        i.CloseButton(True)
+        i.Name("pm_contracts")
+        i.Caption("[Физ. Мех. свойства] Договоры")
+        i.MinSize(300, 300)
+        i.BestSize(300, 600)
+        i.MaxSize(600, 900)
+        i.Hide()
+        self.pm_contracts = PmContractsWidget(mgr_panel)
+        info = self.pm_contracts.get_pane_info()
+        if info != None:
+            self.mgr.LoadPaneInfo(info, i)
+        else:
+            self.pm_contracts.save_pane_info(self.mgr.SavePaneInfo(i))
+        self.mgr.AddPane(self.pm_contracts, i)
 
         i = wx.aui.AuiPaneInfo()
         i.CenterPane()
@@ -183,6 +205,10 @@ class MainFrame(wx.Frame):
         self.editors.Bind(EVT_ENB_STATE_CHANGED, self._on_editors_state_changed)
         self.objects.Bind(EVT_OBJECT_SELECTED, self._on_object_selected)
         self.editors.Bind(EVT_ENB_EDITOR_CLOSED, self._on_editor_closed)
+        self.mgr_panel.Bind(wx.aui.EVT_AUI_PANE_BUTTON, self._on_pane_maximized)
+
+    def _on_pane_maximized(self, event):
+        print(event)
 
     def _on_open_cs_settings_window(self, event):
         if self._cs_settings_window.IsShown():
@@ -198,9 +224,9 @@ class MainFrame(wx.Frame):
 
     def _on_about_dialog(self, event):
         aboutInfo = wx.adv.AboutDialogInfo()
-        aboutInfo.SetName("База данных \"Геомеханики\"")
+        aboutInfo.SetName('База данных "Геомеханики"')
         aboutInfo.SetVersion(__GEOMECH_VERSION__)
-        aboutInfo.SetDescription("Интерфейс базы данных \"Геомеханики\"")
+        aboutInfo.SetDescription('Интерфейс базы данных "Геомеханики"')
         aboutInfo.SetCopyright("(C) 2024")
 
         wx.adv.AboutBox(aboutInfo)
@@ -332,9 +358,17 @@ class MainFrame(wx.Frame):
         supplied_data_shown=None,
         coord_systems_shown=None,
     ):
-        self.menu_bar.Enable(wx.ID_CLOSE, self.editors.can_close())
-        self.menu_bar.Enable(wx.ID_PREVIEW_NEXT, self.editors.can_go_next_editor())
-        self.menu_bar.Enable(wx.ID_PREVIEW_PREVIOUS, self.editors.can_go_prev_editor())
+        self.menu_bar.Enable(
+            wx.ID_CLOSE, not self._disable_controls and self.editors.can_close()
+        )
+        self.menu_bar.Enable(
+            wx.ID_PREVIEW_NEXT,
+            not self._disable_controls and self.editors.can_go_next_editor(),
+        )
+        self.menu_bar.Enable(
+            wx.ID_PREVIEW_PREVIOUS,
+            not self._disable_controls and self.editors.can_go_prev_editor(),
+        )
         object_state = (
             self.mgr.GetPane("objects").IsShown()
             if objects_shown == None
@@ -369,16 +403,40 @@ class MainFrame(wx.Frame):
             mgrtb.ToggleTool(ID_TOGGLE_FASTVIEW, fastview_state)
             mgrtb.ToggleTool(ID_TOGGLE_SUPPLIED_DATA, sd_state)
             mgrtb.Realize()
-        self.toolbar.EnableTool(wx.ID_SAVE, self.editors.can_save())
-        self.toolbar.EnableTool(wx.ID_COPY, self.editors.can_copy())
-        self.toolbar.EnableTool(wx.ID_CUT, self.editors.can_cut())
-        self.toolbar.EnableTool(wx.ID_PASTE, self.editors.can_paste())
-        self.toolbar.EnableTool(wx.ID_UNDO, self.editors.can_undo())
-        self.toolbar.EnableTool(wx.ID_REDO, self.editors.can_redo())
-        self.menu_bar.Enable(wx.ID_SAVE, self.editors.can_save())
-        self.menu_bar.Enable(wx.ID_COPY, self.editors.can_copy())
-        self.menu_bar.Enable(wx.ID_CUT, self.editors.can_cut())
-        self.menu_bar.Enable(wx.ID_PASTE, self.editors.can_paste())
-        self.menu_bar.Enable(wx.ID_UNDO, self.editors.can_undo())
-        self.menu_bar.Enable(wx.ID_REDO, self.editors.can_redo())
+        self.toolbar.EnableTool(
+            wx.ID_SAVE, not self._disable_controls and self.editors.can_save()
+        )
+        self.toolbar.EnableTool(
+            wx.ID_COPY, not self._disable_controls and self.editors.can_copy()
+        )
+        self.toolbar.EnableTool(
+            wx.ID_CUT, not self._disable_controls and self.editors.can_cut()
+        )
+        self.toolbar.EnableTool(
+            wx.ID_PASTE, not self._disable_controls and self.editors.can_paste()
+        )
+        self.toolbar.EnableTool(
+            wx.ID_UNDO, not self._disable_controls and self.editors.can_undo()
+        )
+        self.toolbar.EnableTool(
+            wx.ID_REDO, not self._disable_controls and self.editors.can_redo()
+        )
+        self.menu_bar.Enable(
+            wx.ID_SAVE, not self._disable_controls and self.editors.can_save()
+        )
+        self.menu_bar.Enable(
+            wx.ID_COPY, not self._disable_controls and self.editors.can_copy()
+        )
+        self.menu_bar.Enable(
+            wx.ID_CUT, not self._disable_controls and self.editors.can_cut()
+        )
+        self.menu_bar.Enable(
+            wx.ID_PASTE, not self._disable_controls and self.editors.can_paste()
+        )
+        self.menu_bar.Enable(
+            wx.ID_UNDO, not self._disable_controls and self.editors.can_undo()
+        )
+        self.menu_bar.Enable(
+            wx.ID_REDO, not self._disable_controls and self.editors.can_redo()
+        )
         self.toolbar.Realize()

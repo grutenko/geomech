@@ -158,7 +158,7 @@ class DischargeSeries(db.Entity):
     orig_sample_set = Required(OrigSampleSet, column="OSSID")
     foundation_document = Optional(FoundationDocument, column="FDID")
 
-    RID = PrimaryKey(int, column="rid")
+    RID = PrimaryKey(int, column="RID")
     Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
     StartMeasure = Required(int, column="StartMeasure", size=64)
@@ -388,7 +388,7 @@ class PmSamplePropertyValue(db.Entity):
     pm_test_method = Required(PmTestMethod, column="TMID")
     pm_property = Required(PmProperty, column="PRID")
 
-    RID = PrimaryKey(int, auto=True, column="rid")
+    RID = PrimaryKey(int, auto=True, column="RID")
     Value = Required(float, column="Value")
 
 class PmPerformedTasks(db.Entity):

@@ -126,7 +126,7 @@ class DialogCreateMineObject(wx.Dialog):
     def _set_fields(self):
         o = self._target
         self.field_name.SetValue(o.Name)
-        self.field_comment.SetValue(o.Comment)
+        self.field_comment.SetValue(o.Comment if o.Comment != None else '')
         self.field_coord_system.SetValue(CoordSystem[o.coord_system.RID])
         self.field_x_min.SetValue(o.X_Min)
         self.field_y_min.SetValue(o.Y_Min)

@@ -98,7 +98,7 @@ class DialogCreateCore(wx.Dialog):
         o = self._target
         self.field_number.SetValue(o.Number)
         self.field_name.SetValue(o.Name)
-        self.field_comment.SetValue(o.Comment)
+        self.field_comment.SetValue(o.Comment if o.Comment != None else '')
         self.field_start_date.SetValue(ui.datetimeutil.decode_date(o.StartSetDate))
         if o.EndSetDate != None:
             self.field_end_date.SetValue(ui.datetimeutil.decode_date(o.EndSetDate))

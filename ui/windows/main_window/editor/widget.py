@@ -114,7 +114,7 @@ class EditorNotebook(wx.Panel):
         self._icons = {}
         self.notebook = FlatNotebook(
             self,
-            agwStyle=FNB_X_ON_TAB | FNB_FANCY_TABS | FNB_NO_X_BUTTON | FNB_NO_NAV_BUTTONS,
+            agwStyle=FNB_X_ON_TAB | FNB_VC8 | FNB_NO_X_BUTTON | FNB_NO_NAV_BUTTONS,
         )
         self.notebook.AssignImageList(self._image_list)
         self._native_ = self.notebook

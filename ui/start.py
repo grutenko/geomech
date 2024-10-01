@@ -96,6 +96,7 @@ class StartDialog(wx.Dialog):
         self.SetAffirmativeId(wx.ID_OK)
 
         self.btn_login.Bind(wx.EVT_BUTTON, self._on_login)
+        self._old_config_version = False
 
     def _init(self):
         if "GEOMECH_DEFAULT_HOST" in os.environ:
@@ -115,7 +116,12 @@ class StartDialog(wx.Dialog):
         self.field_database.SetValue(database)
         data = config.get("database")
         if data != None:
-            self.field_login.SetValue(data.login)
+            if "login" not in data:
+                login = data.user
+                self._old_config_version = True
+            else:
+                login = data.login
+            self.field_login.SetValue(login)
             self.field_password.SetValue(data.password)
             self.field_host.SetValue(data.host)
             self.field_port.SetValue(data.port)
