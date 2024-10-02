@@ -349,19 +349,8 @@ class CoreProperties(wx.Panel):
         object = None
         bounds = None
         if event.node != None:
-            if isinstance(event.node, _SelfProps_Node):
-                object = self.o
-                bounds = None
-            elif isinstance(event.node, _DischargeMeasurements_Node):
-                object = self.o
-                bounds = DischargeMeasurement
-            elif isinstance(event.node, _DiscargeSeries_Node):
-                object = event.node.o
-                bounds = None
-            elif isinstance(event.node, _PMSamples_Node):
-                object = self.o
-                bounds = PMSample
-
+            object = event.node.o
+            bounds = event.node.target
         if self._handler_properties_object_seleted != None and object != None:
             self._handler_properties_object_seleted(object, bounds)
 

@@ -27,7 +27,7 @@ class MainFrame(wx.Frame):
     def __init__(self, config):
         super().__init__(None)
         self.SetMinSize(wx.Size(int(300 * 1.618), 300))
-        self.SetSize(int(1080 * 1.618), 1080)
+        self.SetSize(1280, 720)
         self.SetTitle('База даных "Геомеханики"')
         self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnScreen()
@@ -156,12 +156,28 @@ class MainFrame(wx.Frame):
 
         self._bind_all()
         self._update_controls_state()
-        self.Show()
         self._start_tab = HelpPage(self.editors)
         self.editors.add_editor(self._start_tab)
 
         self._pm_settings_window = PmSettingsWindow(self)
         self._cs_settings_window = ManageCoordSystemsWindow(self)
+
+        if (
+            self._config_provider["width"] != None
+            and self._config_provider["height"] != None
+        ):
+            self.SetSize(
+                self._config_provider["width"], self._config_provider["height"]
+            )
+        if (
+            self._config_provider["x"] != None
+            and self._config_provider["y"] != None
+        ):
+            self.SetPosition(
+                wx.Point(self._config_provider["x"], self._config_provider["y"])
+            )
+
+        self.Show()
 
     def _bind_all(self):
         menu = self.menu_bar
@@ -184,7 +200,7 @@ class MainFrame(wx.Frame):
         menu.Bind(wx.EVT_MENU, self._on_toggle_start, id=ID_OPEN_START_TAB)
         menu.Bind(wx.EVT_MENU, self._on_open_pm_settings_window, id=ID_SETTINGS_PM)
         menu.Bind(
-            wx.EVT_MENU, self._on_toggle_supplied_data, id=ID_TOGGLE_SUPPLIED_DATA
+            wx.EVT_MENU, self._on_toggle_supplied_data, id=ID_SUPPLIED_DATA_TOGGLE
         )
         tb = self.toolbar
         tb.Bind(wx.EVT_TOOL, self._on_editor_save, id=wx.ID_SAVE)
@@ -206,6 +222,24 @@ class MainFrame(wx.Frame):
         self.objects.Bind(EVT_OBJECT_SELECTED, self._on_object_selected)
         self.editors.Bind(EVT_ENB_EDITOR_CLOSED, self._on_editor_closed)
         self.mgr_panel.Bind(wx.aui.EVT_AUI_PANE_BUTTON, self._on_pane_maximized)
+        self.Bind(wx.EVT_SIZE, self._on_resize, self)
+        self.Bind(wx.EVT_MOVE_END, self._on_move, self)
+
+    def _on_move(self, event):
+        if not self.IsFullScreen():
+            pos = self.GetPosition()
+            self._config_provider['x'] = pos.x
+            self._config_provider['y'] = pos.y
+            self._config_provider.flush()
+        event.Skip()
+
+    def _on_resize(self, event: wx.SizeEvent):
+        if not self.IsFullScreen():
+            size = event.GetSize()
+            self._config_provider['width'] = size.GetWidth()
+            self._config_provider['height'] = size.GetHeight()
+            self._config_provider.flush()
+        event.Skip()
 
     def _on_pane_maximized(self, event):
         print(event)
@@ -311,9 +345,7 @@ class MainFrame(wx.Frame):
     def _on_object_selected(self, event):
         _id: Identity = event.identity
         self.fastview.start(_id)
-        if _id.rel_data_target != None:
-            return
-        self.supplied_data.start(_id.rel_data_o)
+        self.supplied_data.start(_id)
 
     def _on_toggle_objects(self, event: wx.CommandEvent):
         if event.IsChecked():
@@ -348,6 +380,10 @@ class MainFrame(wx.Frame):
         self.fastview.save_pane_info(self.mgr.SavePaneInfo(i))
         i = self.mgr.GetPane("supplied_data")
         self.supplied_data.save_pane_info(self.mgr.SavePaneInfo(i))
+        pos: wx.Point = self.GetPosition()
+        self._config_provider["fullscreen"] = self.IsFullScreen()
+        size = self.GetSize()
+        self._config_provider.flush()
         event.Skip()
         wx.GetApp().ExitMainLoop()
 

@@ -71,8 +71,6 @@ from wx.grid import (
 class StringCellType(CellType):
     def __init__(self) -> None:
         super().__init__()
-        self.GRID_CELL_STRING_RENDERER = GridCellStringRenderer()
-        self.GRID_CELL_STRING_EDITOR = GridCellAutoWrapStringEditor()
 
     def get_type_name(self):
         return "string"
@@ -84,9 +82,13 @@ class StringCellType(CellType):
         return True
 
     def from_string(self, value: str):
+        if value == None:
+            return ''
         return value
 
     def to_string(self, value) -> str:
+        if value == None:
+            return ''
         return value
 
     def get_grid_renderer(self) -> GridCellRenderer:
@@ -110,12 +112,6 @@ class StringCellType(CellType):
 class FloatCellType(CellType):
     def __init__(self) -> None:
         super().__init__()
-        self.GRID_CELL_FLOAT_EDITOR = wx.grid.GridCellFloatEditor(
-            precision=2, format=wx.grid.GRID_FLOAT_FORMAT_FIXED
-        )
-        self.GRID_CELL_FLOAT_RENDERER = wx.grid.GridCellFloatRenderer(
-            precision=2, format=wx.grid.GRID_FLOAT_FORMAT_FIXED
-        )
 
     def get_type_name(self):
         return "float"
@@ -136,8 +132,10 @@ class FloatCellType(CellType):
         return ret
 
     def from_string(self, value: str):
+        if value.strip() == '':
+            return None
         try:
-            floatValue = float(value)
+            float_value = float(value)
         except ValueError as e:
             try:
                 float_value = float(value.replace(",", "."))
@@ -147,6 +145,8 @@ class FloatCellType(CellType):
         return float_value
 
     def to_string(self, value) -> str:
+        if value == None:
+            return ''
         return str(value)
 
     def get_grid_renderer(self) -> GridCellRenderer:
@@ -166,8 +166,6 @@ class FloatCellType(CellType):
 class NumberCellType(CellType):
     def __init__(self) -> None:
         super().__init__()
-        self.GRID_CELL_NUMBER_EDITOR = wx.grid.GridCellNumberEditor()
-        self.GRID_CELL_NUMBER_RENDERER = wx.grid.GridCellNumberRenderer()
 
     def get_type_name(self):
         return "number"
@@ -185,9 +183,13 @@ class NumberCellType(CellType):
         return ret
 
     def from_string(self, value: str):
+        if value == None:
+            return 0
         return int(value)
 
     def to_string(self, value) -> str:
+        if value == None:
+            return '0'
         return str(value)
 
     def get_grid_renderer(self) -> GridCellRenderer:
@@ -350,6 +352,7 @@ ID_SELECT_ALL = ID_ADD_ROW + 2
 ID_CANCEL_SELECTION = ID_ADD_ROW + 3
 ID_TOGGLE_ERRORS = ID_ADD_ROW + 5
 ID_COPY_HEADERS = ID_ADD_ROW + 6
+ID_COPY_WITH_HEADER = ID_ADD_ROW + 7
 
 
 class GridEditor(wx.Panel):
@@ -382,6 +385,8 @@ class GridEditor(wx.Panel):
         self._view.SetColLabelSize(50)
         self._view.CreateGrid(0, 0)
         self._view.EnableEditing(True)
+        self._view.SetColMinimalAcceptableWidth(2)
+        self._view.SetRowMinimalAcceptableHeight(20)
         self._zoom = 1
         self._original_row_size = 20
         initial_columns = []
@@ -449,7 +454,16 @@ class GridEditor(wx.Panel):
             self._on_errors_view_closing,
             self._errors_view._main_notebook,
         )
-        self._view.GetGridWindow()
+        self._view.Bind(wx.grid.EVT_GRID_EDITOR_SHOWN, self._on_editor_shown)
+        self._view.Bind(wx.grid.EVT_GRID_EDITOR_HIDDEN, self._on_editor_hidden)
+
+    def _on_editor_shown(self, event):
+        self._in_edit_mode = True
+        self._update_controls_state()
+
+    def _on_editor_hidden(self, event):
+        self._in_edit_mode = False
+        self._update_controls_state()
 
     def _on_scroll(self, event):
         event.Veto()
@@ -487,6 +501,11 @@ class GridEditor(wx.Panel):
         item = menu.AppendSubMenu(submenu, "Добавить строки")
         submenu.Bind(wx.EVT_MENU, self._on_add_rows)
         item.SetBitmap(get_art(wx.ART_PLUS))
+        menu.AppendSeparator()
+        item = menu.Append(wx.ID_ANY, "Выделить все")
+        menu.Bind(wx.EVT_MENU, self._on_select_all, item)
+        item = menu.Append(wx.ID_ANY, "Снять выделение")
+        menu.Bind(wx.EVT_MENU, self._on_cancel_selection, item)
         self.PopupMenu(menu, event.GetPosition())
 
     def _on_add_rows(self, event: wx.MenuEvent):
@@ -501,13 +520,22 @@ class GridEditor(wx.Panel):
         item.SetBitmap(get_art(wx.ART_QUESTION))
         menu.Bind(wx.EVT_MENU, self._on_open_cell_info, item)
         menu.AppendSeparator()
-        item = menu.Append(wx.ID_COPY, "Копировать")
+        submenu = wx.Menu()
+        item = submenu.Append(wx.ID_COPY, "Копировать\tCTRL+C")
         item.SetBitmap(get_art(wx.ART_COPY))
         item.Enable(self._state["can_copy"])
-        item = menu.Append(wx.ID_CUT, "Вырезать")
+        submenu.Bind(wx.EVT_MENU, self._on_copy, item)
+        item = submenu.Append(ID_COPY_WITH_HEADER, "Копировать с заголовоком\tCTRL+SHIFT+C")
+        item.SetBitmap(get_art(wx.ART_COPY))
+        item.Enable(self._state["can_copy"])
+        submenu.Bind(wx.EVT_MENU, self._on_copy_with_headers, item)
+        item = menu.AppendSubMenu(submenu, "Копировать")
+        item.SetBitmap(get_art(wx.ART_COPY))
+        item.Enable(self._state["can_copy"])
+        item = menu.Append(wx.ID_CUT, "Вырезать\tCTRL+X")
         item.SetBitmap(get_art(wx.ART_CUT))
         item.Enable(self._state["can_cut"])
-        item = menu.Append(wx.ID_PASTE, "Вставить")
+        item = menu.Append(wx.ID_PASTE, "Вставить\tCTRL+V")
         item.SetBitmap(get_art(wx.ART_PASTE))
         item.Enable(self._state["can_paste"])
         menu.AppendSeparator()
@@ -525,7 +553,18 @@ class GridEditor(wx.Panel):
         item = menu.Append(ID_REMOVE_ROW, "Удалить строку\tDEL")
         item.Enable(False)
         menu.Bind(wx.EVT_MENU, self._on_delete_row, item)
+        menu.AppendSeparator()
+        item = menu.Append(wx.ID_ANY, "Выделить все")
+        menu.Bind(wx.EVT_MENU, self._on_select_all, item)
+        item = menu.Append(wx.ID_ANY, "Снять выделение")
+        menu.Bind(wx.EVT_MENU, self._on_cancel_selection, item)
         self.PopupMenu(menu, event.GetPosition())
+
+    def _on_copy(self, event):
+        self.copy(False)
+
+    def _on_copy_with_headers(self, event):
+        self.copy(True)
 
     def _on_copy_headers(self, event):
         header = []
@@ -689,9 +728,13 @@ class GridEditor(wx.Panel):
     def can_redo(self) -> bool:
         return self._state["can_redo"]
 
-    def save(self): ...
+    def save(self):
+        if self._model.save():
+            self._update_controls_state()
+            return True
+        return False
 
-    def copy(self):
+    def copy(self, with_headers = False):
         blocks: List[wx.grid.GridBlockCoords] = [
             x for x in self._view.GetSelectedBlocks()
         ]
@@ -787,6 +830,10 @@ class GridEditor(wx.Panel):
             self._view.GetGridCursorRow(),
             self._view.GetGridCursorCol(),
         )
+        if cursor_row == -1:
+            cursor_row = 0
+        if cursor_col == -1:
+            cursor_col = 0
 
         if not wx.TheClipboard.IsOpened():
             if not wx.TheClipboard.Open():
@@ -990,16 +1037,17 @@ class GridEditor(wx.Panel):
         )
         self._update_undo_redo_state()
 
-        self.toolbar.EnableTool(ID_ADD_ROW, global_enable)
-        rows = self._view.GetSelectedRows()
-        is_rows_selected = len(rows) > 0
-        self.menubar.Enable(ID_ADD_ROW, global_enable)
-        self.menubar.Enable(ID_REMOVE_ROW, global_enable and is_rows_selected)
-        self.toolbar.EnableTool(ID_REMOVE_ROW, global_enable and is_rows_selected)
+        if self._controls_initialized:
+            self.toolbar.EnableTool(ID_ADD_ROW, global_enable)
+            rows = self._view.GetSelectedRows()
+            is_rows_selected = len(rows) > 0
+            self.menubar.Enable(ID_ADD_ROW, global_enable)
+            self.menubar.Enable(ID_REMOVE_ROW, global_enable and is_rows_selected)
+            self.toolbar.EnableTool(ID_REMOVE_ROW, global_enable and is_rows_selected)
 
-        self.menubar.Check(ID_TOGGLE_ERRORS, self._splitter.GetWindow2() != None)
+            self.menubar.Check(ID_TOGGLE_ERRORS, self._splitter.GetWindow2() != None)
 
-        self.toolbar.Realize()
+            self.toolbar.Realize()
 
     def is_changed(self) -> bool:
         return self._model.have_changes()

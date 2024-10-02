@@ -94,7 +94,6 @@ class Objects(wx.Panel):
     def _on_rel_data_sel_changed(self, event):
         o_node = self.tree.get_current_node()
         rel_data_o, rel_data_target = self.related_data.get_current_object()
-        print(rel_data_o)
         wx.PostEvent(
             self,
             ObjectSelectedEvent(

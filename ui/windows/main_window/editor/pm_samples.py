@@ -138,14 +138,14 @@ class PmSamplesModel(Model):
             Column(
                 "UniAxCompDistort",
                 FloatCellType(),
-                "разрушающая\nнагрузка при\nодноосном сжатии (кПа)",
+                "разрушающая\nнагрузка при\nодноосном сжатии (кН)",
                 "Измерение: разрушающая нагрузка при одноосном сжатии",
                 self._get_column_width("UniAxCompDistort"),
             ),
             Column(
                 "UniAxTensDistort",
                 FloatCellType(),
-                "разрушающая\nнагрузка при\nодноосном растяжении (кПа)",
+                "разрушающая\nнагрузка при\nодноосном растяжении (кН)",
                 "Измерение: разрушающая нагрузка при одноосном растяжении",
                 self._get_column_width("UniAxTensDistort"),
             ),

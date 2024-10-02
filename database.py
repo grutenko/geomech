@@ -176,6 +176,7 @@ class DischargeMeasurement(db.Entity):
     Diameter = Required(float, column="Diameter")
     Length = Required(float, column="Length")
     Weight = Required(float, column="Weight")
+    RockType = Optional(str, column="RockType")
     PartNumber = Required(str, column="PartNumber")
     RTens = Required(float, column="RTens")
     Sensitivity = Required(float, column="Sensitivity")

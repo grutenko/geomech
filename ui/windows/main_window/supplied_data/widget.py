@@ -27,21 +27,24 @@ class SuppliedData(wx.Panel):
         self._config_provider['aui_pane_info'] = info
         self._config_provider.flush()
 
-    def start(self, o):
-        if isinstance(o, MineObject):
+    def start(self, _id):
+        if _id.rel_data_target != None:
+            self.sd.end()
+            return
+        if isinstance(_id.rel_data_o, MineObject):
             _type = "MINE_OBJECT"
-        elif isinstance(o, Station):
+        elif isinstance(_id.rel_data_o, Station):
             _type = "STATION"
-        elif isinstance(o, BoreHole):
+        elif isinstance(_id.rel_data_o, BoreHole):
             _type = "BOREHOLE"
-        elif isinstance(o, OrigSampleSet):
+        elif isinstance(_id.rel_data_o, OrigSampleSet):
             _type = "ORIG_SAMPLE_SET"
-        elif isinstance(o, RockBurst):
+        elif isinstance(_id.rel_data_o, RockBurst):
             _type = "ROCK_BURST"
         else:
             self.sd.end()
             return
-        self.sd.start(o, _type)
+        self.sd.start(_id.rel_data_o, _type)
 
     def end(self):
         self.sd.end()
