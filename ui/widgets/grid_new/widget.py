@@ -83,12 +83,12 @@ class StringCellType(CellType):
 
     def from_string(self, value: str):
         if value == None:
-            return ''
+            return ""
         return value
 
     def to_string(self, value) -> str:
         if value == None:
-            return ''
+            return ""
         return value
 
     def get_grid_renderer(self) -> GridCellRenderer:
@@ -132,7 +132,7 @@ class FloatCellType(CellType):
         return ret
 
     def from_string(self, value: str):
-        if value.strip() == '':
+        if value.strip() == "":
             return None
         try:
             float_value = float(value)
@@ -146,7 +146,7 @@ class FloatCellType(CellType):
 
     def to_string(self, value) -> str:
         if value == None:
-            return ''
+            return ""
         return str(value)
 
     def get_grid_renderer(self) -> GridCellRenderer:
@@ -189,7 +189,7 @@ class NumberCellType(CellType):
 
     def to_string(self, value) -> str:
         if value == None:
-            return '0'
+            return "0"
         return str(value)
 
     def get_grid_renderer(self) -> GridCellRenderer:
@@ -472,7 +472,7 @@ class GridEditor(wx.Panel):
         if event.GetRow() == -1:
             menu = wx.Menu()
             item = menu.Append(wx.ID_INFO, "Свойства столбца")
-            #menu.Bind(wx.EVT_MENU, self._on_copy_headers, item)
+            # menu.Bind(wx.EVT_MENU, self._on_copy_headers, item)
             item.SetBitmap(get_art(wx.ART_INFORMATION))
             item = menu.Append(ID_COPY_HEADERS, "Копировать заголовки")
             menu.Bind(wx.EVT_MENU, self._on_copy_headers, item)
@@ -525,7 +525,9 @@ class GridEditor(wx.Panel):
         item.SetBitmap(get_art(wx.ART_COPY))
         item.Enable(self._state["can_copy"])
         submenu.Bind(wx.EVT_MENU, self._on_copy, item)
-        item = submenu.Append(ID_COPY_WITH_HEADER, "Копировать с заголовоком\tCTRL+SHIFT+C")
+        item = submenu.Append(
+            ID_COPY_WITH_HEADER, "Копировать с заголовоком\tCTRL+SHIFT+C"
+        )
         item.SetBitmap(get_art(wx.ART_COPY))
         item.Enable(self._state["can_copy"])
         submenu.Bind(wx.EVT_MENU, self._on_copy_with_headers, item)
@@ -633,7 +635,7 @@ class GridEditor(wx.Panel):
             if cursor_row >= self._view.GetNumberRows():
                 cursor_row = self._view.GetNumberRows() - 1
 
-            self._view.GoToCell(cursor_row, cursor_col)
+            self._view.SetGridCursor(cursor_row, cursor_col)
 
         self._view.EndBatch()
 
@@ -703,6 +705,7 @@ class GridEditor(wx.Panel):
         new_state = {**self._state, **state}
         eq = True
         for key in state.keys():
+            print(key, state[key], self._state[key])
             if key not in self._state or state[key] != self._state[key]:
                 eq = False
                 break
@@ -734,7 +737,7 @@ class GridEditor(wx.Panel):
             return True
         return False
 
-    def copy(self, with_headers = False):
+    def copy(self, with_headers=False):
         blocks: List[wx.grid.GridBlockCoords] = [
             x for x in self._view.GetSelectedBlocks()
         ]
@@ -881,8 +884,6 @@ class GridEditor(wx.Panel):
             if len(blocks) == 1:
                 start_row, start_col = blocks[0].TopRow, blocks[0].LeftCol
 
-                print(table)
-
                 if abs(blocks[0].RightCol - blocks[0].LeftCol) + 1 != len(
                     table[0]
                 ) or abs(blocks[0].TopRow - blocks[0].BottomRow) + 1 != len(table):
@@ -1003,12 +1004,16 @@ class GridEditor(wx.Panel):
         self._view.HideCellEditControl()
 
     def _update_undo_redo_state(self):
-        self._set_state(
-            {
-                "can_undo": self._command_processor.CanUndo(),
-                "can_redo": self._command_processor.CanRedo(),
-            }
-        )
+        if (
+            self._state["can_undo"] != self._command_processor.CanUndo()
+            or self._state["can_redo"] != self._command_processor.CanRedo()
+        ):
+            self._set_state(
+                {
+                    "can_undo": self._command_processor.CanUndo(),
+                    "can_redo": self._command_processor.CanRedo(),
+                }
+            )
 
     def _update_controls_state(self):
         """
@@ -1027,27 +1032,46 @@ class GridEditor(wx.Panel):
         is_cells_selected = is_cursor_valid or blocks_selected
 
         global_enable = not self._in_edit_mode
-        self._set_state(
-            {
-                "can_copy": global_enable and is_cells_selected,
-                "can_cut": global_enable and is_cells_selected,
-                "can_paste": global_enable,
-                "can_save": self._model.have_changes(),
-            }
-        )
+        _can_copy = global_enable
+        _can_cut = global_enable
+        _can_paste = global_enable
+        _can_save = self._model.have_changes()
+        if (
+            self._state["can_copy"] != _can_copy
+            or self._state["can_cut"] != _can_cut
+            or self._state["can_paste"] != _can_paste
+            or self._state["can_save"] != _can_save
+        ):
+            self._set_state(
+                {
+                    "can_copy": _can_copy,
+                    "can_cut": _can_cut,
+                    "can_paste": _can_paste,
+                    "can_save": _can_save,
+                }
+            )
         self._update_undo_redo_state()
 
-        if self._controls_initialized:
-            self.toolbar.EnableTool(ID_ADD_ROW, global_enable)
-            rows = self._view.GetSelectedRows()
-            is_rows_selected = len(rows) > 0
-            self.menubar.Enable(ID_ADD_ROW, global_enable)
-            self.menubar.Enable(ID_REMOVE_ROW, global_enable and is_rows_selected)
-            self.toolbar.EnableTool(ID_REMOVE_ROW, global_enable and is_rows_selected)
+        if not self._controls_initialized:
+            return
 
-            self.menubar.Check(ID_TOGGLE_ERRORS, self._splitter.GetWindow2() != None)
+        rows = self._view.GetSelectedRows()
+        is_rows_selected = len(rows) > 0
 
+        _e_add_row = global_enable
+        _e_remove_row = global_enable and is_rows_selected
+
+        if _e_add_row != self.toolbar.GetToolEnabled(
+            ID_ADD_ROW
+        ) or _e_remove_row != self.toolbar.GetToolEnabled(ID_REMOVE_ROW):
+            self.toolbar.EnableTool(ID_ADD_ROW, _e_add_row)
+            self.toolbar.EnableTool(ID_REMOVE_ROW, _e_remove_row)
             self.toolbar.Realize()
+
+        self.menubar.Enable(ID_ADD_ROW, global_enable)
+        self.menubar.Enable(ID_REMOVE_ROW, global_enable and is_rows_selected)
+
+        self.menubar.Check(ID_TOGGLE_ERRORS, self._splitter.GetWindow2() != None)
 
     def is_changed(self) -> bool:
         return self._model.have_changes()
@@ -1057,10 +1081,15 @@ class GridEditor(wx.Panel):
             self._model.insert_row(self._model.total_rows())
         self._append_rows_undo_stack.append(number_rows)
         self._render()
+        cursor_col = self._view.GetGridCursorCol()
+        if cursor_col == -1:
+            cursor_col = 0
         self._view.GoToCell(
             self._view.GetNumberRows() - 1, self._view.GetGridCursorCol()
         )
-        self._set_state({"can_save": self._model.have_changes()})
+        _can_save = self._model.have_changes()
+        if self._state["can_save"] != _can_save:
+            self._set_state({"can_save": _can_save})
 
     def _cmd_undo_append_rows(self):
         number_rows = self._append_rows_undo_stack.pop()
@@ -1071,7 +1100,9 @@ class GridEditor(wx.Panel):
             y = self._view.GetNumberRows() - 1
             x = self._view.GetGridCursorCol()
             self._view.GoToCell(y, x)
-        self._set_state({"can_save": self._model.have_changes()})
+        _can_save = self._model.have_changes()
+        if self._state["can_save"] != _can_save:
+            self._set_state({"can_save": _can_save})
 
     def _cmd_delete_rows(self, rows_pos):
         undo = {}
@@ -1083,14 +1114,18 @@ class GridEditor(wx.Panel):
             self._model.delete_row(row_pos - minus)
             minus += 1
         self._render()
-        self._set_state({"can_save": self._model.have_changes()})
+        _can_save = self._model.have_changes()
+        if self._state["can_save"] != _can_save:
+            self._set_state({"can_save": _can_save})
 
     def _cmd_undo_delete_rows(self):
         rows_data = self._delete_rows_undo_stack.pop()
         for row_index, state in rows_data.items():
             self._model.restore_row(row_index, state)
         self._render()
-        self._set_state({"can_save": self._model.have_changes()})
+        _can_save = self._model.have_changes()
+        if self._state["can_save"] != _can_save:
+            self._set_state({"can_save": _can_save})
 
     def _cmd_set_cell_value(self, cells, value: str):
         undo = []
@@ -1104,14 +1139,18 @@ class GridEditor(wx.Panel):
             self._model.set_value_at(cell_col, cell_row, value)
 
         self._render()
-        self._set_state({"can_save": self._model.have_changes()})
+        _can_save = self._model.have_changes()
+        if self._state["can_save"] != _can_save:
+            self._set_state({"can_save": _can_save})
 
     def _cmd_undo_set_cell_value(self):
         undo = self._set_cell_value_undo_stack.pop()
         for cell_row, cell_col, value in undo:
             self._model.set_value_at(cell_col, cell_row, value)
         self._render()
-        self._set_state({"can_save": self._model.have_changes()})
+        _can_save = self._model.have_changes()
+        if self._state["can_save"] != _can_save:
+            self._set_state({"can_save": _can_save})
 
     def _cmd_paste(self, start_row, start_col, table):
         undo = []
@@ -1134,7 +1173,9 @@ class GridEditor(wx.Panel):
 
         self._past_undo_stack.append(undo)
         self._render()
-        self._set_state({"can_save": self._model.have_changes()})
+        _can_save = self._model.have_changes()
+        if self._state["can_save"] != _can_save:
+            self._set_state({"can_save": _can_save})
 
     def _cmd_undo_paste(self):
         undo = self._past_undo_stack.pop()
@@ -1142,7 +1183,9 @@ class GridEditor(wx.Panel):
             self._model.set_value_at(col_index, row_index, value)
 
         self._render()
-        self._set_state({"can_save": self._model.have_changes()})
+        _can_save = self._model.have_changes()
+        if self._state["can_save"] != _can_save:
+            self._set_state({"can_save": _can_save})
 
     def is_changed(self):
         return self._model.have_changes()

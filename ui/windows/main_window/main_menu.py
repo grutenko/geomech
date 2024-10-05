@@ -10,6 +10,9 @@ ID_SUPPLIED_DATA_TOGGLE = ID_FIND_NEXT + 3
 ID_OPEN_START_TAB = ID_FIND_NEXT + 4
 ID_SETTINGS_PM = ID_FIND_NEXT + 6
 ID_SETTINGS_CS = ID_FIND_NEXT + 7
+ID_DM_TOGGLE = ID_FIND_NEXT + 8
+ID_PM_TOGGLE = ID_FIND_NEXT + 9
+ID_RB_TOGGLE = ID_FIND_NEXT + 10
 
 class MainMenu(wx.MenuBar):
     def __init__(self):
@@ -63,6 +66,10 @@ class MainMenu(wx.MenuBar):
         item = menu.AppendCheckItem(ID_OBJECTS_TOGGLE, "[Объекты] Показать/Скрыть\tCTRL+ALT+O")
         item = menu.AppendCheckItem(ID_FASTVIEW_TOGGLE, "[Быстрый просмотр] Показать/Скрыть\tCTRL+ALT+R")
         item = menu.AppendCheckItem(ID_SUPPLIED_DATA_TOGGLE, "[Сопутствующие материалы] Показать/Скрыть\tCTRL+ALT+D")
+        menu.AppendSeparator()
+        item = menu.AppendCheckItem(ID_DM_TOGGLE, "[Разгрузка] Показать/Скрыть")
+        item = menu.AppendCheckItem(ID_PM_TOGGLE, "[Физ. мех. свойства] Показать/Скрыть")
+        item = menu.AppendCheckItem(ID_RB_TOGGLE, "[Горные удары] Показать/Скрыть")
         self.Append(menu, "Вид")
 
         menu = wx.Menu()

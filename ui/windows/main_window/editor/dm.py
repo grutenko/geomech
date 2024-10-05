@@ -459,14 +459,16 @@ class DMModel(Model):
 
 
 class DMEditor(BaseEditor):
+    @db_session
     def __init__(self, parent, identity, menubar, toolbar, statusbar):
         self._config_provider = ClassConfigProvider(
             __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
         )
         self._config_provider.flush()
+        self.o = OrigSampleSet[identity.o.RID]
         super().__init__(
             parent,
-            "Редактор: [Разгрузка] замеры для " + identity.o.Name,
+            "Замеры: " + self.o.Name,
             identity,
             DMModel(identity.rel_data_o, self._config_provider),
             menubar,

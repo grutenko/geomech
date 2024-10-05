@@ -7,6 +7,9 @@ from database import *
 from ui.icon import get_icon
 from ui.class_config_provider import ClassConfigProvider
 from .objects import Objects, EVT_OBJECT_SELECTED
+from .dm.widget import DischargePanel
+from .pm.widget import PmPanel
+from .rb.widget import RbPanel
 from .editor import *
 from .editor.help import HelpPage
 from .editor.widget import EVT_ENB_STATE_CHANGED, EVT_ENB_EDITOR_CLOSED
@@ -16,15 +19,15 @@ from .main_menu import *
 from .main_toolbar import *
 from .mgr_panel_toolbar import *
 from .identity import Identity
-from .pm_contracts.widget import PmContractsWidget
 from ui.windows.cs_settings.manage_coord_systems_window import ManageCoordSystemsWindow
 from ui.windows.pm_settings.main import PmSettingsWindow
 
-__CONFIG_VERSION__ = 1
+__CONFIG_VERSION__ = 2
 
 
 class MainFrame(wx.Frame):
     def __init__(self, config):
+        self._frame_initialized = False
         super().__init__(None)
         self.SetMinSize(wx.Size(int(300 * 1.618), 300))
         self.SetSize(1280, 720)
@@ -43,11 +46,11 @@ class MainFrame(wx.Frame):
         self.SetMenuBar(self.menu_bar)
 
         self.toolbar = MainToolbar(self)
-        self.SetToolBar(self.toolbar)
 
-        main_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.mgr_panel_toolbar = MgrPanelToolbar(self)
         main_sizer.Add(self.mgr_panel_toolbar, 0, wx.EXPAND)
+        main_sizer.Add(self.toolbar, 0, wx.EXPAND)
         mgr_panel = wx.Panel(self)
         self.mgr_panel = mgr_panel
         main_sizer.Add(mgr_panel, 1, wx.EXPAND)
@@ -65,14 +68,14 @@ class MainFrame(wx.Frame):
         self.SetStatusBar(self.statusbar)
 
         i = wx.aui.AuiPaneInfo()
-        i.Left()
-        i.MaximizeButton(True)
+        i.Float()
         i.CloseButton(True)
         i.Name("objects")
         i.Caption("Объекты")
-        i.MinSize(300, 300)
-        i.BestSize(300, 600)
+        i.MinSize(300, 200)
+        i.MinSize(300, 200)
         i.MaxSize(600, 900)
+        i.Dockable(False)
         i.Icon(get_art(wx.ART_HELP_BOOK, scale_to=16))
         i.Hide()
         self.objects = Objects(mgr_panel, self.menu_bar, self.toolbar, self.statusbar)
@@ -84,40 +87,70 @@ class MainFrame(wx.Frame):
         self.mgr.AddPane(self.objects, i)
 
         i = wx.aui.AuiPaneInfo()
-        i.Left()
-        i.MaximizeButton(True)
+        i.Top()
         i.CloseButton(True)
-        i.Name("pm_contracts")
-        i.Caption("[Физ. Мех. свойства] Договоры")
-        i.MinSize(300, 300)
-        i.BestSize(300, 600)
+        i.Name("dm")
+        i.Caption("Разгрузка")
+        i.MinSize(300, 200)
+        i.MinSize(300, 200)
         i.MaxSize(600, 900)
+        i.Icon(get_art(wx.ART_HELP_BOOK, scale_to=16))
         i.Hide()
-        self.pm_contracts = PmContractsWidget(mgr_panel)
-        info = self.pm_contracts.get_pane_info()
+        self.dm = DischargePanel(mgr_panel, self.menu_bar, self.toolbar, self.statusbar)
+        info = self.dm.get_pane_info()
         if info != None:
             self.mgr.LoadPaneInfo(info, i)
         else:
-            self.pm_contracts.save_pane_info(self.mgr.SavePaneInfo(i))
-        self.mgr.AddPane(self.pm_contracts, i)
+            self.dm.save_pane_info(self.mgr.SavePaneInfo(i))
+        self.mgr.AddPane(self.dm, i)
+
+        i = wx.aui.AuiPaneInfo()
+        i.Top()
+        i.CloseButton(True)
+        i.Name("pm")
+        i.Caption("Физ. мех. свойства")
+        i.MinSize(300, 200)
+        i.MinSize(300, 200)
+        i.MaxSize(600, 900)
+        i.Icon(get_art(wx.ART_HELP_BOOK, scale_to=16))
+        i.Hide()
+        self.pm = PmPanel(mgr_panel)
+        info = self.pm.get_pane_info()
+        if info != None:
+            self.mgr.LoadPaneInfo(info, i)
+        else:
+            self.pm.save_pane_info(self.mgr.SavePaneInfo(i))
+        self.mgr.AddPane(self.pm, i)
+
+        i = wx.aui.AuiPaneInfo()
+        i.Top()
+        i.CloseButton(True)
+        i.Name("rb")
+        i.Caption("Горные удары")
+        i.MinSize(300, 200)
+        i.MinSize(300, 200)
+        i.MaxSize(600, 900)
+        i.Icon(get_art(wx.ART_HELP_BOOK, scale_to=16))
+        i.Hide()
+        self.rb = RbPanel(mgr_panel)
+        info = self.rb.get_pane_info()
+        if info != None:
+            self.mgr.LoadPaneInfo(info, i)
+        else:
+            self.rb.save_pane_info(self.mgr.SavePaneInfo(i))
+        self.mgr.AddPane(self.rb, i)
 
         i = wx.aui.AuiPaneInfo()
         i.CenterPane()
         i.Name("editors")
-        i.Icon(get_art(wx.ART_INFORMATION, scale_to=16))
+        i.MinSize(200, 300)
         self.editors = EditorNotebook(
             mgr_panel, self.menu_bar, self.statusbar, self.toolbar
         )
-        info = self.editors.get_pane_info()
-        if info != None:
-            self.mgr.LoadPaneInfo(info, i)
-        else:
-            self.editors.save_pane_info(self.mgr.SavePaneInfo(i))
         self.mgr.AddPane(self.editors, i)
 
         i = wx.aui.AuiPaneInfo()
         i.Right()
-        i.MaximizeButton(True)
         i.CloseButton(True)
         i.Name("fastview")
         i.Caption("Быстрый просмотр")
@@ -135,7 +168,6 @@ class MainFrame(wx.Frame):
 
         i = wx.aui.AuiPaneInfo()
         i.Bottom()
-        i.MaximizeButton(True)
         i.CloseButton(True)
         i.Name("supplied_data")
         i.Caption("Сопутствующие материалы")
@@ -169,15 +201,13 @@ class MainFrame(wx.Frame):
             self.SetSize(
                 self._config_provider["width"], self._config_provider["height"]
             )
-        if (
-            self._config_provider["x"] != None
-            and self._config_provider["y"] != None
-        ):
+        if self._config_provider["x"] != None and self._config_provider["y"] != None:
             self.SetPosition(
                 wx.Point(self._config_provider["x"], self._config_provider["y"])
             )
 
         self.Show()
+        self._frame_initialized = True
 
     def _bind_all(self):
         menu = self.menu_bar
@@ -202,6 +232,9 @@ class MainFrame(wx.Frame):
         menu.Bind(
             wx.EVT_MENU, self._on_toggle_supplied_data, id=ID_SUPPLIED_DATA_TOGGLE
         )
+        menu.Bind(wx.EVT_MENU, self._on_toggle_dm, id=ID_DM_TOGGLE)
+        menu.Bind(wx.EVT_MENU, self._on_toggle_pm, id=ID_PM_TOGGLE)
+        menu.Bind(wx.EVT_MENU, self._on_toggle_rb, id=ID_RB_TOGGLE)
         tb = self.toolbar
         tb.Bind(wx.EVT_TOOL, self._on_editor_save, id=wx.ID_SAVE)
         tb.Bind(wx.EVT_TOOL, self._on_editor_copy, id=wx.ID_COPY)
@@ -215,6 +248,9 @@ class MainFrame(wx.Frame):
         mgrtb.Bind(
             wx.EVT_TOOL, self._on_toggle_supplied_data, id=ID_TOGGLE_SUPPLIED_DATA
         )
+        mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_dm, id=ID_TOGGLE_DISCHARGE)
+        mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_pm, id=ID_TOGGLE_PM)
+        mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_rb, id=ID_TOGGLE_ROCK_BURST)
         self.Bind(wx.EVT_CLOSE, self._on_close)
         self.mgr_panel.Bind(wx.aui.EVT_AUI_PANE_CLOSE, self._on_pane_closed)
         self.mgr_panel.Bind(wx.aui.EVT_AUI_PANE_RESTORE, self._on_pane_restored)
@@ -225,19 +261,43 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_SIZE, self._on_resize, self)
         self.Bind(wx.EVT_MOVE_END, self._on_move, self)
 
+    def _on_toggle_dm(self, event):
+        if event.IsChecked():
+            self.mgr.GetPane("dm").Show()
+        else:
+            self.mgr.GetPane("dm").Hide()
+        self.mgr.Update()
+        self._update_controls_state()
+
+    def _on_toggle_pm(self, event):
+        if event.IsChecked():
+            self.mgr.GetPane("pm").Show()
+        else:
+            self.mgr.GetPane("pm").Hide()
+        self.mgr.Update()
+        self._update_controls_state()
+
+    def _on_toggle_rb(self, event):
+        if event.IsChecked():
+            self.mgr.GetPane("rb").Show()
+        else:
+            self.mgr.GetPane("rb").Hide()
+        self.mgr.Update()
+        self._update_controls_state()
+
     def _on_move(self, event):
         if not self.IsFullScreen():
             pos = self.GetPosition()
-            self._config_provider['x'] = pos.x
-            self._config_provider['y'] = pos.y
+            self._config_provider["x"] = pos.x
+            self._config_provider["y"] = pos.y
             self._config_provider.flush()
         event.Skip()
 
     def _on_resize(self, event: wx.SizeEvent):
-        if not self.IsFullScreen():
+        if not self.IsFullScreen() and self._frame_initialized:
             size = event.GetSize()
-            self._config_provider['width'] = size.GetWidth()
-            self._config_provider['height'] = size.GetHeight()
+            self._config_provider["width"] = size.GetWidth()
+            self._config_provider["height"] = size.GetHeight()
             self._config_provider.flush()
         event.Skip()
 
@@ -288,6 +348,13 @@ class MainFrame(wx.Frame):
             self._update_controls_state(fastview_shown=False)
         elif event.GetPane().name == "supplied_data":
             self._update_controls_state(supplied_data_shown=False)
+        elif event.GetPane().name == "dm":
+            self._update_controls_state(dm_shown=False)
+        elif event.GetPane().name == "pm":
+            self._update_controls_state(pm_shown=False)
+        elif event.GetPane().name == "rb":
+            self._update_controls_state(rb_shown=False)
+        self.Raise()
 
     def _on_pane_restored(self, event):
         if event.GetPane().name == "objects":
@@ -296,6 +363,12 @@ class MainFrame(wx.Frame):
             self._update_controls_state(fastview_shown=True)
         elif event.GetPane().name == "supplied_data":
             self._update_controls_state(supplied_data_shown=True)
+        elif event.GetPane().name == "dm":
+            self._update_controls_state(dm_shown=True)
+        elif event.GetPane().name == "pm":
+            self._update_controls_state(pm_shown=True)
+        elif event.GetPane().name == "rb":
+            self._update_controls_state(rb_shown=True)
 
     def _on_editors_state_changed(self, event):
         self._update_controls_state()
@@ -380,6 +453,12 @@ class MainFrame(wx.Frame):
         self.fastview.save_pane_info(self.mgr.SavePaneInfo(i))
         i = self.mgr.GetPane("supplied_data")
         self.supplied_data.save_pane_info(self.mgr.SavePaneInfo(i))
+        i = self.mgr.GetPane("dm")
+        self.dm.save_pane_info(self.mgr.SavePaneInfo(i))
+        i = self.mgr.GetPane("pm")
+        self.pm.save_pane_info(self.mgr.SavePaneInfo(i))
+        i = self.mgr.GetPane("rb")
+        self.rb.save_pane_info(self.mgr.SavePaneInfo(i))
         pos: wx.Point = self.GetPosition()
         self._config_provider["fullscreen"] = self.IsFullScreen()
         size = self.GetSize()
@@ -392,7 +471,9 @@ class MainFrame(wx.Frame):
         objects_shown=None,
         fastview_shown=None,
         supplied_data_shown=None,
-        coord_systems_shown=None,
+        dm_shown=None,
+        pm_shown=None,
+        rb_shown=None,
     ):
         self.menu_bar.Enable(
             wx.ID_CLOSE, not self._disable_controls and self.editors.can_close()
@@ -420,6 +501,9 @@ class MainFrame(wx.Frame):
             if supplied_data_shown == None
             else supplied_data_shown
         )
+        dm_state = self.mgr.GetPane("dm").IsShown() if dm_shown == None else dm_shown
+        pm_state = self.mgr.GetPane("pm").IsShown() if pm_shown == None else pm_shown
+        rb_state = self.mgr.GetPane("rb").IsShown() if rb_shown == None else rb_shown
         self.menu_bar.Check(
             ID_OBJECTS_TOGGLE,
             object_state,
@@ -429,15 +513,24 @@ class MainFrame(wx.Frame):
             fastview_state,
         )
         self.menu_bar.Check(ID_SUPPLIED_DATA_TOGGLE, sd_state)
+        self.menu_bar.Check(ID_DM_TOGGLE, dm_state)
+        self.menu_bar.Check(ID_PM_TOGGLE, pm_state)
+        self.menu_bar.Check(ID_RB_TOGGLE, rb_state)
         mgrtb = self.mgr_panel_toolbar
         if (
             mgrtb.GetToolState(ID_TOGGLE_OBJECTS) != object_state
             or mgrtb.GetToolState(ID_TOGGLE_FASTVIEW) != fastview_state
             or mgrtb.GetToolState(ID_TOGGLE_SUPPLIED_DATA) != sd_state
+            or mgrtb.GetToolState(ID_TOGGLE_DISCHARGE) != dm_state
+            or mgrtb.GetToolState(ID_TOGGLE_PM) != pm_state
+            or mgrtb.GetToolState(ID_TOGGLE_ROCK_BURST) != rb_state
         ):
             mgrtb.ToggleTool(ID_TOGGLE_OBJECTS, object_state)
             mgrtb.ToggleTool(ID_TOGGLE_FASTVIEW, fastview_state)
             mgrtb.ToggleTool(ID_TOGGLE_SUPPLIED_DATA, sd_state)
+            mgrtb.ToggleTool(ID_TOGGLE_DISCHARGE, dm_state)
+            mgrtb.ToggleTool(ID_TOGGLE_PM, pm_state)
+            mgrtb.ToggleTool(ID_TOGGLE_ROCK_BURST, rb_state)
             mgrtb.Realize()
         self.toolbar.EnableTool(
             wx.ID_SAVE, not self._disable_controls and self.editors.can_save()

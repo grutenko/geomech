@@ -4,7 +4,7 @@ from ui.icon import get_art
 
 class MainToolbar(wx.ToolBar):
     def __init__(self, parent):
-        super().__init__(parent, style=wx.TB_FLAT | wx.TB_HORZ_TEXT)
+        super().__init__(parent, style=wx.TB_DEFAULT_STYLE | wx.TB_HORZ_TEXT | wx.TB_DOCKABLE | wx.TB_FLAT)
 
         tool = self.AddTool(wx.ID_SAVE, "Сохранить", get_art(wx.ART_FILE_SAVE, scale_to=16), "Сохранить активный редактор")
         tool.Enable(False)

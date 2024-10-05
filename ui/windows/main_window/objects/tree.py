@@ -3,17 +3,19 @@ from pony.orm import *
 
 from database import *
 from ui.widgets.tree import *
-from ui.icon import get_art
+from ui.icon import get_art, get_icon
 from ui.delete_object import delete_object
 from ..dialogs.dialog_create_bore_hole import DialogCreateBoreHole
+from ..dialogs.wiz_create_bore_hole import WizCreateBoreHole
 from ..dialogs.dialog_create_mine_object import DialogCreateMineObject
 from ..dialogs.dialog_create_orig_sample_set import DialogCreateCore
 from ..dialogs.dialog_create_station import DialogCreateStation
 
 
 class _MineObject_Node(TreeNode):
-    def __init__(self, o: MineObject):
+    def __init__(self, o: MineObject, mine_objects_only = False):
         self.o = o
+        self._mine_objects_only = mine_objects_only
 
     @db_session
     def self_reload(self):
@@ -47,14 +49,15 @@ class _MineObject_Node(TreeNode):
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
-        for o in select(
-            o for o in BoreHole if o.mine_object == self.o and o.station == None
-        ):
-            nodes.append(_BoreHole_Node(o))
-        for o in select(o for o in Station if o.mine_object == self.o):
-            nodes.append(_Station_Node(o))
+        if not self._mine_objects_only:
+            for o in select(
+                o for o in BoreHole if o.mine_object == self.o and o.station == None
+            ):
+                nodes.append(_BoreHole_Node(o))
+            for o in select(o for o in Station if o.mine_object == self.o):
+                nodes.append(_Station_Node(o))
         for o in select(o for o in MineObject if o.parent == self.o):
-            nodes.append(_MineObject_Node(o))
+            nodes.append(_MineObject_Node(o, mine_objects_only=self._mine_objects_only))
         return nodes
 
     def __eq__(self, node):
@@ -62,14 +65,17 @@ class _MineObject_Node(TreeNode):
 
 
 class _Station_Node(TreeNode):
-    def __init__(self, o: Station):
+    def __init__(self, o: Station, root_as_parent=False):
         self.o = o
+        self._root_as_parent = root_as_parent
 
     @db_session
     def self_reload(self):
         self.o = Station[self.o.RID]
 
     def get_parent(self) -> TreeNode:
+        if self._root_as_parent:
+            return _StationsRoot_Node()
         return _MineObject_Node(self.o.mine_object)
 
     def get_name(self) -> str:
@@ -93,14 +99,17 @@ class _Station_Node(TreeNode):
 
 
 class _BoreHole_Node(TreeNode):
-    def __init__(self, o: BoreHole):
+    def __init__(self, o: BoreHole, root_as_parent = False):
         self.o = o
+        self._root_as_parent = root_as_parent
 
     @db_session
     def self_reload(self):
         self.o = BoreHole[self.o.RID]
 
     def get_parent(self) -> TreeNode:
+        if self._root_as_parent:
+            return _BoreHolesRoot_Node()
         if self.o.station != None:
             return _Station_Node(self.o.station)
         else:
@@ -167,6 +176,57 @@ class _Root_Node(TreeNode):
 
     def __eq__(self, o):
         return isinstance(o, _Root_Node)
+    
+class _MineObjectsRoot_Node(TreeNode):
+    def get_name(self) -> str:
+        return "Объекты"
+
+    def get_parent(self) -> TreeNode:
+        return _MineObjectsRoot_Node()
+
+    @db_session
+    def get_subnodes(self) -> List[TreeNode]:
+        nodes = []
+        for o in select(o for o in MineObject if o.Level == 0):
+            nodes.append(_MineObject_Node(o, mine_objects_only=True))
+        return nodes
+
+    def __eq__(self, o):
+        return isinstance(o, _MineObjectsRoot_Node)
+    
+class _StationsRoot_Node(TreeNode):
+    def get_name(self) -> str:
+        return "Объекты"
+
+    def get_parent(self) -> TreeNode:
+        return _StationsRoot_Node()
+
+    @db_session
+    def get_subnodes(self) -> List[TreeNode]:
+        nodes = []
+        for o in select(o for o in Station).order_by(lambda x: x.StartDate):
+            nodes.append(_Station_Node(o, root_as_parent=True))
+        return nodes
+
+    def __eq__(self, o):
+        return isinstance(o, _StationsRoot_Node)
+    
+class _BoreHolesRoot_Node(TreeNode):
+    def get_name(self) -> str:
+        return "Объекты"
+
+    def get_parent(self) -> TreeNode:
+        return _BoreHolesRoot_Node()
+
+    @db_session
+    def get_subnodes(self) -> List[TreeNode]:
+        nodes = []
+        for o in select(o for o in BoreHole).order_by(lambda x: x.StartDate):
+            nodes.append(_BoreHole_Node(o, root_as_parent=True))
+        return nodes
+
+    def __eq__(self, o):
+        return isinstance(o, _BoreHolesRoot_Node)
 
 OpenSelfEditorEvent, EVT_TREE_OPEN_SELF_EDITOR = wx.lib.newevent.NewEvent()
 
@@ -175,6 +235,7 @@ class TreeWidget(Tree):
         super().__init__(parent)
         self.bind_all()
         self.set_root_node(_Root_Node())
+        self._mode = 'all'
         self.Bind(EVT_WIDGET_TREE_MENU, self._on_node_context_menu)
 
     def _create_node(self, o):
@@ -211,9 +272,10 @@ class TreeWidget(Tree):
         item = subnode_menu.Append(wx.ID_ANY, "Измерительную станцию")
         subnode_menu.Bind(wx.EVT_MENU, self._on_create_station, item)
         item = subnode_menu.Append(wx.ID_ANY, "Скважину")
+        item.SetBitmap(get_icon("magic-wand"))
         subnode_menu.Bind(wx.EVT_MENU, self._on_create_bore_hole, item)
         item = menu.AppendSubMenu(subnode_menu, "Добавить")
-        item.SetBitmap(get_art(wx.ART_PLUS, scale_to=16))
+        item.SetBitmap(get_art(wx.ART_NEW, scale_to=16))
         item = menu.Append(wx.ID_ANY, "Изменить")
         item.SetBitmap(get_art(wx.ART_EDIT, scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_open_self_editor, item)
@@ -223,15 +285,29 @@ class TreeWidget(Tree):
         menu.Bind(wx.EVT_MENU, self._on_delete_mine_object, item)
         self.PopupMenu(menu, point)
 
+    def change_mode(self, mode):
+        if mode == 'all':
+            self.set_root_node(_Root_Node())
+        elif mode == 'mine_objects':
+            self.set_root_node(_MineObjectsRoot_Node())
+        elif mode == 'stations':
+            self.set_root_node(_StationsRoot_Node())
+        elif mode == 'bore_holes':
+            self.set_root_node(_BoreHolesRoot_Node())
+        else:
+            return
+        self._mode = mode
+
     def _create_object(self, parent_object, instance_class):
+        window = wx.GetApp().GetTopWindow().FindFocus().GetTopLevelParent()
         if instance_class == MineObject:
-            dlg = DialogCreateMineObject(self, parent_object)
+            dlg = DialogCreateMineObject(window, parent_object)
         elif instance_class == Station:
-            dlg = DialogCreateStation(self, self._current_object)
+            dlg = DialogCreateStation(window, self._current_object)
         elif instance_class == BoreHole:
-            dlg = DialogCreateBoreHole(self, self._current_object)
+            dlg = WizCreateBoreHole(window, self._current_object)
         elif instance_class == OrigSampleSet:
-            dlg = DialogCreateCore(self, self._current_object)
+            dlg = DialogCreateCore(window, self._current_object)
         if dlg.ShowModal() == wx.ID_OK:
             # Элемент дерева - объект родителя перезагружается из базы данных
             self.soft_reload_childrens(self._current_node)
@@ -273,9 +349,10 @@ class TreeWidget(Tree):
         menu = wx.Menu()
         subnode_menu = wx.Menu()
         item = subnode_menu.Append(wx.ID_ANY, "Скважину")
+        item.SetBitmap(get_icon("magic-wand"))
         subnode_menu.Bind(wx.EVT_MENU, self._on_create_bore_hole, item)
         item = menu.AppendSubMenu(subnode_menu, "Добавить")
-        item.SetBitmap(get_art(wx.ART_PLUS, scale_to=16))
+        item.SetBitmap(get_art(wx.ART_NEW, scale_to=16))
         item = menu.Append(wx.ID_ANY, "Изменить")
         item.SetBitmap(get_art(wx.ART_EDIT, scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_open_self_editor, item)
@@ -301,7 +378,7 @@ class TreeWidget(Tree):
             item = subnode_menu.Append(wx.ID_ANY, "Привязать Керн")
             subnode_menu.Bind(wx.EVT_MENU, self._on_create_core, item)
         item = menu.AppendSubMenu(subnode_menu, "Добавить")
-        item.SetBitmap(get_art(wx.ART_PLUS, scale_to=16))
+        item.SetBitmap(get_art(wx.ART_NEW, scale_to=16))
         item = menu.Append(wx.ID_ANY, "Изменить")
         item.SetBitmap(get_art(wx.ART_EDIT, scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_open_self_editor, item)

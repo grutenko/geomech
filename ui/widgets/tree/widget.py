@@ -226,7 +226,6 @@ class Tree(wx.Panel):
                 item, _ = self._tree.GetFirstChild(item)
                 i += 1
         finally:
-            print('end')
             self._synthetic_expand = False
 
     def _on_native_item_selection_changed(self, event: wx.TreeEvent):
