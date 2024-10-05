@@ -4,7 +4,7 @@ from ui.icon import get_art, get_icon
 from .list import RbList
 from ui.class_config_provider import ClassConfigProvider
 
-from .create_dialog import DialogCreateRockBurst
+from .create import DialogCreateRockBurst
 
 __CONFIG_VERSION__ = 1
 

@@ -6,7 +6,7 @@ from ui.icon import get_art, get_icon
 from ui.icon import get_art
 from ui.datetimeutil import decode_date
 
-from .create_dialog import DialogCreateDischargeSeries
+from .create import DialogCreateDischargeSeries
 
 
 class DischargeList(wx.Panel):

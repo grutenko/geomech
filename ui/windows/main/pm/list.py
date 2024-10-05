@@ -5,7 +5,7 @@ from database import *
 from ui.icon import get_art, get_icon
 from ui.datetimeutil import decode_date
 
-from .dialog_create import DialogCreatePmSeries
+from .create import DialogCreatePmSeries
 
 class PmList(wx.Panel):
     def __init__(self, parent):

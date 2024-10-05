@@ -1,7 +1,7 @@
 import wx
 
 from ui.icon import get_art, get_icon
-from .create_dialog import DialogCreateRockBurst
+from .create import DialogCreateRockBurst
 
 class RbList(wx.Panel):
     def __init__(self, parent):

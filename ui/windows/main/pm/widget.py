@@ -3,7 +3,7 @@ import wx
 from ui.class_config_provider import ClassConfigProvider
 from ui.icon import get_art, get_icon
 from .list import PmList
-from .dialog_create import DialogCreatePmSeries
+from .create import DialogCreatePmSeries
 
 __CONFIG_VERSION__ = 1
 

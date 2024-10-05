@@ -4,8 +4,8 @@ from pony.orm import *
 from ui.icon import get_art, get_icon
 from ui.class_config_provider import ClassConfigProvider
 from .list import DischargeList
-from .discharge import DischargeDetails
-from .create_dialog import DialogCreateDischargeSeries
+from .detail import DischargeDetails
+from .create import DialogCreateDischargeSeries
 
 
 __CONFIG_VERSION__ = 1
