@@ -705,7 +705,6 @@ class GridEditor(wx.Panel):
         new_state = {**self._state, **state}
         eq = True
         for key in state.keys():
-            print(key, state[key], self._state[key])
             if key not in self._state or state[key] != self._state[key]:
                 eq = False
                 break
@@ -1002,6 +1001,8 @@ class GridEditor(wx.Panel):
         self.toolbar.Realize()
         self._controls_initialized = False
         self._view.HideCellEditControl()
+        self.statusbar.SetStatusText("", 1)
+        self.statusbar.SetStatusText("", 2)
 
     def _update_undo_redo_state(self):
         if (

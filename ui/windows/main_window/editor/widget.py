@@ -37,11 +37,18 @@ class EditorProto(Protocol):
     def is_changed(self) -> bool: ...
 
 
+EditorNBStateChangedEvent, EVT_ENB_STATE_CHANGED = wx.lib.newevent.NewEvent()
+EditorClosedEvent, EVT_ENB_EDITOR_CLOSED = wx.lib.newevent.NewEvent()
+
+
 class BasicEditor(wx.Panel):
     def __init__(self, notebook, title="Редактор", identity=None):
         super().__init__(notebook.get_native())
         self._identity = identity
         self._title = title
+
+    def notify_state_changed(self):
+        wx.PostEvent(self, EditorNBStateChangedEvent(target=self))
 
     def get_identity(self) -> Identity | None:
         return self._identity
@@ -86,10 +93,6 @@ class BasicEditor(wx.Panel):
 
     def is_read_only(self) -> bool:
         return False
-
-
-EditorNBStateChangedEvent, EVT_ENB_STATE_CHANGED = wx.lib.newevent.NewEvent()
-EditorClosedEvent, EVT_ENB_EDITOR_CLOSED = wx.lib.newevent.NewEvent()
 
 
 class EditorNotebook(wx.Panel):

@@ -24,24 +24,18 @@ class DischargeDetails(wx.Panel):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._image_list = wx.ImageList(16, 16)
-        self._link_icon = self._image_list.Add(get_icon("link"))
-        self._info_icon = self._image_list.Add(get_art(wx.ART_INFORMATION))
-        self._help_page_icon = self._image_list.Add(get_art(wx.ART_HELP_PAGE))
-        self._info_icon = self._image_list.Add(get_art(wx.ART_INFORMATION))
         self._table_icon = self._image_list.Add(get_art(wx.ART_REPORT_VIEW))
         self._list = wx.ListCtrl(self, style=wx.LC_LIST)
         self._list.AssignImageList(self._image_list, wx.IMAGE_LIST_SMALL)
         self._list.AppendColumn("Элемент")
-        self._list.InsertItem(0, "[Керн]", self._link_icon)
-        self._list.InsertItem(1, "[Набор замеров]", self._info_icon)
-        self._list.InsertItem(2, "Ящики", self._table_icon)
-        self._list.InsertItem(3, "Замеры", self._table_icon)
+        self._list.InsertItem(1, "Ящики", self._table_icon)
+        self._list.InsertItem(2, "Замеры", self._table_icon)
         main_sizer.Add(self._list, 1, wx.EXPAND)
         self._list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_item_activated)
         self.SetSizer(main_sizer)
 
     def _on_item_activated(self, event: wx.ListEvent):
-        if event.GetIndex() == 3:
+        if event.GetIndex() == 1:
             if self.o != None:
                 _id = Identity(self.o, self.o, DischargeMeasurement)
                 n = EditorNotebook.get_instance()
@@ -61,7 +55,7 @@ class DischargeDetails(wx.Panel):
         o = DischargeSeries[rid]
         self.o = OrigSampleSet[o.orig_sample_set.RID]
         measure_count = select(o for o in DischargeMeasurement if o.orig_sample_set == self.o).count()
-        self._list.SetItemText(3, "Замеры (%d)" % measure_count)
+        self._list.SetItemText(1, "Замеры (%d)" % measure_count)
         self.rid = self.o.RID
         self.Show()
 

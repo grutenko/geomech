@@ -3,13 +3,11 @@ import wx
 from pony.orm import *
 from database import *
 from ui.icon import get_art, get_icon
-from ui.icon import get_art
 from ui.datetimeutil import decode_date
 
-from .create_dialog import DialogCreateDischargeSeries
+from .dialog_create import DialogCreatePmSeries
 
-
-class DischargeList(wx.Panel):
+class PmList(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -20,8 +18,7 @@ class DischargeList(wx.Panel):
         self._book_stack_icon = self._image_list.Add(get_icon("book-stack"))
         self._list = wx.ListCtrl(self, style=wx.LC_REPORT)
         self._list.AppendColumn("Название", width=250)
-        self._list.AppendColumn("Дата начала", width=100)
-        self._list.AppendColumn("Дата окончания", width=100)
+        self._list.AppendColumn("Место", width=150)
         self._list.AppendColumn("Договор", width=150)
         self._list.AssignImageList(self._image_list, wx.IMAGE_LIST_SMALL)
         main_sizer.Add(self._list, 1, wx.EXPAND)
@@ -43,38 +40,29 @@ class DischargeList(wx.Panel):
             item = menu.Append(wx.ID_DELETE, "Удалить")
             item.SetBitmap(get_art(wx.ART_DELETE))
             menu.AppendSeparator()
-            item = menu.Append(wx.ID_ADD, "Добавить разгрузку")
+            item = menu.Append(wx.ID_ADD, "Добавить набор")
             menu.Bind(wx.EVT_MENU, self._on_add, item)
             item.SetBitmap(get_icon("magic-wand"))
         else:
             menu = wx.Menu()
-            item = menu.Append(wx.ID_ADD, "Добавить разгрузку")
+            item = menu.Append(wx.ID_ADD, "Добавить набор")
             menu.Bind(wx.EVT_MENU, self._on_add, item)
             item.SetBitmap(get_icon("magic-wand"))
         self.PopupMenu(menu, event.GetPosition())
 
     @db_session
     def _load(self):
-        discharges = select(o for o in DischargeSeries).order_by(
-            lambda x: desc(x.StartMeasure)
+        discharges = select(o for o in PMTestSeries).order_by(
+            lambda x: desc(x.RID)
         )
         self._items = discharges
         for index, o in enumerate(discharges):
             item = self._list.InsertItem(index, o.Name, self._book_stack_icon)
-            self._list.SetItem(item, 1, str(decode_date(o.StartMeasure)))
-            self._list.SetItem(
-                item,
-                2,
-                (
-                    str(decode_date(o.EndMeasure))
-                    if o.EndMeasure != None
-                    else "[Не задано]"
-                ),
-            )
+            self._list.SetItem(item, 1, o.Location if o.Location != None else o.Location)
             self._list.SetItemData(item, o.RID)
 
     def _on_add(self, event):
-        dlg = DialogCreateDischargeSeries(self)
+        dlg = DialogCreatePmSeries(self)
         dlg.ShowModal()
 
     def get_items(self):

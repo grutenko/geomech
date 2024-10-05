@@ -302,7 +302,7 @@ class MainFrame(wx.Frame):
         event.Skip()
 
     def _on_pane_maximized(self, event):
-        print(event)
+        ...
 
     def _on_open_cs_settings_window(self, event):
         if self._cs_settings_window.IsShown():
