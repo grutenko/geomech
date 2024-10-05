@@ -9,7 +9,7 @@ import os
 
 import options
 import version
-import ui.windows.main_window.main
+import ui.windows.main.main
 from ui.start import StartDialog
 from pony.orm import *
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     _conf = config.get('database')
     database.init(_conf)
 
-    main_frame = ui.windows.main_window.main.MainFrame(_conf)
+    main_frame = ui.windows.main.main.MainFrame(_conf)
     app.SetTopWindow(main_frame)
 
     app.MainLoop()
