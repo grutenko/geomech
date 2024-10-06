@@ -4,7 +4,7 @@ import wx.dataview
 from pony.orm import *
 from database import *
 
-from ui.icon import get_art
+from ui.icon import get_art, get_icon
 
 
 class SuppliedDataWidget(wx.Panel):
@@ -29,10 +29,9 @@ class SuppliedDataWidget(wx.Panel):
             self, style=wx.dataview.TL_DEFAULT_STYLE | wx.BORDER_NONE
         )
         self.list.AssignImageList(self._image_list)
-        self._icon_folder = self._image_list.Add(get_art(wx.ART_FOLDER, scale_to=16))
+        self._icon_folder = self._image_list.Add(get_icon('folder'))
         self._icon_folder_open = self._image_list.Add(
-            get_art(wx.ART_FOLDER_OPEN, scale_to=16)
-        )
+            get_icon('folder-open'))
         self._icon_file = self._image_list.Add(get_art(wx.ART_NORMAL_FILE, scale_to=16))
         self.list.AppendColumn("Название", 250)
         self.list.AppendColumn("Тип", 50)

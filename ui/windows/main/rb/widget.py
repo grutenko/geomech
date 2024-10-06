@@ -25,12 +25,12 @@ class RbPanel(wx.Panel):
         )
         item.Enable(False)
         item = self.toolbar.AddTool(
-            wx.ID_DELETE, "Удалить", get_art(wx.ART_DELETE)
+            wx.ID_DELETE, "Удалить", get_icon('delete')
         )
         item.Enable(False)
         self.toolbar.AddStretchableSpace()
         item = self.toolbar.AddCheckTool(
-            wx.ID_FIND, "", get_art(wx.ART_FIND)
+            wx.ID_FIND, "", get_icon('find')
         )
         self.toolbar.Realize()
 

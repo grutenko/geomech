@@ -48,7 +48,7 @@ class BaseEditor(wx.Panel):
         return self._title
 
     def get_icon(self):
-        return wx.ART_REPORT_VIEW, get_art(wx.ART_REPORT_VIEW, scale_to=16)
+        return 'data-sheet', get_icon('data-sheet', scale_to=16)
 
     def can_save(self) -> bool:
         return self.editor.can_save()

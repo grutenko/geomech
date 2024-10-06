@@ -13,7 +13,7 @@ class DialogCreateRockBurst(wx.Dialog):
     def __init__(self, parent):
         super().__init__(parent)
         self.SetSize(350, 400)
-        self.SetIcon(wx.Icon(get_icon("magic-wand")))
+        self.SetIcon(wx.Icon(get_icon("wand")))
         self.SetTitle("Мастер добавления горного удара")
         self.CenterOnScreen()
         self._history = []

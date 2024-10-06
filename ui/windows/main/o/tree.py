@@ -41,10 +41,10 @@ class _MineObject_Node(TreeNode):
         return "[" + self._get_type_name() + "] " + self.o.Name
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return wx.ART_FOLDER, get_art(wx.ART_FOLDER, 16)
+        return 'folder', get_icon('folder', 16)
 
     def get_icon_open(self) -> Tuple[str | wx.Bitmap] | None:
-        return wx.ART_FOLDER_OPEN, get_art(wx.ART_FOLDER_OPEN, 16)
+        return 'folder-open', get_icon('folder-open', 16)
 
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
@@ -82,10 +82,10 @@ class _Station_Node(TreeNode):
         return "[Станция] " + self.o.Name
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return wx.ART_FOLDER, get_art(wx.ART_FOLDER, 16)
+        return 'folder', get_icon('folder', 16)
 
     def get_icon_open(self) -> Tuple[str | wx.Bitmap] | None:
-        return wx.ART_FOLDER_OPEN, get_art(wx.ART_FOLDER_OPEN, 16)
+        return 'folder-open', get_icon('folder-open', 16)
 
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
@@ -119,10 +119,10 @@ class _BoreHole_Node(TreeNode):
         return "[Скважина] " + self.o.Name
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return wx.ART_FOLDER, get_art(wx.ART_FOLDER, 16)
+        return 'folder', get_icon('folder', 16)
 
     def get_icon_open(self) -> Tuple[str | wx.Bitmap] | None:
-        return wx.ART_FOLDER_OPEN, get_art(wx.ART_FOLDER_OPEN, 16)
+        return 'folder-open', get_icon('folder-open', 16)
 
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
@@ -272,16 +272,16 @@ class TreeWidget(Tree):
         item = subnode_menu.Append(wx.ID_ANY, "Измерительную станцию")
         subnode_menu.Bind(wx.EVT_MENU, self._on_create_station, item)
         item = subnode_menu.Append(wx.ID_ANY, "Скважину")
-        item.SetBitmap(get_icon("magic-wand"))
+        item.SetBitmap(get_icon("wand"))
         subnode_menu.Bind(wx.EVT_MENU, self._on_create_bore_hole, item)
         item = menu.AppendSubMenu(subnode_menu, "Добавить")
         item.SetBitmap(get_art(wx.ART_NEW, scale_to=16))
         item = menu.Append(wx.ID_ANY, "Изменить")
-        item.SetBitmap(get_art(wx.ART_EDIT, scale_to=16))
+        item.SetBitmap(get_icon('edit', scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_open_self_editor, item)
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Удалить")
-        item.SetBitmap(get_art(wx.ART_DELETE, scale_to=16))
+        item.SetBitmap(get_icon('delete', scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_delete_mine_object, item)
         self.PopupMenu(menu, point)
 
@@ -349,16 +349,16 @@ class TreeWidget(Tree):
         menu = wx.Menu()
         subnode_menu = wx.Menu()
         item = subnode_menu.Append(wx.ID_ANY, "Скважину")
-        item.SetBitmap(get_icon("magic-wand"))
+        item.SetBitmap(get_icon("wand"))
         subnode_menu.Bind(wx.EVT_MENU, self._on_create_bore_hole, item)
         item = menu.AppendSubMenu(subnode_menu, "Добавить")
         item.SetBitmap(get_art(wx.ART_NEW, scale_to=16))
         item = menu.Append(wx.ID_ANY, "Изменить")
-        item.SetBitmap(get_art(wx.ART_EDIT, scale_to=16))
+        item.SetBitmap(get_icon('edit', scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_open_self_editor, item)
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Удалить")
-        item.SetBitmap(get_art(wx.ART_DELETE, scale_to=16))
+        item.SetBitmap(get_icon('delete', scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_delete_bore_hole, item)
         self.PopupMenu(menu, point)
 
@@ -380,11 +380,11 @@ class TreeWidget(Tree):
         item = menu.AppendSubMenu(subnode_menu, "Добавить")
         item.SetBitmap(get_art(wx.ART_NEW, scale_to=16))
         item = menu.Append(wx.ID_ANY, "Изменить")
-        item.SetBitmap(get_art(wx.ART_EDIT, scale_to=16))
+        item.SetBitmap(get_icon('edit', scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_open_self_editor, item)
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Удалить")
-        item.SetBitmap(get_art(wx.ART_DELETE, scale_to=16))
+        item.SetBitmap(get_icon('delete', scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_delete_bore_hole, item)
         self.PopupMenu(menu, point)
 
@@ -398,10 +398,10 @@ class TreeWidget(Tree):
         self._current_object = node.o
         menu = wx.Menu()
         item = menu.Append(wx.ID_ANY, "Изменить")
-        item.SetBitmap(get_art(wx.ART_EDIT, scale_to=16))
+        item.SetBitmap(get_icon('edit', scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_open_self_editor, item)
         item = menu.Append(wx.ID_ANY, "Удалить")
-        item.SetBitmap(get_art(wx.ART_DELETE, scale_to=16))
+        item.SetBitmap(get_icon('delete', scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_delete_core, item)
         self.PopupMenu(menu, point)
 

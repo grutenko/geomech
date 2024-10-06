@@ -10,47 +10,39 @@ ID_TOGGLE_COORD_SYSTEM = ID_TOGGLE_OBJECTS + 3
 ID_TOGGLE_DISCHARGE = ID_TOGGLE_OBJECTS + 4
 ID_TOGGLE_PM = ID_TOGGLE_OBJECTS + 5
 ID_TOGGLE_ROCK_BURST = ID_TOGGLE_OBJECTS + 6
+ID_TOGGLE_CONTAINER = ID_TOGGLE_OBJECTS + 7
 
 
 class MgrPanelToolbar(wx.ToolBar):
     def __init__(self, parent):
-        super().__init__(parent, style=wx.TB_DEFAULT_STYLE | wx.TB_HORZ_TEXT | wx.TB_DOCKABLE | wx.TB_FLAT)
+        super().__init__(parent, style=wx.TB_DEFAULT_STYLE | wx.TB_FLAT | wx.TB_LEFT | wx.TB_RIGHT)
 
-        tool = self.AddCheckTool(
-            ID_TOGGLE_DISCHARGE,
-            "Разгрузка",
-            get_art(wx.ART_HELP_BOOK, scale_to=16),
-            shortHelp="Показать/Скрыть разгрузка",
-        )
-        tool = self.AddCheckTool(
-            ID_TOGGLE_PM,
-            "Физ. мех. свойства",
-            get_art(wx.ART_HELP_BOOK, scale_to=16),
-            shortHelp="Показать/Скрыть Физ. мех. свойства",
-        )
-        tool = self.AddCheckTool(
-            ID_TOGGLE_ROCK_BURST,
-            "Горные удары",
-            get_art(wx.ART_HELP_BOOK, scale_to=16),
-            shortHelp="Показать/Скрыть Горные удары",
-        )
+        tool = self.AddTool(ID_TOGGLE_CONTAINER, "База данных", get_icon('book-stack'))
+        menu = wx.Menu()
+        item = menu.AppendCheckItem(ID_TOGGLE_DISCHARGE, "Разгрузочные замеры", "Показать/Скрыть разгрузка")
+        item.SetBitmap(get_icon('check'))
+        item = menu.AppendCheckItem(ID_TOGGLE_PM, "[Физ. Мех. Свойства] Наборы замеров (договоры)", "Показать/Скрыть Физ. мех. свойства")
+        item.SetBitmap(get_icon('check'))
+        item = menu.AppendCheckItem(ID_TOGGLE_ROCK_BURST, "Горные удары", "Показать/Скрыть Горные удары")
+        item.SetBitmap(get_icon('check'))
+        self._dropdown = menu
         self.AddSeparator()
         tool = self.AddCheckTool(
             ID_TOGGLE_OBJECTS,
             "Объекты",
-            get_art(wx.ART_HELP_BOOK, scale_to=16),
+            get_icon('hierarchy'),
             shortHelp="Показать/Скрыть объекты",
         )
         tool = self.AddCheckTool(
             ID_TOGGLE_FASTVIEW,
             "Быстрый просмотр",
-            get_art(wx.ART_INFORMATION, scale_to=16),
+            get_icon("show-property", scale_to=16),
             shortHelp="Показать/Скрыть быстрый просмотр",
         )
         tool = self.AddCheckTool(
             ID_TOGGLE_SUPPLIED_DATA,
             "Сопутствующие материалы",
-            get_art(wx.ART_FOLDER, scale_to=16),
+            get_icon("versions", scale_to=16),
             shortHelp="Показать/Скрыть сопутствующие материалы",
         )
 

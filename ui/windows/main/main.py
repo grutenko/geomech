@@ -46,11 +46,11 @@ class MainFrame(wx.Frame):
         self.SetMenuBar(self.menu_bar)
 
         self.toolbar = MainToolbar(self)
+        self.SetToolBar(self.toolbar)
 
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.mgr_panel_toolbar = MgrPanelToolbar(self)
         main_sizer.Add(self.mgr_panel_toolbar, 0, wx.EXPAND)
-        main_sizer.Add(self.toolbar, 0, wx.EXPAND)
         mgr_panel = wx.Panel(self)
         self.mgr_panel = mgr_panel
         main_sizer.Add(mgr_panel, 1, wx.EXPAND)
@@ -94,7 +94,7 @@ class MainFrame(wx.Frame):
         i.MinSize(300, 200)
         i.MinSize(300, 200)
         i.MaxSize(600, 900)
-        i.Icon(get_art(wx.ART_HELP_BOOK, scale_to=16))
+        i.Icon(get_icon("book-stack"))
         i.Hide()
         self.dm = DischargePanel(mgr_panel, self.menu_bar, self.toolbar, self.statusbar)
         info = self.dm.get_pane_info()
@@ -112,7 +112,7 @@ class MainFrame(wx.Frame):
         i.MinSize(300, 200)
         i.MinSize(300, 200)
         i.MaxSize(600, 900)
-        i.Icon(get_art(wx.ART_HELP_BOOK, scale_to=16))
+        i.Icon(get_icon("book-stack"))
         i.Hide()
         self.pm = PmPanel(mgr_panel)
         info = self.pm.get_pane_info()
@@ -130,7 +130,7 @@ class MainFrame(wx.Frame):
         i.MinSize(300, 200)
         i.MinSize(300, 200)
         i.MaxSize(600, 900)
-        i.Icon(get_art(wx.ART_HELP_BOOK, scale_to=16))
+        i.Icon(get_icon("book-stack"))
         i.Hide()
         self.rb = RbPanel(mgr_panel)
         info = self.rb.get_pane_info()
@@ -154,7 +154,7 @@ class MainFrame(wx.Frame):
         i.CloseButton(True)
         i.Name("fastview")
         i.Caption("Быстрый просмотр")
-        i.Icon(get_art(wx.ART_INFORMATION, scale_to=16))
+        i.Icon(get_icon("show-property"))
         i.MinSize(300, 300)
         i.BestSize(300, 600)
         self.fastview = FastView(mgr_panel)
@@ -174,7 +174,7 @@ class MainFrame(wx.Frame):
         i.MinSize(300, 200)
         i.BestSize(600, 200)
         i.Hide()
-        i.Icon(get_art(wx.ART_FOLDER, scale_to=16))
+        i.Icon(get_icon("versions"))
         self.supplied_data = SuppliedData(mgr_panel)
         info = self.supplied_data.get_pane_info()
         if info != None:
@@ -251,6 +251,7 @@ class MainFrame(wx.Frame):
         mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_dm, id=ID_TOGGLE_DISCHARGE)
         mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_pm, id=ID_TOGGLE_PM)
         mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_rb, id=ID_TOGGLE_ROCK_BURST)
+        mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_dropdown, id=ID_TOGGLE_CONTAINER)
         self.Bind(wx.EVT_CLOSE, self._on_close)
         self.mgr_panel.Bind(wx.aui.EVT_AUI_PANE_CLOSE, self._on_pane_closed)
         self.mgr_panel.Bind(wx.aui.EVT_AUI_PANE_RESTORE, self._on_pane_restored)
@@ -260,6 +261,12 @@ class MainFrame(wx.Frame):
         self.mgr_panel.Bind(wx.aui.EVT_AUI_PANE_BUTTON, self._on_pane_maximized)
         self.Bind(wx.EVT_SIZE, self._on_resize, self)
         self.Bind(wx.EVT_MOVE_END, self._on_move, self)
+
+    def _on_toggle_dropdown(self, event):
+        pos = wx.GetMousePosition()
+        self.mgr_panel_toolbar.PopupMenu(
+            self.mgr_panel_toolbar._dropdown, self.mgr_panel_toolbar.ScreenToClient(pos)
+        )
 
     def _on_toggle_dm(self, event):
         if event.IsChecked():
@@ -301,8 +308,7 @@ class MainFrame(wx.Frame):
             self._config_provider.flush()
         event.Skip()
 
-    def _on_pane_maximized(self, event):
-        ...
+    def _on_pane_maximized(self, event): ...
 
     def _on_open_cs_settings_window(self, event):
         if self._cs_settings_window.IsShown():
@@ -521,16 +527,16 @@ class MainFrame(wx.Frame):
             mgrtb.GetToolState(ID_TOGGLE_OBJECTS) != object_state
             or mgrtb.GetToolState(ID_TOGGLE_FASTVIEW) != fastview_state
             or mgrtb.GetToolState(ID_TOGGLE_SUPPLIED_DATA) != sd_state
-            or mgrtb.GetToolState(ID_TOGGLE_DISCHARGE) != dm_state
-            or mgrtb.GetToolState(ID_TOGGLE_PM) != pm_state
-            or mgrtb.GetToolState(ID_TOGGLE_ROCK_BURST) != rb_state
+            or mgrtb._dropdown.IsChecked(ID_TOGGLE_DISCHARGE) != dm_state
+            or mgrtb._dropdown.IsChecked(ID_TOGGLE_PM) != pm_state
+            or mgrtb._dropdown.IsChecked(ID_TOGGLE_ROCK_BURST) != rb_state
         ):
             mgrtb.ToggleTool(ID_TOGGLE_OBJECTS, object_state)
             mgrtb.ToggleTool(ID_TOGGLE_FASTVIEW, fastview_state)
             mgrtb.ToggleTool(ID_TOGGLE_SUPPLIED_DATA, sd_state)
-            mgrtb.ToggleTool(ID_TOGGLE_DISCHARGE, dm_state)
-            mgrtb.ToggleTool(ID_TOGGLE_PM, pm_state)
-            mgrtb.ToggleTool(ID_TOGGLE_ROCK_BURST, rb_state)
+            mgrtb._dropdown.Check(ID_TOGGLE_DISCHARGE, dm_state)
+            mgrtb._dropdown.Check(ID_TOGGLE_PM, pm_state)
+            mgrtb._dropdown.Check(ID_TOGGLE_ROCK_BURST, rb_state)
             mgrtb.Realize()
         self.toolbar.EnableTool(
             wx.ID_SAVE, not self._disable_controls and self.editors.can_save()

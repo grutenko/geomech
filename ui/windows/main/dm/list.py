@@ -17,7 +17,7 @@ class DischargeList(wx.Panel):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._image_list = wx.ImageList(16, 16)
-        self._book_stack_icon = self._image_list.Add(get_icon("book-stack"))
+        self._book_stack_icon = self._image_list.Add(get_icon("read"))
         self._list = wx.ListCtrl(self, style=wx.LC_REPORT)
         self._list.AppendColumn("Название", width=250)
         self._list.AppendColumn("Дата начала", width=100)
@@ -39,18 +39,18 @@ class DischargeList(wx.Panel):
             self._list.Select(index)
             menu = wx.Menu()
             item = menu.Append(wx.ID_EDIT, "Изменить")
-            item.SetBitmap(get_art(wx.ART_EDIT))
+            item.SetBitmap(get_icon('edit'))
             item = menu.Append(wx.ID_DELETE, "Удалить")
-            item.SetBitmap(get_art(wx.ART_DELETE))
+            item.SetBitmap(get_icon('delete'))
             menu.AppendSeparator()
             item = menu.Append(wx.ID_ADD, "Добавить разгрузку")
             menu.Bind(wx.EVT_MENU, self._on_add, item)
-            item.SetBitmap(get_icon("magic-wand"))
+            item.SetBitmap(get_icon("wand"))
         else:
             menu = wx.Menu()
             item = menu.Append(wx.ID_ADD, "Добавить разгрузку")
             menu.Bind(wx.EVT_MENU, self._on_add, item)
-            item.SetBitmap(get_icon("magic-wand"))
+            item.SetBitmap(get_icon("wand"))
         self.PopupMenu(menu, event.GetPosition())
 
     @db_session

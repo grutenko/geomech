@@ -23,18 +23,18 @@ class DischargePanel(wx.Panel):
 
         self.toolbar = wx.ToolBar(self, style=wx.TB_HORZ_TEXT | wx.TB_FLAT)
         item = self.toolbar.AddTool(
-            wx.ID_BACKWARD, label="Назад", bitmap=get_art(wx.ART_GO_BACK)
+            wx.ID_BACKWARD, label="Назад", bitmap=get_icon('undo')
         )
         item.Enable(False)
         self.toolbar.AddSeparator()
-        item = self.toolbar.AddTool(wx.ID_ADD, "Добавить", get_icon("magic-wand"))
+        item = self.toolbar.AddTool(wx.ID_ADD, "Добавить", get_icon("wand"))
         self.toolbar.Bind(wx.EVT_TOOL, self._on_add, id=wx.ID_ADD)
-        item = self.toolbar.AddTool(wx.ID_EDIT, "Изменить", get_art(wx.ART_EDIT))
+        item = self.toolbar.AddTool(wx.ID_EDIT, "Изменить", get_icon('edit'))
         item.Enable(False)
-        item = self.toolbar.AddTool(wx.ID_DELETE, "Удалить", get_art(wx.ART_DELETE))
+        item = self.toolbar.AddTool(wx.ID_DELETE, "Удалить", get_icon('delete'))
         item.Enable(False)
         self.toolbar.AddStretchableSpace()
-        item = self.toolbar.AddCheckTool(wx.ID_FIND, "", get_art(wx.ART_FIND))
+        item = self.toolbar.AddCheckTool(wx.ID_FIND, "", get_icon('find'))
         self.toolbar.Bind(wx.EVT_TOOL, self._on_back, id=wx.ID_BACKWARD)
         self.toolbar.Realize()
 

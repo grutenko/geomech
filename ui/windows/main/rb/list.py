@@ -28,18 +28,18 @@ class RbList(wx.Panel):
             self._list.Select(index)
             menu = wx.Menu()
             item = menu.Append(wx.ID_EDIT, "Изменить")
-            item.SetBitmap(get_art(wx.ART_EDIT))
+            item.SetBitmap(get_icon('edit'))
             item = menu.Append(wx.ID_DELETE, "Удалить")
-            item.SetBitmap(get_art(wx.ART_DELETE))
+            item.SetBitmap(get_icon('delete'))
             menu.AppendSeparator()
             item = menu.Append(wx.ID_ADD, "Добавить горный удар")
             menu.Bind(wx.EVT_MENU, self._on_add, item)
-            item.SetBitmap(get_icon("magic-wand"))
+            item.SetBitmap(get_icon("wand"))
         else:
             menu = wx.Menu()
             item = menu.Append(wx.ID_ADD, "Добавить горный удар")
             menu.Bind(wx.EVT_MENU, self._on_add, item)
-            item.SetBitmap(get_icon("magic-wand"))
+            item.SetBitmap(get_icon("wand"))
         self.PopupMenu(menu, event.GetPosition())
 
     def _on_add(self, event):
