@@ -151,7 +151,7 @@ class _Core_Node(TreeNode):
         return "[Керн]"
 
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
-        return wx.ART_HELP_PAGE, get_art(wx.ART_HELP_PAGE, 16)
+        return 'file', get_icon('file')
 
     def is_leaf(self) -> bool:
         return True

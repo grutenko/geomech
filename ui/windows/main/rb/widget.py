@@ -15,7 +15,7 @@ class RbPanel(wx.Panel):
             __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
         )
 
-        self.toolbar = wx.ToolBar(self, style=wx.TB_HORZ_TEXT | wx.TB_FLAT)
+        self.toolbar = wx.ToolBar(self, style=wx.TB_FLAT)
         item = self.toolbar.AddTool(
             wx.ID_ADD, "Добавить", get_icon("magic-wand")
         )

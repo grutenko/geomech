@@ -20,6 +20,7 @@ class PmList(wx.Panel):
         self._list.AppendColumn("Название", width=250)
         self._list.AppendColumn("Место", width=150)
         self._list.AppendColumn("Договор", width=150)
+        self._list.AppendColumn("Месторождение", width=150)
         self._list.AssignImageList(self._image_list, wx.IMAGE_LIST_SMALL)
         main_sizer.Add(self._list, 1, wx.EXPAND)
         self.SetSizer(main_sizer)

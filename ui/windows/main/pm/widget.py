@@ -16,7 +16,7 @@ class PmPanel(wx.Panel):
 
         self._current_rid = None
 
-        self.toolbar = wx.ToolBar(self, style=wx.TB_HORZ_TEXT | wx.TB_FLAT)
+        self.toolbar = wx.ToolBar(self, style=wx.TB_FLAT)
         item = self.toolbar.AddTool(
             wx.ID_BACKWARD, label="Назад", bitmap=get_icon('undo')
         )

@@ -36,8 +36,8 @@ class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
         self.table = wx.ListCtrl(
             self, style=wx.LC_REPORT | wx.BORDER_NONE | wx.LC_SORT_ASCENDING
         )
-        self.table.AppendColumn("Название", width=100)
-        self.table.AppendColumn("Комментарий", width=400)
+        self.table.AppendColumn("Название", width=400)
+        self.table.AppendColumn("Комментарий", width=100)
         self.table.AppendColumn("Дата введения", width=100)
         self.table.AppendColumn("Дата аннулирования", width=150)
         self.table.AppendColumn("Аналитический?", width=120)

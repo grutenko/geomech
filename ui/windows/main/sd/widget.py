@@ -17,6 +17,7 @@ class SuppliedData(wx.Panel):
         self.SetSizer(main_sizer)
         self.sd = SuppliedDataWidget(self)
         main_sizer.Add(self.sd, 1, wx.EXPAND)
+        self._current = None
         self.Layout()
 
 
@@ -44,7 +45,12 @@ class SuppliedData(wx.Panel):
         else:
             self.sd.end()
             return
+        self._current = _id.rel_data_o
         self.sd.start(_id.rel_data_o, _type)
 
+    def get_current_object(self):
+        return self._current
+
     def end(self):
+        self._current = None
         self.sd.end()

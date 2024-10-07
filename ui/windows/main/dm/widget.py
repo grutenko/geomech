@@ -1,6 +1,7 @@
 import wx
 
 from pony.orm import *
+
 from ui.icon import get_art, get_icon
 from ui.class_config_provider import ClassConfigProvider
 from .list import DischargeList
@@ -21,7 +22,7 @@ class DischargePanel(wx.Panel):
 
         self._current_rid = None
 
-        self.toolbar = wx.ToolBar(self, style=wx.TB_HORZ_TEXT | wx.TB_FLAT)
+        self.toolbar = wx.ToolBar(self, style=wx.TB_FLAT)
         item = self.toolbar.AddTool(
             wx.ID_BACKWARD, label="Назад", bitmap=get_icon('undo')
         )
@@ -34,7 +35,7 @@ class DischargePanel(wx.Panel):
         item = self.toolbar.AddTool(wx.ID_DELETE, "Удалить", get_icon('delete'))
         item.Enable(False)
         self.toolbar.AddStretchableSpace()
-        item = self.toolbar.AddCheckTool(wx.ID_FIND, "", get_icon('find'))
+        item = self.toolbar.AddCheckTool(wx.ID_FIND, "", get_icon('filter'))
         self.toolbar.Bind(wx.EVT_TOOL, self._on_back, id=wx.ID_BACKWARD)
         self.toolbar.Realize()
 
@@ -54,6 +55,9 @@ class DischargePanel(wx.Panel):
         self.main_sizer = main_sizer
 
         self.Layout()
+
+        self._table = {}
+        self.itemDataMap = {}
 
     def _on_add(self, event):
         dlg = DialogCreateDischargeSeries(self)

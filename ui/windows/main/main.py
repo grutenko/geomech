@@ -60,7 +60,12 @@ class MainFrame(wx.Frame):
         self.SetSizer(main_sizer)
 
         self.mgr = wx.aui.AuiManager(
-            mgr_panel, flags=wx.aui.AUI_MGR_DEFAULT | wx.aui.AUI_MGR_LIVE_RESIZE
+            mgr_panel,
+            flags=wx.aui.AUI_MGR_DEFAULT
+            | wx.aui.AUI_MGR_LIVE_RESIZE
+            | wx.aui.AUI_MGR_RECTANGLE_HINT
+            | wx.aui.AUI_MGR_ALLOW_ACTIVE_PANE
+            | wx.aui.AUI_MGR_TRANSPARENT_DRAG,
         )
 
         self.statusbar = wx.StatusBar(self)
@@ -68,15 +73,14 @@ class MainFrame(wx.Frame):
         self.SetStatusBar(self.statusbar)
 
         i = wx.aui.AuiPaneInfo()
-        i.Float()
         i.CloseButton(True)
         i.Name("objects")
+        i.PinButton()
         i.Caption("Объекты")
-        i.MinSize(300, 200)
-        i.MinSize(300, 200)
+        i.MinSize(300, 100)
+        i.MinSize(300, 100)
         i.MaxSize(600, 900)
-        i.Dockable(False)
-        i.Icon(get_art(wx.ART_HELP_BOOK, scale_to=16))
+        i.Icon(get_icon("hierarchy"))
         i.Hide()
         self.objects = Objects(mgr_panel, self.menu_bar, self.toolbar, self.statusbar)
         info = self.objects.get_pane_info()
@@ -89,11 +93,13 @@ class MainFrame(wx.Frame):
         i = wx.aui.AuiPaneInfo()
         i.Top()
         i.CloseButton(True)
+        i.PinButton()
+        i.PaneBorder()
         i.Name("dm")
         i.Caption("Разгрузка")
         i.MinSize(300, 200)
-        i.MinSize(300, 200)
         i.MaxSize(600, 900)
+
         i.Icon(get_icon("book-stack"))
         i.Hide()
         self.dm = DischargePanel(mgr_panel, self.menu_bar, self.toolbar, self.statusbar)
@@ -108,10 +114,11 @@ class MainFrame(wx.Frame):
         i.Top()
         i.CloseButton(True)
         i.Name("pm")
+        i.PinButton()
         i.Caption("Физ. мех. свойства")
-        i.MinSize(300, 200)
-        i.MinSize(300, 200)
+        i.MinSize(300, 100)
         i.MaxSize(600, 900)
+
         i.Icon(get_icon("book-stack"))
         i.Hide()
         self.pm = PmPanel(mgr_panel)
@@ -125,11 +132,13 @@ class MainFrame(wx.Frame):
         i = wx.aui.AuiPaneInfo()
         i.Top()
         i.CloseButton(True)
+        i.PaneBorder()
         i.Name("rb")
+        i.PinButton()
         i.Caption("Горные удары")
-        i.MinSize(300, 200)
-        i.MinSize(300, 200)
+        i.MinSize(300, 100)
         i.MaxSize(600, 900)
+
         i.Icon(get_icon("book-stack"))
         i.Hide()
         self.rb = RbPanel(mgr_panel)
@@ -141,9 +150,10 @@ class MainFrame(wx.Frame):
         self.mgr.AddPane(self.rb, i)
 
         i = wx.aui.AuiPaneInfo()
-        i.CenterPane()
+        i.Center()
         i.Name("editors")
         i.MinSize(200, 300)
+        i.CloseButton(False)
         self.editors = EditorNotebook(
             mgr_panel, self.menu_bar, self.statusbar, self.toolbar
         )
@@ -152,10 +162,12 @@ class MainFrame(wx.Frame):
         i = wx.aui.AuiPaneInfo()
         i.Right()
         i.CloseButton(True)
+        i.PinButton()
         i.Name("fastview")
+        i.PaneBorder()
         i.Caption("Быстрый просмотр")
         i.Icon(get_icon("show-property"))
-        i.MinSize(300, 300)
+        i.MinSize(300, 100)
         i.BestSize(300, 600)
         self.fastview = FastView(mgr_panel)
         i.Hide()
@@ -169,6 +181,9 @@ class MainFrame(wx.Frame):
         i = wx.aui.AuiPaneInfo()
         i.Bottom()
         i.CloseButton(True)
+
+        i.PinButton()
+        i.PaneBorder()
         i.Name("supplied_data")
         i.Caption("Сопутствующие материалы")
         i.MinSize(300, 200)
@@ -349,6 +364,14 @@ class MainFrame(wx.Frame):
 
     def _on_pane_closed(self, event):
         if event.GetPane().name == "objects":
+            o = self.supplied_data.get_current_object()
+            if (
+                isinstance(o, MineObject)
+                or isinstance(o, Station)
+                or isinstance(o, BoreHole)
+                or isinstance(o, OrigSampleSet)
+            ):
+                self.supplied_data.end()
             self._update_controls_state(objects_shown=False)
         elif event.GetPane().name == "fastview":
             self._update_controls_state(fastview_shown=False)
@@ -427,26 +450,17 @@ class MainFrame(wx.Frame):
         self.supplied_data.start(_id)
 
     def _on_toggle_objects(self, event: wx.CommandEvent):
-        if event.IsChecked():
-            self.mgr.GetPane("objects").Show()
-        else:
-            self.mgr.GetPane("objects").Hide()
+        self.mgr.GetPane("objects").Show(event.IsChecked())
         self.mgr.Update()
         self._update_controls_state()
 
     def _on_toggle_fastview(self, event):
-        if event.IsChecked():
-            self.mgr.GetPane("fastview").Show()
-        else:
-            self.mgr.GetPane("fastview").Hide()
+        self.mgr.GetPane("fastview").Show(event.IsChecked())
         self.mgr.Update()
         self._update_controls_state()
 
     def _on_toggle_supplied_data(self, event):
-        if event.IsChecked():
-            self.mgr.GetPane("supplied_data").Show()
-        else:
-            self.mgr.GetPane("supplied_data").Hide()
+        self.mgr.GetPane("supplied_data").Show(event.IsChecked())
         self.mgr.Update()
         self._update_controls_state()
 

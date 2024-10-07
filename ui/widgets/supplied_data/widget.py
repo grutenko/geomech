@@ -1,10 +1,12 @@
 import wx
 import wx.dataview
+import os
 
 from pony.orm import *
 from database import *
 
 from ui.icon import get_art, get_icon
+from ui.resourcelocation import resource_path
 
 
 class SuppliedDataWidget(wx.Panel):
@@ -25,6 +27,7 @@ class SuppliedDataWidget(wx.Panel):
         main_sizer.Add(self._deputy, 1, wx.EXPAND)
 
         self._image_list = wx.ImageList(16, 16)
+        self._icons = {}
         self.list = wx.dataview.TreeListCtrl(
             self, style=wx.dataview.TL_DEFAULT_STYLE | wx.BORDER_NONE
         )
@@ -44,6 +47,11 @@ class SuppliedDataWidget(wx.Panel):
 
         self.Layout()
 
+    def _apply_icon(self, icon_name, icon):
+        if icon_name not in self._icons:
+            self._icons[icon_name] = self._image_list.Add(icon)
+        return self._icons[icon_name]
+
     @db_session
     def _render(self):
         self.list.DeleteAllItems()
@@ -60,8 +68,16 @@ class SuppliedDataWidget(wx.Panel):
             self.list.SetItemText(folder, 1, "Папка")
             self.list.SetItemText(folder, 2, "---")
             for child in o.parts:
+                ext = child.FileName.split(".")[-1]
+                if ext == 'xlsx':
+                    ext = 'xls'
+                icon_path = resource_path("icons/%s.png" % ext)
+                if os.path.exists(icon_path):
+                    _icon = self._apply_icon(ext, wx.Bitmap(icon_path))
+                else:
+                    _icon = self._icon_file
                 file = self.list.AppendItem(
-                    folder, child.Name, self._icon_file, self._icon_file, child
+                    folder, child.Name, _icon, _icon, child
                 )
                 self.list.SetItemText(file, 1, child.FileName.split(".")[-1])
                 self.list.SetItemText(file, 2, "---")
