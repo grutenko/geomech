@@ -15,7 +15,7 @@ class DialogCreateRockBurst(wx.Dialog):
         self.SetSize(350, 400)
         self.SetIcon(wx.Icon(get_icon("wand")))
         self.SetTitle("Мастер добавления горного удара")
-        self.CenterOnScreen()
+        self.CenterOnParent()
         self._history = []
         self._pages = {
             "first": wx.Panel(self),

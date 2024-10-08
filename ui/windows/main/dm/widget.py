@@ -49,6 +49,9 @@ class DischargePanel(wx.Panel):
         main_sizer.Add(top_sizer, 0, wx.EXPAND | wx.BOTTOM, border=2)
         self.SetSizer(main_sizer)
 
+        self.statusbar = wx.StatusBar(self, style=0)
+        main_sizer.Add(self.statusbar, 0, wx.EXPAND)
+
         self._details = DischargeDetails(self, menubar, toolbar, statusbar)
 
         self._list = DischargeList(self)
@@ -107,21 +110,23 @@ class DischargePanel(wx.Panel):
 
     def _go_to_item(self, rid):
         if self._current_rid == None:
-            self.main_sizer.Detach(1)
+            self.main_sizer.Detach(3)
             self.main_sizer.Add(self._details, 1, wx.EXPAND)
             self._list.end()
         self._details.start(rid)
+        self.statusbar.SetStatusText(self._details.get_item_name())
         self._current_rid = rid
         self.Layout()
         self._update_controls_state()
 
     def _go_to_list(self):
         if self._current_rid != None:
-            self.main_sizer.Detach(1)
+            self.main_sizer.Detach(3)
             self._details.end()
             self.main_sizer.Add(self._list, 1, wx.EXPAND)
             self._list.start()
         self._current_rid = None
+        self.statusbar.SetStatusText('')
         self.Layout()
         self._update_controls_state()
 

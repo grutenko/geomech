@@ -260,6 +260,7 @@ class TreeWidget(Tree):
         self.set_root_node(_Root_Node())
         self._mode = "all"
         self.Bind(EVT_WIDGET_TREE_MENU, self._on_node_context_menu)
+        self.Bind(EVT_WIDGET_TREE_ACTIVATED, self._on_node_activated)
 
     def _create_node(self, o):
         if isinstance(o, MineObject):
@@ -271,6 +272,9 @@ class TreeWidget(Tree):
         elif isinstance(o, OrigSampleSet) and o.bore_hole != None:
             return _Core_Node(o)
         return None
+
+    def _on_node_activated(self, event):
+        wx.PostEvent(self, OpenSelfEditorEvent(target=event.node.o))
 
     def _mine_object_context_menu(self, node: _MineObject_Node, point: wx.Point):
         self._current_object = node.o

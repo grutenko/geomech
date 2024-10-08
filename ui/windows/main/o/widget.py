@@ -109,6 +109,8 @@ class Objects(wx.Panel):
             dlg = DialogCreateMineObject(window, event.target, _type="UPDATE")
         elif isinstance(event.target, Station):
             dlg = DialogCreateStation(window, event.target, _type="UPDATE")
+        elif isinstance(event.target, BoreHole):
+            dlg = DialogCreateBoreHole(window, event.target, _type="UPDATE")
         elif isinstance(event.target, OrigSampleSet):
             dlg = DialogCreateCore(window, event.target, _type="UPDATE")
         else:

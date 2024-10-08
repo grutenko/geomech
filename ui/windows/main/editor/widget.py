@@ -139,15 +139,27 @@ class EditorNotebook(wx.Panel):
         self.notebook.Bind(EVT_FLATNOTEBOOK_PAGE_CLOSING, self._on_page_closing, self.notebook)
         self.notebook.Bind(EVT_FLATNOTEBOOK_PAGE_CLOSED, self._on_page_closed, self.notebook)
 
-    def select_by_identity(self, _id):
+    def get_by_identity(self, _id):
         for i in range(self._native_.GetPageCount()):
             page = self._native_.GetPage(i)
             if page.get_identity() == _id:
-                old_index = self._native_.GetSelection()
-                self._native_.SetSelection(i)
-                self._notify_selection_changed(i, old_index)
-                return True
+                return i, page
+        return -1, None
+
+    def select_by_identity(self, _id):
+        index, old_page = self.get_by_identity(_id)
+        if index != -1:
+            old_index = self._native_.GetSelection()
+            self._native_.SetSelection(index)
+            self._notify_selection_changed(index, old_index)
+            return True
         return False
+    
+    def select_by_index(self, index):
+        if index >= 0 and index < self._native_.GetPageCount():
+            old_index = self._native_.GetSelection()
+            self._native_.SetSelection(index)
+            self._notify_selection_changed(index, old_index)
 
     def get_native(self) -> FlatNotebook:
         return self._native_

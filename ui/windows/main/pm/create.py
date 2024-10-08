@@ -15,7 +15,7 @@ class DialogCreatePmSeries(wx.Dialog):
         self.SetSize(350, 400)
         self.SetIcon(wx.Icon(get_icon("wand")))
         self.SetTitle("Мастер добавления набора испытаний")
-        self.CenterOnScreen()
+        self.CenterOnParent()
         self._history = []
         self._pages = {
             "first": wx.Panel(self),

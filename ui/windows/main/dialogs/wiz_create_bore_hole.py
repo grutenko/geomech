@@ -14,7 +14,7 @@ class WizCreateBoreHole(wx.Dialog):
         self.SetSize(350, 500)
         self.SetIcon(wx.Icon(get_icon("magic-wand")))
         self.SetTitle("Мастер добавления скважины")
-        self.CenterOnScreen()
+        self.CenterOnParent()
         self._history = []
         self._pages = {}
         self._apply_page0()

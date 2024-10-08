@@ -200,6 +200,7 @@ class DialogCreateBoreHole(wx.Dialog):
             label = "Изменить"
         self.btn_save = wx.Button(self, label=label)
         self.btn_save.Bind(wx.EVT_BUTTON, self._on_save)
+        self.btn_save.SetDefault()
         btn_sizer.Add(self.btn_save, 0)
         main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.TOP, border=10)
 
@@ -210,6 +211,14 @@ class DialogCreateBoreHole(wx.Dialog):
 
         if _type == "UPDATE":
             self._set_fields()
+
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyUP)
+
+    def OnKeyUP(self, event):
+        keyCode = event.GetKeyCode()
+        if keyCode == wx.WXK_ESCAPE:
+            self.EndModal(wx.ID_CANCEL)
+        event.Skip() 
 
     def _set_fields(self):
         o = self._target

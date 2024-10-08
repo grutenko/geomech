@@ -15,7 +15,7 @@ class DialogCreateDischargeSeries(wx.Dialog):
         self.SetSize(350, 400)
         self.SetIcon(wx.Icon(get_icon("magic-wand")))
         self.SetTitle("Мастер добавления набора замеров")
-        self.CenterOnScreen()
+        self.CenterOnParent()
         self._history = []
         self._pages = {
             "first": wx.Panel(self),
