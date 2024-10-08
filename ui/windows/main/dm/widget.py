@@ -1,16 +1,20 @@
 import wx
+import wx.lib.newevent
 
 from pony.orm import *
 
 from ui.icon import get_art, get_icon
 from ui.class_config_provider import ClassConfigProvider
+from ui.windows.main.identity import Identity
 from .list import DischargeList
 from .detail import DischargeDetails
 from .create import DialogCreateDischargeSeries
 
 
-__CONFIG_VERSION__ = 1
+__CONFIG_VERSION__ = 2
 
+
+DmSelEvent, EVT_Dm_SELECTED = wx.lib.newevent.NewEvent()
 
 class DischargePanel(wx.Panel):
     @db_session
@@ -64,6 +68,9 @@ class DischargePanel(wx.Panel):
         dlg.ShowModal()
 
     def _on_selection_changed(self, event):
+        o = self._list.get_current_o()
+        if o != None:
+            wx.PostEvent(self, DmSelEvent(target=self, identity=Identity(o, o, None)))
         self._update_controls_state()
 
     def _on_back(self, event):
@@ -126,3 +133,6 @@ class DischargePanel(wx.Panel):
 
     def _on_select_box_changed(self, event: wx.CommandEvent):
         self._go_to_item(self._select_box.GetClientData(event.GetInt()))
+
+    def remove_selection(self):
+        self._list.remove_selection()

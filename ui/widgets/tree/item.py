@@ -21,5 +21,7 @@ class TreeNode(Protocol):
         return []
     def is_leaf(self) -> bool:
         return False
+    def is_root(self) -> bool:
+        return False
     def __eq__(self, o):
         raise NotImplementedError("Method __eq__() not implemented.")

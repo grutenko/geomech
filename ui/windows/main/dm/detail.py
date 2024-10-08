@@ -1,7 +1,9 @@
+import pubsub.pub
 import wx
 
 from pony.orm import *
 from database import *
+import pubsub
 
 from ui.windows.main.editor.widget import EditorNotebook
 from ui.windows.main.editor.dm import DMEditor
@@ -24,7 +26,7 @@ class DischargeDetails(wx.Panel):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._image_list = wx.ImageList(16, 16)
-        self._table_icon = self._image_list.Add(get_icon('data-sheet'))
+        self._table_icon = self._image_list.Add(get_icon("data-sheet"))
         self._list = wx.ListCtrl(self, style=wx.LC_LIST)
         self._list.AssignImageList(self._image_list, wx.IMAGE_LIST_SMALL)
         self._list.AppendColumn("Элемент")
@@ -33,6 +35,17 @@ class DischargeDetails(wx.Panel):
         main_sizer.Add(self._list, 1, wx.EXPAND)
         self._list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_item_activated)
         self.SetSizer(main_sizer)
+
+        pubsub.pub.subscribe(self._on_editor_saved, "editor.saved")
+
+    def _on_editor_saved(self, target, editor):
+        _id = Identity(self.o, self.o, DischargeMeasurement)
+        if (
+            editor != None
+            and editor.get_identity() != None
+            and editor.get_identity().__eq__(_id)
+        ):
+            self._render()
 
     def _on_item_activated(self, event: wx.ListEvent):
         if event.GetIndex() == 1:
@@ -51,12 +64,19 @@ class DischargeDetails(wx.Panel):
                     )
 
     @db_session
+    def _render(self):
+        if self.rid != None:
+            measure_count = select(
+                o for o in DischargeMeasurement if o.orig_sample_set == self.o
+            ).count()
+            self._list.SetItemText(1, "Замеры (%d)" % measure_count)
+
+    @db_session
     def start(self, rid):
         o = DischargeSeries[rid]
         self.o = OrigSampleSet[o.orig_sample_set.RID]
-        measure_count = select(o for o in DischargeMeasurement if o.orig_sample_set == self.o).count()
-        self._list.SetItemText(1, "Замеры (%d)" % measure_count)
         self.rid = self.o.RID
+        self._render()
         self.Show()
 
     def end(self):

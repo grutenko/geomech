@@ -17,7 +17,7 @@ from ui.icon import get_art
 
 from .tree import TreeWidget, EVT_WIDGET_TREE_SEL_CHANGED, EVT_TREE_OPEN_SELF_EDITOR
 
-__CONFIG_VERSION__ = 1
+__CONFIG_VERSION__ = 2
 
 ObjectSelectedEvent, EVT_OBJECT_SELECTED = wx.lib.newevent.NewEvent()
 
@@ -76,7 +76,6 @@ class Objects(wx.Panel):
         _menu.Enable(5, _mode in ["all", "stations"])
         _menu.Enable(6, _mode in ["all", "bore_holes"])
 
-
     def _on_change_mode(self, event):
         if self._view_choice.GetSelection() == 0:
             _mode = "all"
@@ -134,3 +133,18 @@ class Objects(wx.Panel):
         if self._notebook_configured:
             self._config_provider["notebook_page"] = self._notebook.GetSelection()
             self._config_provider.flush()
+
+    def remove_selection(self):
+        self.tree._tree.UnselectAll()
+
+    def select_by_identity(self, identity):
+        if identity.rel_data_target != None:
+            return
+        if (
+            not isinstance(identity.rel_data_o, MineObject)
+            and not isinstance(identity.rel_data_o, Station)
+            and not isinstance(identity.rel_data_o, BoreHole)
+            and not isinstance(identity.rel_data_o, OrigSampleSet)
+        ):
+            return
+        self.tree.select_by_identity(identity)

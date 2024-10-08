@@ -1,4 +1,5 @@
 import wx
+import wx.lib.newevent
 
 from ui.icon import get_art, get_icon
 from .list import RbList
@@ -6,7 +7,9 @@ from ui.class_config_provider import ClassConfigProvider
 
 from .create import DialogCreateRockBurst
 
-__CONFIG_VERSION__ = 1
+__CONFIG_VERSION__ = 2
+
+RbSelectedEvent, EVT_RB_SELECTED = wx.lib.newevent.NewEvent()
 
 class RbPanel(wx.Panel):
     def __init__(self, parent):
@@ -52,3 +55,6 @@ class RbPanel(wx.Panel):
     def save_pane_info(self, info: str):
         self._config_provider["aui_pane_info"] = info
         self._config_provider.flush()
+
+    def remove_selection(self):
+        self._list.remove_selection()

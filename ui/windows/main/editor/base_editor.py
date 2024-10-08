@@ -69,7 +69,7 @@ class BaseEditor(wx.Panel):
         return self.editor.can_redo()
 
     def save(self):
-        self.editor.save()
+        return self.editor.save()
 
     def copy(self):
         self.editor.copy()

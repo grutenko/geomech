@@ -1,15 +1,18 @@
+import pubsub.pub
 import wx
 import wx.aui
 import wx.adv
+import wx.lib.agw.aui
 
+import pubsub
 from version import __GEOMECH_VERSION__
 from database import *
 from ui.icon import get_icon
 from ui.class_config_provider import ClassConfigProvider
 from .o import Objects, EVT_OBJECT_SELECTED
-from .dm.widget import DischargePanel
-from .pm.widget import PmPanel
-from .rb.widget import RbPanel
+from .dm.widget import DischargePanel, EVT_Dm_SELECTED
+from .pm.widget import PmPanel, EVT_PM_SELECTED
+from .rb.widget import RbPanel, EVT_RB_SELECTED
 from .editor import *
 from .editor.help import HelpPage
 from .editor.widget import EVT_ENB_STATE_CHANGED, EVT_ENB_EDITOR_CLOSED
@@ -74,6 +77,8 @@ class MainFrame(wx.Frame):
 
         i = wx.aui.AuiPaneInfo()
         i.CloseButton(True)
+        i.Gripper()
+        i.GripperTop()
         i.Name("objects")
         i.PinButton()
         i.Caption("Объекты")
@@ -92,6 +97,8 @@ class MainFrame(wx.Frame):
 
         i = wx.aui.AuiPaneInfo()
         i.Top()
+        i.Gripper()
+        i.GripperTop()
         i.CloseButton(True)
         i.PinButton()
         i.PaneBorder()
@@ -112,6 +119,8 @@ class MainFrame(wx.Frame):
 
         i = wx.aui.AuiPaneInfo()
         i.Top()
+        i.Gripper()
+        i.GripperTop()
         i.CloseButton(True)
         i.Name("pm")
         i.PinButton()
@@ -131,6 +140,8 @@ class MainFrame(wx.Frame):
 
         i = wx.aui.AuiPaneInfo()
         i.Top()
+        i.Gripper()
+        i.GripperTop()
         i.CloseButton(True)
         i.PaneBorder()
         i.Name("rb")
@@ -161,6 +172,8 @@ class MainFrame(wx.Frame):
 
         i = wx.aui.AuiPaneInfo()
         i.Right()
+        i.Gripper()
+        i.GripperTop()
         i.CloseButton(True)
         i.PinButton()
         i.Name("fastview")
@@ -181,7 +194,8 @@ class MainFrame(wx.Frame):
         i = wx.aui.AuiPaneInfo()
         i.Bottom()
         i.CloseButton(True)
-
+        i.Gripper()
+        i.GripperTop()
         i.PinButton()
         i.PaneBorder()
         i.Name("supplied_data")
@@ -273,9 +287,20 @@ class MainFrame(wx.Frame):
         self.editors.Bind(EVT_ENB_STATE_CHANGED, self._on_editors_state_changed)
         self.objects.Bind(EVT_OBJECT_SELECTED, self._on_object_selected)
         self.editors.Bind(EVT_ENB_EDITOR_CLOSED, self._on_editor_closed)
+        self.dm.Bind(EVT_Dm_SELECTED, self._on_object_selected)
+        self.pm.Bind(EVT_PM_SELECTED, self._on_object_selected)
+        self.rb.Bind(EVT_RB_SELECTED, self._on_object_selected)
         self.mgr_panel.Bind(wx.aui.EVT_AUI_PANE_BUTTON, self._on_pane_maximized)
         self.Bind(wx.EVT_SIZE, self._on_resize, self)
         self.Bind(wx.EVT_MOVE_END, self._on_move, self)
+        pubsub.pub.subscribe(self._cmd_on_select_object, "cmd.object.select")
+
+    def _cmd_on_select_object(self, target, identity):
+        if not self.mgr.GetPane("objects").IsShown():
+            self.menu_bar.ProcessEvent(
+                wx.CommandEvent(wx.wxEVT_MENU, ID_OBJECTS_TOGGLE)
+            )
+        self.objects.select_by_identity(identity)
 
     def _on_toggle_dropdown(self, event):
         pos = wx.GetMousePosition()
@@ -284,26 +309,17 @@ class MainFrame(wx.Frame):
         )
 
     def _on_toggle_dm(self, event):
-        if event.IsChecked():
-            self.mgr.GetPane("dm").Show()
-        else:
-            self.mgr.GetPane("dm").Hide()
+        self.mgr.GetPane("dm").Show(event.IsChecked())
         self.mgr.Update()
         self._update_controls_state()
 
     def _on_toggle_pm(self, event):
-        if event.IsChecked():
-            self.mgr.GetPane("pm").Show()
-        else:
-            self.mgr.GetPane("pm").Hide()
+        self.mgr.GetPane("pm").Show(event.IsChecked())
         self.mgr.Update()
         self._update_controls_state()
 
     def _on_toggle_rb(self, event):
-        if event.IsChecked():
-            self.mgr.GetPane("rb").Show()
-        else:
-            self.mgr.GetPane("rb").Hide()
+        self.mgr.GetPane("rb").Show(event.IsChecked())
         self.mgr.Update()
         self._update_controls_state()
 
@@ -445,11 +461,16 @@ class MainFrame(wx.Frame):
         self.Close()
 
     def _on_object_selected(self, event):
+        _p = [self.objects, self.pm, self.dm, self.rb]
+        for pane in _p:
+            if not isinstance(pane, type(event.target)):
+                pane.remove_selection()
         _id: Identity = event.identity
         self.fastview.start(_id)
         self.supplied_data.start(_id)
 
     def _on_toggle_objects(self, event: wx.CommandEvent):
+        print(event.IsChecked())
         self.mgr.GetPane("objects").Show(event.IsChecked())
         self.mgr.Update()
         self._update_controls_state()

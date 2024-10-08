@@ -26,8 +26,9 @@ WidgetTreeSelChanged, EVT_WIDGET_TREE_SEL_CHANGED = wx.lib.newevent.NewEvent()
 
 
 class Tree(wx.Panel):
-    def __init__(self, parent, use_icons = True):
+    def __init__(self, parent, use_icons=True):
         super().__init__(parent)
+        self.SetDoubleBuffered(True)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._tree = wx.TreeCtrl(
@@ -105,17 +106,43 @@ class Tree(wx.Panel):
             context.subnodes = context.node.get_subnodes()
             context.is_subnodes_loaded = True
         first_item, cookies = self._tree.GetFirstChild(native_item)
+        _item_deputy = None
         if first_item.IsOk():
             deputy_context = self._tree.GetItemData(first_item)
             if isinstance(deputy_context, DeputyContext):
-                self._tree.Delete(first_item)
-        for subnode in context.subnodes:
-            self._append_node(native_item, subnode)
+                _item_deputy = first_item
+        if len(context.subnodes) > 0:
+            if _item_deputy != None:
+                _first_subnode = context.subnodes.pop(0)
+                self._append_node(native_item, _first_subnode, native_item=_item_deputy)
+            for subnode in context.subnodes:
+                self._append_node(native_item, subnode)
+            if _item_deputy != None:
+                context.subnodes.insert(0, _first_subnode)
 
     def select_node(self, node: TreeNode):
-        item = self._find_native_item(node)
-        if item != None:
-            self._tree.SelectItem(item)
+        if node == None:
+            return
+
+        _stack = [node]
+        while True:
+            _item = self._find_native_item(_stack[0])
+            if _item != None or _stack[0].is_root():
+                break
+            else:
+                _stack.insert(0, _stack[0].get_parent())
+
+        _stack.pop()
+        _p_item = None
+        for _node in _stack:
+            _p_item = self._find_native_item(_node)
+            if _p_item == None:
+                return
+            self._load_subnodes(_p_item)
+
+        _item = self._find_native_item(node)
+        if _item != None:
+            self._tree.SelectItem(_item)
 
     def soft_reload_node(self, node: TreeNode):
         item = self._find_native_item(node)
@@ -139,10 +166,18 @@ class Tree(wx.Panel):
             self._tree.SetItemText(native_item, context.node.get_name())
             icon = context.node.get_icon()
             if icon != None:
-                self._tree.SetItemImage(native_item, self._apply_icon(icon[0], icon[1]), wx.TreeItemIcon_Normal)
+                self._tree.SetItemImage(
+                    native_item,
+                    self._apply_icon(icon[0], icon[1]),
+                    wx.TreeItemIcon_Normal,
+                )
             icon = context.node.get_icon_open()
             if icon != None:
-                self._tree.SetItemImage(native_item, self._apply_icon(icon[0], icon[1]), wx.TreeItemIcon_Expanded)
+                self._tree.SetItemImage(
+                    native_item,
+                    self._apply_icon(icon[0], icon[1]),
+                    wx.TreeItemIcon_Expanded,
+                )
 
     def soft_reload_childrens(self, node: TreeNode):
         item = self._find_native_item(node)
@@ -184,15 +219,21 @@ class Tree(wx.Panel):
             self._icons[icon_name] = self._image_list.Add(icon)
         return self._icons[icon_name]
 
-    def _append_node(self, parent_native_item: wx.TreeItemId, node: TreeNode, index=-1):
-        if index == -1:
-            item = self._tree.AppendItem(
-                parent_native_item, node.get_name(), data=Context(node)
-            )
+    def _append_node(self, parent_native_item: wx.TreeItemId, node: TreeNode, index=-1, native_item = None):
+        if native_item == None:
+            if index == -1:
+                item = self._tree.AppendItem(
+                    parent_native_item, node.get_name(), data=Context(node)
+                )
+            else:
+                item = self._tree.InsertItem(
+                    parent_native_item, index, node.get_name(), data=Context(node)
+                )
         else:
-            item = self._tree.InsertItem(
-                parent_native_item, index, node.get_name(), data=Context(node)
-            )
+            item = native_item
+            self._tree.SetItemText(item, node.get_name())
+            self._tree.SetItemData(item, Context(node))
+
         if self._use_icons:
             icon = node.get_icon()
             if icon != None:

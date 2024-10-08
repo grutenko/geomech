@@ -1,10 +1,11 @@
 import wx
 
+from ui.icon import get_icon
 from ui.class_config_provider import ClassConfigProvider
 from ui.widgets.supplied_data.widget import SuppliedDataWidget
 from database import *
 
-__CONFIG_VERSION__ = 1
+__CONFIG_VERSION__ = 3
 
 class SuppliedData(wx.Panel):
     def __init__(self, parent):

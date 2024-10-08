@@ -1,11 +1,14 @@
 import wx
+import wx.lib.newevent
 
 from ui.class_config_provider import ClassConfigProvider
 from ui.icon import get_art, get_icon
 from .list import PmList
 from .create import DialogCreatePmSeries
 
-__CONFIG_VERSION__ = 1
+__CONFIG_VERSION__ = 2
+
+PmSelectedEvent, EVT_PM_SELECTED = wx.lib.newevent.NewEvent()
 
 class PmPanel(wx.Panel):
     def __init__(self, parent):
@@ -58,3 +61,6 @@ class PmPanel(wx.Panel):
     def save_pane_info(self, info: str):
         self._config_provider["aui_pane_info"] = info
         self._config_provider.flush()
+
+    def remove_selection(self):
+        self._list.remove_selection()

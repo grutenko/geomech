@@ -1,11 +1,14 @@
+import pubsub.pub
 import wx
 import wx.lib.mixins.listctrl as listmix
 
+import pubsub
 from pony.orm import *
 from database import *
 from ui.icon import get_art, get_icon
 from ui.icon import get_art
 from ui.datetimeutil import decode_date
+from ui.windows.main.identity import Identity
 
 from .create import DialogCreateDischargeSeries
 
@@ -14,10 +17,8 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self._items = []
-
+        self._items = {}
         self.itemDataMap = {}
-
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._image_list = wx.ImageList(16, 16)
@@ -50,6 +51,12 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
             item = menu.Append(wx.ID_DELETE, "Удалить")
             item.SetBitmap(get_icon("delete"))
             menu.AppendSeparator()
+            sub = wx.Menu()
+            item = sub.Append(wx.ID_ANY, 'Показать в "Объектах"')
+            sub.Bind(wx.EVT_MENU, self._on_select_core, item)
+            item.SetBitmap(get_icon("share"))
+            menu.AppendSubMenu(sub, "[Керн]")
+            menu.AppendSeparator()
             item = menu.Append(wx.ID_ADD, "Добавить разгрузку")
             menu.Bind(wx.EVT_MENU, self._on_add, item)
             item.SetBitmap(get_icon("wand"))
@@ -61,11 +68,23 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
         self.PopupMenu(menu, event.GetPosition())
 
     @db_session
+    def _on_select_core(self, event):
+        if self._list.GetFirstSelected() == -1:
+            return None
+        ds = self._items[self._list.GetItemData(self._list.GetFirstSelected())]
+        core = OrigSampleSet[ds.orig_sample_set.RID]
+        pubsub.pub.sendMessage(
+            "cmd.object.select", target=self, identity=Identity(core, core, None)
+        )
+
+    @db_session
     def _load(self):
         discharges = select(o for o in DischargeSeries).order_by(
             lambda x: desc(x.StartMeasure)
         )
-        self._items = discharges
+        self._items = {}
+        for o in discharges:
+            self._items[o.RID] = o
         m = [
             "REGION",
             "ROCKS",
@@ -104,7 +123,11 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
             self._list.SetItem(item, 5, _row[5].__str__())
             self._list.SetItemData(item, o.RID)
             self.itemDataMap[o.RID] = _row
-        print(list(self.itemDataMap.keys()))
+
+    def get_current_o(self):
+        if self._list.GetFirstSelected() == -1:
+            return None
+        return self._items[self._list.GetItemData(self._list.GetFirstSelected())]
 
     def GetListCtrl(self):
         return self._list
@@ -121,3 +144,9 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
 
     def end(self):
         self.Hide()
+
+    def remove_selection(self):
+        i = self._list.GetFirstSelected()
+        while i != -1:
+            self._list.Select(i, 0)
+            i = self._list.GetNextSelected(i)

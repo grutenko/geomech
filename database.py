@@ -42,6 +42,16 @@ class MineObject(db.Entity):
     Y_Max = Required(float, column="Y_Max")
     Z_Max = Required(float, column="Z_Max")
 
+    def get_tree_name(self):
+        _m = {
+            "REGION": "Регион",
+            "ROCKS": "Горный массив",
+            "FIELD": "Месторождение",
+            "HORIZON": "Горизонт",
+            "EXCAVATION": "Выработка",
+        }
+        return '[' + _m[self.Type] + '] ' + self.Name
+
 
 class CoordSystem(db.Entity):
     _table_ = "CoordSystems"
@@ -92,6 +102,9 @@ class Station(db.Entity):
     StartDate = Required(int, column="StartDate", size=64)
     EndDate = Optional(int, column="EndDate", size=64)
 
+    def get_tree_name(self):
+        return '[Станция] ' + self.Name
+
 
 class BoreHole(db.Entity):
     _table_ = "BoreHoles"
@@ -115,6 +128,9 @@ class BoreHole(db.Entity):
     EndDate = Optional(int, column="EndDate", size=64)
     DestroyDate = Optional(int, column="DestroyDate", size=64)
 
+    def get_tree_name(self):
+        return '[Скважина] ' + self.Name
+
 
 class OrigSampleSet(db.Entity):
     _table_ = "OrigSampleSets"
@@ -137,6 +153,13 @@ class OrigSampleSet(db.Entity):
     StartSetDate = Required(int, column="StartSetDate", size=64)
     EndSetDate = Optional(int, column="EndSetDate", size=64)
 
+    def get_tree_name(self):
+        _m = {
+            "CORE": "Керн",
+            "STUF": "Штуф",
+            "DISPERCE": "Дисперсный материал"
+        }
+        return '[' + _m[self.SampleType] + '] ' + self.Name
 
 class FoundationDocument(db.Entity):
     _table_ = "FoundationDocuments"
@@ -163,6 +186,9 @@ class DischargeSeries(db.Entity):
     Comment = Optional(str, column="Comment")
     StartMeasure = Required(int, column="StartMeasure", size=64)
     EndMeasure = Optional(int, column="EndMeasure", size=64)
+
+    def get_tree_name(self):
+        return '[Набор замеров] ' + self.Name
 
 
 class DischargeMeasurement(db.Entity):
@@ -242,6 +268,9 @@ class RockBurst(db.Entity):
     Z = Required(float, column="Z")
     BurstDate = Required(int, column="BurstDate", size=64)
 
+    def get_tree_name(self):
+        return '[Горный удар] ' + self.Name
+
 
 class CoreBoxStorage(db.Entity):
     _table_ = "CoreBoxStorage"
@@ -287,6 +316,9 @@ class PMTestSeries(db.Entity):
     Comment = Optional(str, column="Comment")
     Location = Optional(str, column="Location")
 
+    def get_tree_name(self):
+        return '[Набор испытаний] ' + self.Name
+
 
 class PMSampleSet(db.Entity):
     _table_ = "PMSampleSets"
@@ -305,6 +337,9 @@ class PMSampleSet(db.Entity):
     CrackDescr = Optional(str, column="CrackDescr")
     RealDetails = Required(bool, column="RealDetails")
     SampleCount = Optional(int, column="SampleCount")
+
+    def get_tree_name(self):
+        return '[Набор образцов] ' + self.Name
 
 
 class PMSample(db.Entity):

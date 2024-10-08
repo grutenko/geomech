@@ -1,6 +1,8 @@
+import pubsub.pub
 import wx
 from wx.lib.agw.flatnotebook import *
 from typing import Protocol, runtime_checkable, Optional, Tuple
+import pubsub
 
 from database import *
 
@@ -39,6 +41,7 @@ class EditorProto(Protocol):
 
 EditorNBStateChangedEvent, EVT_ENB_STATE_CHANGED = wx.lib.newevent.NewEvent()
 EditorClosedEvent, EVT_ENB_EDITOR_CLOSED = wx.lib.newevent.NewEvent()
+EditorSavedEvent, EVT_ENB_EDITOR_SAVED = wx.lib.newevent.NewEvent()
 
 
 class BasicEditor(wx.Panel):
@@ -261,8 +264,15 @@ class EditorNotebook(wx.Panel):
         )
 
     def save(self):
+        _saved = False
+        _editor = None
         if self._native_.GetPageCount() > 0:
-            self._native_.GetPage(self._native_.GetSelection()).save()
+            _editor = self._native_.GetPage(self._native_.GetSelection())
+            _saved = _editor.save()
+        if _saved:
+            wx.PostEvent(self, EditorSavedEvent(target=self, editor=_editor))
+            pubsub.pub.sendMessage("editor.saved", target=self, editor=_editor)
+        
 
     def copy(self):
         if self._native_.GetPageCount() > 0:

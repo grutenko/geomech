@@ -74,3 +74,9 @@ class PmList(wx.Panel):
 
     def end(self):
         self.Hide()
+
+    def remove_selection(self):
+        i = self._list.GetFirstSelected()
+        while i != -1:
+            self._list.Select(i, 0)
+            i = self._list.GetNextSelected(i)
