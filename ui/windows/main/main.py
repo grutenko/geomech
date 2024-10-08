@@ -14,7 +14,7 @@ from .dm.widget import DischargePanel, EVT_Dm_SELECTED
 from .pm.widget import PmPanel, EVT_PM_SELECTED
 from .rb.widget import RbPanel, EVT_RB_SELECTED
 from .editor import *
-from .editor.help import HelpPage
+from .editor.md_viewer import MdViewer
 from .editor.widget import EVT_ENB_STATE_CHANGED, EVT_ENB_EDITOR_CLOSED
 from .fastview import FastView
 from .sd import SuppliedData
@@ -217,7 +217,8 @@ class MainFrame(wx.Frame):
 
         self._bind_all()
         self._update_controls_state()
-        self._start_tab = HelpPage(self.editors)
+        self._start_tab = MdViewer(self.editors, "[Чтение] Начало работы", "start")
+        self._start_tab.set_file("start/index.md")
         self.editors.add_editor(self._start_tab)
 
         self._pm_settings_window = PmSettingsWindow(self)
@@ -371,7 +372,7 @@ class MainFrame(wx.Frame):
         if self._start_tab != None:
             self.editors.close_editor(self._start_tab)
         else:
-            self._start_tab = HelpPage(self.editors)
+            self._start_tab = MdViewer(self.editors, "[Чтение] Начало работы")
             self.editors.add_editor(self._start_tab)
 
     def _on_find(self, event): ...

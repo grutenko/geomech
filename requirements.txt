@@ -4,3 +4,7 @@ pyinstaller==6.10.0
 pony==0.7.19
 psycopg2==2.9.9
 pypubsub==4.0.3
+markdown==3.7
+bs4==4.12.3
+attrdict2==0.0.2
+numpy==2.1.2

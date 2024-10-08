@@ -1,8 +1,8 @@
 import wx
 
 
-from ui.widgets.grid_new import *
-from ui.widgets.grid_new.widget import Column
+from ui.widgets.grid import *
+from ui.widgets.grid.widget import Column
 from ui.windows.main.identity import Identity
 from ui.class_config_provider import ClassConfigProvider
 from ui.icon import get_art

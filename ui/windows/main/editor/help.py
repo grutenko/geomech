@@ -12,8 +12,8 @@ class HelpPage(BasicEditor):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.viewer = wx.html.HtmlWindow(self)
         main_sizer.Add(self.viewer, 1, wx.EXPAND)
-        with open(resource_path("html/help_page.html"), 'r') as f:
-            data = f.read().encode('WINDOWS-1251')
+        with open(resource_path("html/help_page.html"), 'rb') as f:
+            data = f.read()
         self.viewer.SetPage(data)
 
         self.SetSizer(main_sizer)

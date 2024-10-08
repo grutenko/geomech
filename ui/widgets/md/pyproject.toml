@@ -1,0 +1,17 @@
+[project]
+name = "wxMarkdown"
+version = "1.0.0.post1"
+description = "Write formatted text for wxPython in Markdown."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Maximillian Strand", email = "maxi@millian.se" }]
+license = { text = "MIT License (MIT)" }
+
+dependencies = [
+  "wxPython>=4.2.0",
+  "Markdown>=3.4.1",
+  "beautifulsoup4>=4.11.2"
+]
+
+[project.urls]
+"Repository" = "https://gitlab.com/deepadmax/wxMarkdown"

@@ -15,11 +15,12 @@ pyinstaller --onefile `
             --distpath=$DistPath `
             --workpath=$WorkPath `
             --name=$Name `
-            --add-data=$PSScriptRoot/../html:html `
+            --add-data=$PSScriptRoot/../md:md `
             --add-data=$PSScriptRoot/../icons:icons `
             --icon=$PSScriptRoot/../icons/logo.ico `
             --version-file=$WorkPath/win32_versionfile.txt `
             --runtime-hook=$PSScriptRoot/hooks/env.py `
+            --hidden-import=wx._xml `
             --hidden-import=pony.orm.dbproviders `
             --hidden-import=pony.orm.dbproviders.postgres `
             --hidden-import=psycopg2 `

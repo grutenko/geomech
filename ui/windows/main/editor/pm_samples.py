@@ -2,10 +2,10 @@ import wx
 from typing import Dict, List, Iterable
 from dataclasses import dataclass, field
 
-from ui.widgets.grid_new.widget import Column, Model, StringCellType, FloatCellType
+from ui.widgets.grid.widget import Column, Model, StringCellType, FloatCellType
 from ui.class_config_provider import ClassConfigProvider
 from .base_editor import BaseEditor
-from ui.widgets.grid_new.widget import EVT_GRID_COLUMN_RESIZED
+from ui.widgets.grid.widget import EVT_GRID_COLUMN_RESIZED
 
 
 @dataclass

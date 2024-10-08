@@ -310,6 +310,9 @@ class TreeWidget(Tree):
         item = menu.Append(wx.ID_ANY, "Удалить")
         item.SetBitmap(get_icon("delete", scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_delete_mine_object, item)
+        menu.AppendSeparator()
+        item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
+        item.SetBitmap(get_icon("versions"))
         self.PopupMenu(menu, point)
 
     def change_mode(self, mode):
@@ -391,6 +394,9 @@ class TreeWidget(Tree):
         item = menu.Append(wx.ID_ANY, "Удалить")
         item.SetBitmap(get_icon("delete", scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_delete_bore_hole, item)
+        menu.AppendSeparator()
+        item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
+        item.SetBitmap(get_icon("versions"))
         self.PopupMenu(menu, point)
 
     def _on_delete_station(self, event):
@@ -416,7 +422,12 @@ class TreeWidget(Tree):
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Удалить")
         item.SetBitmap(get_icon("delete", scale_to=16))
+        
         menu.Bind(wx.EVT_MENU, self._on_delete_bore_hole, item)
+        menu.AppendSeparator()
+        
+        item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
+        item.SetBitmap(get_icon("versions"))
         self.PopupMenu(menu, point)
 
     def _on_create_core(self, event):
@@ -434,6 +445,11 @@ class TreeWidget(Tree):
         item = menu.Append(wx.ID_ANY, "Удалить")
         item.SetBitmap(get_icon("delete", scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_delete_core, item)
+        menu.AppendSeparator()
+        item = menu.Append(wx.ID_ANY, "Разгрузочные замеры")
+        item.SetBitmap(get_icon("book-stack"))
+        item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
+        item.SetBitmap(get_icon("versions"))
         self.PopupMenu(menu, point)
 
     def _on_delete_core(self, event):
