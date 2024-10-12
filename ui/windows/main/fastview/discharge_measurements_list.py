@@ -1,5 +1,6 @@
 import wx
 
+
 class DischargeMeasurementsListFastview(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
@@ -13,8 +14,8 @@ class DischargeMeasurementsListFastview(wx.Panel):
         self.Layout()
         self.Hide()
 
-    def start(self, o, bounds = None):
+    def start(self, o, bounds=None):
         self.Show()
-        
+
     def end(self):
         self.Hide()

@@ -13,6 +13,8 @@ ID_SETTINGS_CS = ID_FIND_NEXT + 7
 ID_DM_TOGGLE = ID_FIND_NEXT + 8
 ID_PM_TOGGLE = ID_FIND_NEXT + 9
 ID_RB_TOGGLE = ID_FIND_NEXT + 10
+ID_IMPORT_BORE_HOLES = ID_FIND_NEXT + 11
+
 
 class MainMenu(wx.MenuBar):
     def __init__(self):
@@ -37,7 +39,7 @@ class MainMenu(wx.MenuBar):
         item = menu.Append(wx.ID_CLOSE, "Закрыть редактор\tCTRL+W")
         item.SetBitmap(get_icon("delete", scale_to=16))
         item.Enable(False)
-        
+
         menu.AppendSeparator()
         item = menu.Append(wx.ID_EXIT, "Выйти")
 
@@ -73,6 +75,11 @@ class MainMenu(wx.MenuBar):
         self.Append(menu, "Вид")
 
         menu = wx.Menu()
+        item = menu.Append(ID_IMPORT_BORE_HOLES, "Импортировать скважины")
+        item.SetBitmap(get_icon("import-xls"))
+        self.Append(menu, "Импорт")
+
+        menu = wx.Menu()
         item = menu.Append(ID_SETTINGS_PM, "Физ. Мех. свойства")
         item = menu.Append(ID_SETTINGS_CS, "Системы координат")
         item = menu.Append(wx.ID_ANY, "Документы")
@@ -89,6 +96,6 @@ class MainMenu(wx.MenuBar):
         item.Enable(False)
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ABOUT, "О программе")
-        item = menu.AppendCheckItem(ID_OPEN_START_TAB, "Открыть \"Начало работы\"")
+        item = menu.AppendCheckItem(ID_OPEN_START_TAB, 'Открыть "Начало работы"')
         item.Check(True)
         self.Append(menu, "Справка")

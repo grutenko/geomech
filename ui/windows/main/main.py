@@ -24,11 +24,13 @@ from .mgr_panel_toolbar import *
 from .identity import Identity
 from ui.windows.cs.main import ManageCoordSystemsWindow
 from ui.windows.pm.main import PmSettingsWindow
+from .editor.import_bore_holes import ImportBoreHoles
 
 __CONFIG_VERSION__ = 2
 
 
 class MainFrame(wx.Frame):
+    @db_session
     def __init__(self, config):
         self._frame_initialized = False
         super().__init__(None)
@@ -41,9 +43,7 @@ class MainFrame(wx.Frame):
 
         self._disable_controls = False
 
-        self._config_provider = ClassConfigProvider(
-            __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
-        )
+        self._config_provider = ClassConfigProvider(__name__ + "." + self.__class__.__name__, __CONFIG_VERSION__)
 
         self.menu_bar = MainMenu()
         self.SetMenuBar(self.menu_bar)
@@ -82,8 +82,8 @@ class MainFrame(wx.Frame):
         i.Name("objects")
         i.PinButton()
         i.Caption("Объекты")
-        i.MinSize(300, 100)
-        i.MinSize(300, 100)
+        i.MinSize(300, 200)
+        i.MinSize(300, 200)
         i.MaxSize(600, 900)
         i.Icon(get_icon("hierarchy"))
         i.Hide()
@@ -104,6 +104,7 @@ class MainFrame(wx.Frame):
         i.PaneBorder()
         i.Name("dm")
         i.Caption("Разгрузка")
+        i.MaximizeButton()
         i.MinSize(300, 200)
         i.MaxSize(600, 900)
 
@@ -125,7 +126,8 @@ class MainFrame(wx.Frame):
         i.Name("pm")
         i.PinButton()
         i.Caption("Физ. мех. свойства")
-        i.MinSize(300, 100)
+        i.MaximizeButton()
+        i.MinSize(300, 200)
         i.MaxSize(600, 900)
 
         i.Icon(get_icon("book-stack"))
@@ -140,6 +142,7 @@ class MainFrame(wx.Frame):
 
         i = wx.aui.AuiPaneInfo()
         i.Top()
+        i.MaximizeButton()
         i.Gripper()
         i.GripperTop()
         i.CloseButton(True)
@@ -147,7 +150,7 @@ class MainFrame(wx.Frame):
         i.Name("rb")
         i.PinButton()
         i.Caption("Горные удары")
-        i.MinSize(300, 100)
+        i.MinSize(300, 200)
         i.MaxSize(600, 900)
 
         i.Icon(get_icon("book-stack"))
@@ -163,11 +166,10 @@ class MainFrame(wx.Frame):
         i = wx.aui.AuiPaneInfo()
         i.Center()
         i.Name("editors")
+        i.CaptionVisible(False)
         i.MinSize(200, 300)
         i.CloseButton(False)
-        self.editors = EditorNotebook(
-            mgr_panel, self.menu_bar, self.statusbar, self.toolbar
-        )
+        self.editors = EditorNotebook(mgr_panel, self.menu_bar, self.statusbar, self.toolbar)
         self.mgr.AddPane(self.editors, i)
 
         i = wx.aui.AuiPaneInfo()
@@ -180,7 +182,7 @@ class MainFrame(wx.Frame):
         i.PaneBorder()
         i.Caption("Быстрый просмотр")
         i.Icon(get_icon("show-property"))
-        i.MinSize(300, 100)
+        i.MinSize(300, 200)
         i.BestSize(300, 600)
         self.fastview = FastView(mgr_panel)
         i.Hide()
@@ -224,17 +226,12 @@ class MainFrame(wx.Frame):
         self._pm_settings_window = PmSettingsWindow(self)
         self._cs_settings_window = ManageCoordSystemsWindow(self)
 
-        if (
-            self._config_provider["width"] != None
-            and self._config_provider["height"] != None
-        ):
-            self.SetSize(
-                self._config_provider["width"], self._config_provider["height"]
-            )
+        self._root_object = select(o for o in MineObject if o.Level == 0).first()
+
+        if self._config_provider["width"] != None and self._config_provider["height"] != None:
+            self.SetSize(self._config_provider["width"], self._config_provider["height"])
         if self._config_provider["x"] != None and self._config_provider["y"] != None:
-            self.SetPosition(
-                wx.Point(self._config_provider["x"], self._config_provider["y"])
-            )
+            self.SetPosition(wx.Point(self._config_provider["x"], self._config_provider["y"]))
 
         self.Show()
         self._frame_initialized = True
@@ -259,12 +256,11 @@ class MainFrame(wx.Frame):
         menu.Bind(wx.EVT_MENU, self._on_toggle_fastview, id=ID_FASTVIEW_TOGGLE)
         menu.Bind(wx.EVT_MENU, self._on_toggle_start, id=ID_OPEN_START_TAB)
         menu.Bind(wx.EVT_MENU, self._on_open_pm_settings_window, id=ID_SETTINGS_PM)
-        menu.Bind(
-            wx.EVT_MENU, self._on_toggle_supplied_data, id=ID_SUPPLIED_DATA_TOGGLE
-        )
+        menu.Bind(wx.EVT_MENU, self._on_toggle_supplied_data, id=ID_SUPPLIED_DATA_TOGGLE)
         menu.Bind(wx.EVT_MENU, self._on_toggle_dm, id=ID_DM_TOGGLE)
         menu.Bind(wx.EVT_MENU, self._on_toggle_pm, id=ID_PM_TOGGLE)
         menu.Bind(wx.EVT_MENU, self._on_toggle_rb, id=ID_RB_TOGGLE)
+        menu.Bind(wx.EVT_MENU, self._on_toggle_import_bore_holes, id=ID_IMPORT_BORE_HOLES)
         tb = self.toolbar
         tb.Bind(wx.EVT_TOOL, self._on_editor_save, id=wx.ID_SAVE)
         tb.Bind(wx.EVT_TOOL, self._on_editor_copy, id=wx.ID_COPY)
@@ -275,9 +271,7 @@ class MainFrame(wx.Frame):
         mgrtb = self.mgr_panel_toolbar
         mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_objects, id=ID_TOGGLE_OBJECTS)
         mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_fastview, id=ID_TOGGLE_FASTVIEW)
-        mgrtb.Bind(
-            wx.EVT_TOOL, self._on_toggle_supplied_data, id=ID_TOGGLE_SUPPLIED_DATA
-        )
+        mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_supplied_data, id=ID_TOGGLE_SUPPLIED_DATA)
         mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_dm, id=ID_TOGGLE_DISCHARGE)
         mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_pm, id=ID_TOGGLE_PM)
         mgrtb.Bind(wx.EVT_TOOL, self._on_toggle_rb, id=ID_TOGGLE_ROCK_BURST)
@@ -295,19 +289,43 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_SIZE, self._on_resize, self)
         self.Bind(wx.EVT_MOVE_END, self._on_move, self)
         pubsub.pub.subscribe(self._cmd_on_select_object, "cmd.object.select")
+        pubsub.pub.subscribe(self._cmd_on_show_supplied_data, "cmd.supplied_data.show")
+        pubsub.pub.subscribe(self._cmd_dm_select, "cmd.dm.select")
+        pubsub.pub.subscribe(self._on_object_added, "object.added")
+
+    def _on_object_added(self, objects):
+        self.objects.reload_for_new_objects(objects)
+
+    def _on_toggle_import_bore_holes(self, event):
+        index, page = self.editors.get_by_identity(Identity(self._root_object, self._root_object, "import_bore_holes"))
+        if page != None:
+            self.editors.select_by_index(index)
+        else:
+            self.editors.add_editor(ImportBoreHoles(self.editors, self.menu_bar, self.toolbar, self.statusbar))
+
+    def _cmd_dm_select(self, target, identity):
+        if not self.mgr.GetPane("dm").IsShown():
+            self.mgr.GetPane("dm").Show()
+            self.mgr.Update()
+            self._update_controls_state()
+        self.dm.select_by_identity(identity)
+
+    def _cmd_on_show_supplied_data(self, target):
+        if not self.mgr.GetPane("supplied_data").IsShown():
+            self.mgr.GetPane("supplied_data").Show()
+            self.mgr.Update()
+            self._update_controls_state()
 
     def _cmd_on_select_object(self, target, identity):
         if not self.mgr.GetPane("objects").IsShown():
-            self.menu_bar.ProcessEvent(
-                wx.CommandEvent(wx.wxEVT_MENU, ID_OBJECTS_TOGGLE)
-            )
+            self.mgr.GetPane("objects").Show()
+            self.mgr.Update()
+            self._update_controls_state()
         self.objects.select_by_identity(identity)
 
     def _on_toggle_dropdown(self, event):
         pos = wx.GetMousePosition()
-        self.mgr_panel_toolbar.PopupMenu(
-            self.mgr_panel_toolbar._dropdown, self.mgr_panel_toolbar.ScreenToClient(pos)
-        )
+        self.mgr_panel_toolbar.PopupMenu(self.mgr_panel_toolbar._dropdown, self.mgr_panel_toolbar.ScreenToClient(pos))
 
     def _on_toggle_dm(self, event):
         self.mgr.GetPane("dm").Show(event.IsChecked())
@@ -382,12 +400,7 @@ class MainFrame(wx.Frame):
     def _on_pane_closed(self, event):
         if event.GetPane().name == "objects":
             o = self.supplied_data.get_current_object()
-            if (
-                isinstance(o, MineObject)
-                or isinstance(o, Station)
-                or isinstance(o, BoreHole)
-                or isinstance(o, OrigSampleSet)
-            ):
+            if isinstance(o, MineObject) or isinstance(o, Station) or isinstance(o, BoreHole) or isinstance(o, OrigSampleSet):
                 self.supplied_data.end()
             self._update_controls_state(objects_shown=False)
         elif event.GetPane().name == "fastview":
@@ -517,9 +530,7 @@ class MainFrame(wx.Frame):
         pm_shown=None,
         rb_shown=None,
     ):
-        self.menu_bar.Enable(
-            wx.ID_CLOSE, not self._disable_controls and self.editors.can_close()
-        )
+        self.menu_bar.Enable(wx.ID_CLOSE, not self._disable_controls and self.editors.can_close())
         self.menu_bar.Enable(
             wx.ID_PREVIEW_NEXT,
             not self._disable_controls and self.editors.can_go_next_editor(),
@@ -528,21 +539,9 @@ class MainFrame(wx.Frame):
             wx.ID_PREVIEW_PREVIOUS,
             not self._disable_controls and self.editors.can_go_prev_editor(),
         )
-        object_state = (
-            self.mgr.GetPane("objects").IsShown()
-            if objects_shown == None
-            else objects_shown
-        )
-        fastview_state = (
-            self.mgr.GetPane("fastview").IsShown()
-            if fastview_shown == None
-            else fastview_shown
-        )
-        sd_state = (
-            self.mgr.GetPane("supplied_data").IsShown()
-            if supplied_data_shown == None
-            else supplied_data_shown
-        )
+        object_state = self.mgr.GetPane("objects").IsShown() if objects_shown == None else objects_shown
+        fastview_state = self.mgr.GetPane("fastview").IsShown() if fastview_shown == None else fastview_shown
+        sd_state = self.mgr.GetPane("supplied_data").IsShown() if supplied_data_shown == None else supplied_data_shown
         dm_state = self.mgr.GetPane("dm").IsShown() if dm_shown == None else dm_shown
         pm_state = self.mgr.GetPane("pm").IsShown() if pm_shown == None else pm_shown
         rb_state = self.mgr.GetPane("rb").IsShown() if rb_shown == None else rb_shown
@@ -574,40 +573,16 @@ class MainFrame(wx.Frame):
             mgrtb._dropdown.Check(ID_TOGGLE_PM, pm_state)
             mgrtb._dropdown.Check(ID_TOGGLE_ROCK_BURST, rb_state)
             mgrtb.Realize()
-        self.toolbar.EnableTool(
-            wx.ID_SAVE, not self._disable_controls and self.editors.can_save()
-        )
-        self.toolbar.EnableTool(
-            wx.ID_COPY, not self._disable_controls and self.editors.can_copy()
-        )
-        self.toolbar.EnableTool(
-            wx.ID_CUT, not self._disable_controls and self.editors.can_cut()
-        )
-        self.toolbar.EnableTool(
-            wx.ID_PASTE, not self._disable_controls and self.editors.can_paste()
-        )
-        self.toolbar.EnableTool(
-            wx.ID_UNDO, not self._disable_controls and self.editors.can_undo()
-        )
-        self.toolbar.EnableTool(
-            wx.ID_REDO, not self._disable_controls and self.editors.can_redo()
-        )
-        self.menu_bar.Enable(
-            wx.ID_SAVE, not self._disable_controls and self.editors.can_save()
-        )
-        self.menu_bar.Enable(
-            wx.ID_COPY, not self._disable_controls and self.editors.can_copy()
-        )
-        self.menu_bar.Enable(
-            wx.ID_CUT, not self._disable_controls and self.editors.can_cut()
-        )
-        self.menu_bar.Enable(
-            wx.ID_PASTE, not self._disable_controls and self.editors.can_paste()
-        )
-        self.menu_bar.Enable(
-            wx.ID_UNDO, not self._disable_controls and self.editors.can_undo()
-        )
-        self.menu_bar.Enable(
-            wx.ID_REDO, not self._disable_controls and self.editors.can_redo()
-        )
+        self.toolbar.EnableTool(wx.ID_SAVE, not self._disable_controls and self.editors.can_save())
+        self.toolbar.EnableTool(wx.ID_COPY, not self._disable_controls and self.editors.can_copy())
+        self.toolbar.EnableTool(wx.ID_CUT, not self._disable_controls and self.editors.can_cut())
+        self.toolbar.EnableTool(wx.ID_PASTE, not self._disable_controls and self.editors.can_paste())
+        self.toolbar.EnableTool(wx.ID_UNDO, not self._disable_controls and self.editors.can_undo())
+        self.toolbar.EnableTool(wx.ID_REDO, not self._disable_controls and self.editors.can_redo())
+        self.menu_bar.Enable(wx.ID_SAVE, not self._disable_controls and self.editors.can_save())
+        self.menu_bar.Enable(wx.ID_COPY, not self._disable_controls and self.editors.can_copy())
+        self.menu_bar.Enable(wx.ID_CUT, not self._disable_controls and self.editors.can_cut())
+        self.menu_bar.Enable(wx.ID_PASTE, not self._disable_controls and self.editors.can_paste())
+        self.menu_bar.Enable(wx.ID_UNDO, not self._disable_controls and self.editors.can_undo())
+        self.menu_bar.Enable(wx.ID_REDO, not self._disable_controls and self.editors.can_redo())
         self.toolbar.Realize()

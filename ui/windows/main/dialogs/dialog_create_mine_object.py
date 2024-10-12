@@ -8,14 +8,15 @@ from ui.windows.cs.transl import CsTransl
 from ui.ctrl.coord_system_ctrl import CoordSystemCtrl
 from ui.icon import get_icon
 
+
 class DialogCreateMineObject(wx.Dialog):
     @db_session
-    def __init__(self, parent, o = None, _type = 'CREATE'):
+    def __init__(self, parent, o=None, _type="CREATE"):
         super().__init__(parent, title="Добавить горный объект")
         self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnParent()
         self._type = _type
-        if _type == 'CREATE':
+        if _type == "CREATE":
             self.parent = o
         else:
             self.SetTitle("Изменить: %s" % o.Name)
@@ -24,7 +25,7 @@ class DialogCreateMineObject(wx.Dialog):
 
         top_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        top_sizer.Add(main_sizer, 1, wx.EXPAND | wx.ALL, border = 10)
+        top_sizer.Add(main_sizer, 1, wx.EXPAND | wx.ALL, border=10)
 
         label = wx.StaticText(self, label="Система координат")
         main_sizer.Add(label, 0)
@@ -46,9 +47,7 @@ class DialogCreateMineObject(wx.Dialog):
 
         label = wx.StaticText(comment_pane, label="Комментарий")
         comment_sizer.Add(label, 0)
-        self.field_comment = wx.TextCtrl(
-            comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE
-        )
+        self.field_comment = wx.TextCtrl(comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE)
         self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
         comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
@@ -57,7 +56,7 @@ class DialogCreateMineObject(wx.Dialog):
 
         colpane_pane = collpane.GetPane()
         colpane_sizer = wx.BoxSizer(wx.VERTICAL)
-        
+
         self.open_cs_transf = wx.Button(colpane_pane, label="Открыть утилиту перевода координат")
         colpane_sizer.Add(self.open_cs_transf, 0, wx.BOTTOM, border=10)
         self.open_cs_transf.Bind(wx.EVT_BUTTON, self._on_open_cs_transf)
@@ -105,10 +104,10 @@ class DialogCreateMineObject(wx.Dialog):
         main_sizer.Add(line, 0, wx.EXPAND | wx.TOP, border=10)
 
         btn_sizer = wx.StdDialogButtonSizer()
-        if _type == 'CREATE':
-            label = 'Создать'
+        if _type == "CREATE":
+            label = "Создать"
         else:
-            label = 'Изменить'
+            label = "Изменить"
         self.btn_save = wx.Button(self, label=label)
         self.btn_save.Bind(wx.EVT_BUTTON, self._on_save)
         self.btn_save.SetDefault()
@@ -120,22 +119,23 @@ class DialogCreateMineObject(wx.Dialog):
         self.Layout()
         self.Fit()
 
-        if _type == 'UPDATE':
+        if _type == "UPDATE":
             self._set_fields()
-        
+
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyUP)
 
     def OnKeyUP(self, event):
         keyCode = event.GetKeyCode()
         if keyCode == wx.WXK_ESCAPE:
             self.EndModal(wx.ID_CANCEL)
-        event.Skip() 
+        else:
+            event.Skip()
 
     @db_session
     def _set_fields(self):
         o = self._target
         self.field_name.SetValue(o.Name)
-        self.field_comment.SetValue(o.Comment if o.Comment != None else '')
+        self.field_comment.SetValue(o.Comment if o.Comment != None else "")
         self.field_coord_system.SetValue(CoordSystem[o.coord_system.RID])
         self.field_x_min.SetValue(o.X_Min)
         self.field_y_min.SetValue(o.Y_Min)
@@ -151,19 +151,19 @@ class DialogCreateMineObject(wx.Dialog):
 
     @db_session
     def _create_object(self, fields):
-        fields['coord_system'] = select(o for o in CoordSystem if o.RID == fields['coord_system'].RID).first()
-        if 'parent' in fields:
-            fields['parent'] = select(o for o in MineObject if o.RID == fields['parent'].RID).first()
+        fields["coord_system"] = select(o for o in CoordSystem if o.RID == fields["coord_system"].RID).first()
+        if "parent" in fields:
+            fields["parent"] = select(o for o in MineObject if o.RID == fields["parent"].RID).first()
         self.o = MineObject(**fields)
 
     @db_session
     def _on_save(self, event):
         if not self.Validate():
             return
-        
+
         fields = {}
 
-        if self._type == 'CREATE':
+        if self._type == "CREATE":
             if self.parent != None:
                 m = {
                     "REGION": "Регион",
@@ -172,29 +172,27 @@ class DialogCreateMineObject(wx.Dialog):
                     "HORIZON": "Горизонт",
                     "EXCAVATION": "Выработка",
                 }
-                child_mine_object_type = list(m.keys()).__getitem__(
-                    list(m.keys()).index(self.parent.Type) + 1
-                )
-                fields['parent'] = self.parent
-                fields['Type'] = child_mine_object_type
-                fields['Level'] = self.parent.Level + 1
-                fields['HCode'] = str(self.parent.RID).zfill(8) + '.' + str(self.parent.RID).zfill(19)
+                child_mine_object_type = list(m.keys()).__getitem__(list(m.keys()).index(self.parent.Type) + 1)
+                fields["parent"] = self.parent
+                fields["Type"] = child_mine_object_type
+                fields["Level"] = self.parent.Level + 1
+                fields["HCode"] = str(self.parent.RID).zfill(8) + "." + str(self.parent.RID).zfill(19)
             else:
-                fields['Type'] = 'REGION'
-                fields['Level'] = 0
-                fields['HCode'] = ('0' * 12) + '.' + ('0' * 19)
-        fields['Name'] = self.field_name.GetValue()
-        fields['Comment'] = self.field_comment.GetValue()
-        fields['coord_system'] = CoordSystem[self.field_coord_system.GetValue().RID]
-        fields['X_Min'] = self.field_x_min.GetValue()
-        fields['Y_Min'] = self.field_y_min.GetValue()
-        fields['Z_Min'] = self.field_z_min.GetValue()
-        fields['X_Max'] = self.field_x_max.GetValue()
-        fields['Y_Max'] = self.field_y_max.GetValue()
-        fields['Z_Max'] = self.field_z_max.GetValue()
+                fields["Type"] = "REGION"
+                fields["Level"] = 0
+                fields["HCode"] = ("0" * 12) + "." + ("0" * 19)
+        fields["Name"] = self.field_name.GetValue()
+        fields["Comment"] = self.field_comment.GetValue()
+        fields["coord_system"] = CoordSystem[self.field_coord_system.GetValue().RID]
+        fields["X_Min"] = self.field_x_min.GetValue()
+        fields["Y_Min"] = self.field_y_min.GetValue()
+        fields["Z_Min"] = self.field_z_min.GetValue()
+        fields["X_Max"] = self.field_x_max.GetValue()
+        fields["Y_Max"] = self.field_y_max.GetValue()
+        fields["Z_Max"] = self.field_z_max.GetValue()
 
         try:
-            if self._type == 'CREATE':
+            if self._type == "CREATE":
                 self._create_object(fields)
             else:
                 self.o = MineObject[self._target.RID]

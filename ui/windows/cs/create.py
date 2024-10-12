@@ -46,20 +46,15 @@ class CreateCoordSystemDialog(wx.Dialog):
 
         label = wx.StaticText(comment_pane, label="Комментарий")
         comment_sizer.Add(label, 0)
-        self.field_comment = wx.TextCtrl(
-            comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE
-        )
+        self.field_comment = wx.TextCtrl(comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE)
         self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
         comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
-
         label = wx.StaticText(self, label="Минимальные координаты")
         main_sizer.Add(label, 0, wx.EXPAND)
-    
+
         _sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.field_vec_min = wx.TextCtrl(
-            self, size=wx.Size(250, -1), value="0.0; 0.0; 0.0"
-        )
+        self.field_vec_min = wx.TextCtrl(self, size=wx.Size(250, -1), value="0.0; 0.0; 0.0")
         self.field_vec_min.SetValidator(_Vec3_Validator())
         _sizer.Add(self.field_vec_min, 1, wx.EXPAND)
         q = wx.StaticText(self, label="[?]")
@@ -71,9 +66,7 @@ class CreateCoordSystemDialog(wx.Dialog):
         label = wx.StaticText(self, label="Максимальные координаты")
         main_sizer.Add(label, 0)
         _sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.field_vec_max = wx.TextCtrl(
-            self, size=wx.Size(250, -1), value="0.0; 0.0; 0.0"
-        )
+        self.field_vec_max = wx.TextCtrl(self, size=wx.Size(250, -1), value="0.0; 0.0; 0.0")
         self.field_vec_max.SetValidator(_Vec3_Validator())
         _sizer.Add(self.field_vec_max, 1, wx.EXPAND)
         q = wx.StaticText(self, label="[?]")
@@ -89,9 +82,7 @@ class CreateCoordSystemDialog(wx.Dialog):
         label = wx.StaticText(self, label="Положение начала в родительской системе")
         main_sizer.Add(label, 0)
         _sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.field_base = wx.TextCtrl(
-            self, size=wx.Size(250, -1), value="0.0; 0.0; 0.0"
-        )
+        self.field_base = wx.TextCtrl(self, size=wx.Size(250, -1), value="0.0; 0.0; 0.0")
         self.field_base.SetValidator(_Vec3_Validator())
         _sizer.Add(self.field_base, 1, wx.EXPAND)
         q = wx.StaticText(self, label="[?]")
@@ -121,10 +112,10 @@ class CreateCoordSystemDialog(wx.Dialog):
         main_sizer.Add(line, 0, wx.EXPAND | wx.TOP, border=10)
 
         btn_sizer = wx.StdDialogButtonSizer()
-        if type == 'CREATE':
-            label = 'Cоздать'
+        if type == "CREATE":
+            label = "Cоздать"
         else:
-            label = 'Изменить'
+            label = "Изменить"
         self.btn_save = wx.Button(self, label=label)
         self.btn_save.Bind(wx.EVT_BUTTON, self._on_save)
         btn_sizer.Add(self.btn_save, 0)
@@ -134,7 +125,7 @@ class CreateCoordSystemDialog(wx.Dialog):
         self.Layout()
         self.Fit()
 
-        if type == 'UPDATE':
+        if type == "UPDATE":
             self._set_fields()
 
     def _on_open_mat_util(self, event):
@@ -148,49 +139,46 @@ class CreateCoordSystemDialog(wx.Dialog):
         self.field_base.SetValue("%f; %f; %f" % (o.X_0, o.Y_0, o.Z_0))
         self.field_vec_min.SetValue("%f; %f; %f" % (o.X_Min, o.Y_Min, o.Z_Min))
         self.field_vec_max.SetValue("%f; %f; %f" % (o.X_Max, o.Y_Max, o.Z_Max))
-        self.field_mat.SetValue(
-            "%f; %f; %f\n%f; %f; %f\n%f; %f; %f"
-            % (o.X_X, o.X_Y, o.X_Z, o.Y_X, o.Y_Y, o.Y_Z, o.Z_X, o.Z_Y, o.Z_Z)
-        )
+        self.field_mat.SetValue("%f; %f; %f\n%f; %f; %f\n%f; %f; %f" % (o.X_X, o.X_Y, o.X_Z, o.Y_X, o.Y_Y, o.Y_Z, o.Z_X, o.Z_Y, o.Z_Z))
 
     def _set_coords(self, fields):
         _min = re.split(r"\s*;\s*", self.field_vec_min.GetValue())
-        fields['X_Min'] = float(_min[0])
-        fields['Y_Min'] = float(_min[1])
-        fields['Z_Min'] = float(_min[2])
+        fields["X_Min"] = float(_min[0])
+        fields["Y_Min"] = float(_min[1])
+        fields["Z_Min"] = float(_min[2])
         _max = re.split(r"\s*;\s*", self.field_vec_max.GetValue())
-        fields['X_Max'] = float(_max[0])
-        fields['Y_Max'] = float(_max[1])
-        fields['Z_Max'] = float(_max[2])
+        fields["X_Max"] = float(_max[0])
+        fields["Y_Max"] = float(_max[1])
+        fields["Z_Max"] = float(_max[2])
         _zero = re.split(r"\s*;\s*", self.field_base.GetValue())
-        fields['X_0'] = float(_zero[0])
-        fields['Y_0'] = float(_zero[1])
-        fields['Z_0'] = float(_zero[2])
+        fields["X_0"] = float(_zero[0])
+        fields["Y_0"] = float(_zero[1])
+        fields["Z_0"] = float(_zero[2])
         _mat = re.split(r"\s*\n\s*", self.field_mat.GetValue())
         _mat0 = re.split(r"\s*;\s*", _mat[0])
-        fields['X_X'] = float(_mat0[0])
-        fields['X_Y'] = float(_mat0[1])
-        fields['X_Z'] = float(_mat0[2])
+        fields["X_X"] = float(_mat0[0])
+        fields["X_Y"] = float(_mat0[1])
+        fields["X_Z"] = float(_mat0[2])
         _mat1 = re.split(r"\s*;\s*", _mat[1])
-        fields['Y_X'] = float(_mat1[0])
-        fields['Y_Y'] = float(_mat1[1])
-        fields['Y_Z'] = float(_mat1[2])
+        fields["Y_X"] = float(_mat1[0])
+        fields["Y_Y"] = float(_mat1[1])
+        fields["Y_Z"] = float(_mat1[2])
         _mat2 = re.split(r"\s*;\s*", _mat[2])
-        fields['Z_X'] = float(_mat2[0])
-        fields['Z_Y'] = float(_mat2[1])
-        fields['Z_Z'] = float(_mat2[2])
+        fields["Z_X"] = float(_mat2[0])
+        fields["Z_Y"] = float(_mat2[1])
+        fields["Z_Z"] = float(_mat2[2])
         return fields
 
     @db_session
     def _on_save(self, event):
         if not self.Validate():
             return
-        
-        if self._type == 'CREATE':
+
+        if self._type == "CREATE":
             fields = {
                 "parent": CoordSystem[self.parent.RID],
                 "Level": self.parent.Level + 1,
-                "HCode": str(self.parent.RID).zfill(8) + '.' + str(self.parent.RID).zfill(19),
+                "HCode": str(self.parent.RID).zfill(8) + "." + str(self.parent.RID).zfill(19),
                 "Name": self.field_name.GetValue(),
                 "Comment": self.field_comment.GetValue(),
             }
@@ -215,6 +203,3 @@ class CreateCoordSystemDialog(wx.Dialog):
                 wx.MessageBox(str(e))
             else:
                 self.EndModal(wx.ID_OK)
-
-        
-        

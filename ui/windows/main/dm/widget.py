@@ -16,30 +16,27 @@ __CONFIG_VERSION__ = 2
 
 DmSelEvent, EVT_Dm_SELECTED = wx.lib.newevent.NewEvent()
 
+
 class DischargePanel(wx.Panel):
     @db_session
     def __init__(self, parent, menubar, toolbar, statusbar):
         super().__init__(parent)
-        self._config_provider = ClassConfigProvider(
-            __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
-        )
+        self._config_provider = ClassConfigProvider(__name__ + "." + self.__class__.__name__, __CONFIG_VERSION__)
 
         self._current_rid = None
 
         self.toolbar = wx.ToolBar(self, style=wx.TB_FLAT)
-        item = self.toolbar.AddTool(
-            wx.ID_BACKWARD, label="Назад", bitmap=get_icon('undo')
-        )
+        item = self.toolbar.AddTool(wx.ID_BACKWARD, label="Назад", bitmap=get_icon("undo"))
         item.Enable(False)
         self.toolbar.AddSeparator()
         item = self.toolbar.AddTool(wx.ID_ADD, "Добавить", get_icon("wand"))
         self.toolbar.Bind(wx.EVT_TOOL, self._on_add, id=wx.ID_ADD)
-        item = self.toolbar.AddTool(wx.ID_EDIT, "Изменить", get_icon('edit'))
+        item = self.toolbar.AddTool(wx.ID_EDIT, "Изменить", get_icon("edit"))
         item.Enable(False)
-        item = self.toolbar.AddTool(wx.ID_DELETE, "Удалить", get_icon('delete'))
+        item = self.toolbar.AddTool(wx.ID_DELETE, "Удалить", get_icon("delete"))
         item.Enable(False)
         self.toolbar.AddStretchableSpace()
-        item = self.toolbar.AddCheckTool(wx.ID_FIND, "", get_icon('filter'))
+        item = self.toolbar.AddCheckTool(wx.ID_FIND, "", get_icon("filter"))
         self.toolbar.Bind(wx.EVT_TOOL, self._on_back, id=wx.ID_BACKWARD)
         self.toolbar.Realize()
 
@@ -126,7 +123,7 @@ class DischargePanel(wx.Panel):
             self.main_sizer.Add(self._list, 1, wx.EXPAND)
             self._list.start()
         self._current_rid = None
-        self.statusbar.SetStatusText('')
+        self.statusbar.SetStatusText("")
         self.Layout()
         self._update_controls_state()
 
@@ -141,3 +138,6 @@ class DischargePanel(wx.Panel):
 
     def remove_selection(self):
         self._list.remove_selection()
+
+    def select_by_identity(self, identity):
+        self._list.select_by_identity(identity)

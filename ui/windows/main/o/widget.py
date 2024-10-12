@@ -25,9 +25,7 @@ ObjectSelectedEvent, EVT_OBJECT_SELECTED = wx.lib.newevent.NewEvent()
 class Objects(wx.Panel):
     def __init__(self, parent, menubar, toolbar, statusbar):
         super().__init__(parent)
-        self._config_provider = ClassConfigProvider(
-            __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
-        )
+        self._config_provider = ClassConfigProvider(__name__ + "." + self.__class__.__name__, __CONFIG_VERSION__)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._tree_search = wx.SearchCtrl(self)
         menu = wx.Menu()
@@ -91,12 +89,7 @@ class Objects(wx.Panel):
         self.tree.change_mode(_mode)
         self._current_mode = _mode
         self._update_controls_state()
-
-    def _on_sash_pos_changed(self, event):
-        if not self._synthetic_sash_pos:
-            self._config_provider["sash_pos"] = self.wnd.GetSashPosition()
-            self._config_provider.flush()
-
+        
     def _bind_all(self):
         self.tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self._on_sel_changed)
         self.tree.Bind(EVT_TREE_OPEN_SELF_EDITOR, self._on_open_self_editor)

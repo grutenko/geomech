@@ -20,6 +20,7 @@ class BaseEditor(wx.Panel):
         menubar,
         toolbar,
         statusbar,
+        header_height = -1
     ):
         super().__init__(parent.get_native())
         self.o = identity.o
@@ -27,7 +28,7 @@ class BaseEditor(wx.Panel):
         self._title = title
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.editor = GridEditor(self, model, menubar, toolbar, statusbar)
+        self.editor = GridEditor(self, model, menubar, toolbar, statusbar, header_height=header_height)
         main_sizer.Add(self.editor, 1, wx.EXPAND)
         self.SetSizer(main_sizer)
 
@@ -48,7 +49,7 @@ class BaseEditor(wx.Panel):
         return self._title
 
     def get_icon(self):
-        return 'data-sheet', get_icon('data-sheet', scale_to=16)
+        return "data-sheet", get_icon("data-sheet", scale_to=16)
 
     def can_save(self) -> bool:
         return self.editor.can_save()

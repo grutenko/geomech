@@ -6,8 +6,7 @@ from pony.orm import *
 def delete_object(o, relations=[]) -> bool:
     dlg = wx.MessageDialog(
         None,
-        "Вы действительно хотите удалить объект: %s?\nЭто действие необратимо."
-        % o.Name,
+        "Вы действительно хотите удалить объект: %s?\nЭто действие необратимо." % o.Name,
         "Подтвердите удаление",
         wx.YES | wx.NO | wx.NO_DEFAULT | wx.ICON_ASTERISK,
     )

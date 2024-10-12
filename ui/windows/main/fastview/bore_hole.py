@@ -4,6 +4,7 @@ import wx.propgrid
 from ui.datetimeutil import decode_date
 from .fastview_propgrid import FastviewPropgrid
 
+
 class BoreHoleFastview(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
@@ -47,7 +48,7 @@ class BoreHoleFastview(wx.Panel):
         self.Layout()
         self.Hide()
 
-    def start(self, o, bounds = None):
+    def start(self, o, bounds=None):
         start_date = decode_date(o.StartDate)
         fields = {
             "RID": o.RID,
@@ -61,14 +62,14 @@ class BoreHoleFastview(wx.Panel):
             "Tilt": o.Tilt,
             "Diameter": o.Diameter,
             "Length": o.Length,
-            "StartDate": wx.DateTime(start_date.day, start_date.month - 1, start_date.year)
+            "StartDate": wx.DateTime(start_date.day, start_date.month - 1, start_date.year),
         }
         if o.EndDate != None:
             date = decode_date(o.EndDate)
-            fields['EndDate'] = wx.DateTime(date.day, date.month - 1, date.year)
+            fields["EndDate"] = wx.DateTime(date.day, date.month - 1, date.year)
         if o.DestroyDate != None:
             date = decode_date(o.DestroyDate)
-            fields['DestroyDate'] = wx.DateTime(date.day, date.month - 1, date.year)
+            fields["DestroyDate"] = wx.DateTime(date.day, date.month - 1, date.year)
         self.propgrid.SetPropertyValues(fields)
         self.Show()
 

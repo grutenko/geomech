@@ -18,9 +18,7 @@ class MineObjectFastview(wx.Panel):
         prop = self.propgrid.Append(wx.propgrid.StringProperty("Название", "Name"))
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.LongStringProperty("Комментарий", "Comment"))
-        prop = self.propgrid.Append(
-            wx.propgrid.StringProperty("Система координат", "coord_system")
-        )
+        prop = self.propgrid.Append(wx.propgrid.StringProperty("Система координат", "coord_system"))
         self.propgrid.SetPropertyReadOnly(prop)
         category = self.propgrid.Append(wx.propgrid.PropertyCategory("Ограничения координат", "Coords"))
         prop = self.propgrid.AppendIn(category, wx.propgrid.FloatProperty("X Мин. (м)", "X_Min"))
@@ -31,7 +29,7 @@ class MineObjectFastview(wx.Panel):
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.AppendIn(category, wx.propgrid.FloatProperty("X Макс. (м)", "X_Max"))
         self.propgrid.SetPropertyReadOnly(prop)
-        prop = self.propgrid.AppendIn(category, wx.propgrid.FloatProperty( "Y Макс. (м)", "Y_Max"))
+        prop = self.propgrid.AppendIn(category, wx.propgrid.FloatProperty("Y Макс. (м)", "Y_Max"))
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.AppendIn(category, wx.propgrid.FloatProperty("Z Макс. (м)", "Z_Max"))
         self.propgrid.SetPropertyReadOnly(prop)
@@ -43,18 +41,20 @@ class MineObjectFastview(wx.Panel):
 
     @db_session
     def start(self, o, bounds=None):
-        self.propgrid.SetPropertyValues({
-            "RID": o.RID,
-            "Name": o.Name,
-            "Comment": o.Comment,
-            "coord_system": CoordSystem[o.coord_system.RID].Name,
-            "X_Min": o.X_Min,
-            "Y_Min": o.Y_Min,
-            "Z_Min": o.Z_Min,
-            "X_Max": o.X_Max,
-            "Y_Max": o.Y_Max,
-            "Z_Max": o.Z_Max,
-        })
+        self.propgrid.SetPropertyValues(
+            {
+                "RID": o.RID,
+                "Name": o.Name,
+                "Comment": o.Comment,
+                "coord_system": CoordSystem[o.coord_system.RID].Name,
+                "X_Min": o.X_Min,
+                "Y_Min": o.Y_Min,
+                "Z_Min": o.Z_Min,
+                "X_Max": o.X_Max,
+                "Y_Max": o.Y_Max,
+                "Z_Max": o.Z_Max,
+            }
+        )
         self.Show()
 
     def end(self):

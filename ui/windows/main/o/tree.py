@@ -1,31 +1,33 @@
+import pubsub.pub
 import wx
 from pony.orm import *
 
+import pubsub
 from database import *
 from ui.widgets.tree import *
 from ui.icon import get_art, get_icon
 from ui.delete_object import delete_object
+from ui.windows.main.identity import Identity
 from ..dialogs.dialog_create_bore_hole import DialogCreateBoreHole
-from ..dialogs.wiz_create_bore_hole import WizCreateBoreHole
 from ..dialogs.dialog_create_mine_object import DialogCreateMineObject
 from ..dialogs.dialog_create_orig_sample_set import DialogCreateCore
 from ..dialogs.dialog_create_station import DialogCreateStation
 
 
 class _MineObject_Node(TreeNode):
+    @db_session
     def __init__(self, o: MineObject, mine_objects_only=False):
-        self.o = o
+        self.o = MineObject[o.RID]
+        self.p = self.o.parent
         self._mine_objects_only = mine_objects_only
 
     @db_session
     def self_reload(self):
         self.o = MineObject[self.o.RID]
 
-    @db_session
     def get_parent(self) -> TreeNode:
-        o = MineObject[self.o.RID]
-        if o.parent != None:
-            return _MineObject_Node(o.parent)
+        if self.p != None:
+            return _MineObject_Node(self.p)
         else:
             return _Root_Node()
 
@@ -52,13 +54,11 @@ class _MineObject_Node(TreeNode):
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
         if not self._mine_objects_only:
-            for o in select(
-                o for o in BoreHole if o.mine_object == self.o and o.station == None
-            ):
+            for o in select(o for o in BoreHole if o.mine_object == self.o and o.station == None):
                 nodes.append(_BoreHole_Node(o))
-            for o in select(o for o in Station if o.mine_object == self.o):
+            for o in select(o for o in Station if o.mine_object == self.o).order_by(lambda x: desc(x.RID)):
                 nodes.append(_Station_Node(o))
-        for o in select(o for o in MineObject if o.parent == self.o):
+        for o in select(o for o in MineObject if o.parent == self.o).order_by(lambda x: desc(x.RID)):
             nodes.append(_MineObject_Node(o, mine_objects_only=self._mine_objects_only))
         return nodes
 
@@ -67,20 +67,20 @@ class _MineObject_Node(TreeNode):
 
 
 class _Station_Node(TreeNode):
+    @db_session
     def __init__(self, o: Station, root_as_parent=False):
-        self.o = o
+        self.o = Station[o.RID]
+        self.p = self.o.mine_object
         self._root_as_parent = root_as_parent
 
     @db_session
     def self_reload(self):
         self.o = Station[self.o.RID]
 
-    @db_session
     def get_parent(self) -> TreeNode:
-        o = Station[self.o.RID]
         if self._root_as_parent:
             return _StationsRoot_Node()
-        return _MineObject_Node(o.mine_object)
+        return _MineObject_Node(self.p)
 
     def get_name(self) -> str:
         return "[Станция] " + self.o.Name
@@ -94,7 +94,7 @@ class _Station_Node(TreeNode):
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
-        for o in select(o for o in BoreHole if o.station == self.o):
+        for o in select(o for o in BoreHole if o.station == self.o).order_by(lambda x: desc(x.RID)):
             nodes.append(_BoreHole_Node(o))
         return nodes
 
@@ -103,23 +103,24 @@ class _Station_Node(TreeNode):
 
 
 class _BoreHole_Node(TreeNode):
+    @db_session
     def __init__(self, o: BoreHole, root_as_parent=False):
-        self.o = o
+        self.o = BoreHole[o.RID]
+        self.p_mine_object = self.o.mine_object
+        self.p_station = self.o.station
         self._root_as_parent = root_as_parent
 
     @db_session
     def self_reload(self):
         self.o = BoreHole[self.o.RID]
 
-    @db_session
     def get_parent(self) -> TreeNode:
-        o = BoreHole[self.o.RID]
         if self._root_as_parent:
             return _BoreHolesRoot_Node()
-        if o.station != None:
-            return _Station_Node(o.station)
+        if self.p_station != None:
+            return _Station_Node(self.p_station)
         else:
-            return _MineObject_Node(o.mine_object)
+            return _MineObject_Node(self.p_mine_object)
 
     def get_name(self) -> str:
         return "[Скважина] " + self.o.Name
@@ -143,15 +144,17 @@ class _BoreHole_Node(TreeNode):
 
 
 class _Core_Node(TreeNode):
+    @db_session
     def __init__(self, o: OrigSampleSet):
-        self.o = o
+        self.o = OrigSampleSet[o.RID]
+        self.p = self.o.bore_hole
 
     @db_session
     def self_reload(self):
         self.o = OrigSampleSet[self.o.RID]
 
     def get_parent(self) -> TreeNode:
-        return _BoreHole_Node(self.o.bore_hole)
+        return _BoreHole_Node(self.p)
 
     def get_name(self) -> str:
         return "[Керн]"
@@ -176,10 +179,10 @@ class _Root_Node(TreeNode):
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
-        for o in select(o for o in MineObject if o.Level == 0):
+        for o in select(o for o in MineObject if o.Level == 0).order_by(lambda x: desc(x.RID)):
             nodes.append(_MineObject_Node(o))
         return nodes
-    
+
     def is_root(self) -> bool:
         return True
 
@@ -197,10 +200,10 @@ class _MineObjectsRoot_Node(TreeNode):
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
-        for o in select(o for o in MineObject if o.Level == 0):
+        for o in select(o for o in MineObject if o.Level == 0).order_by(lambda x: desc(x.RID)):
             nodes.append(_MineObject_Node(o, mine_objects_only=True))
         return nodes
-    
+
     def is_root(self) -> bool:
         return True
 
@@ -218,10 +221,10 @@ class _StationsRoot_Node(TreeNode):
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
-        for o in select(o for o in Station).order_by(lambda x: x.StartDate):
+        for o in select(o for o in Station).order_by(lambda x: desc(x.RID)):
             nodes.append(_Station_Node(o, root_as_parent=True))
         return nodes
-    
+
     def is_root(self) -> bool:
         return True
 
@@ -235,14 +238,14 @@ class _BoreHolesRoot_Node(TreeNode):
 
     def get_parent(self) -> TreeNode:
         return _BoreHolesRoot_Node()
-    
+
     def is_root(self) -> bool:
         return True
 
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
-        for o in select(o for o in BoreHole).order_by(lambda x: x.StartDate):
+        for o in select(o for o in BoreHole).order_by(lambda x: desc(x.RID)):
             nodes.append(_BoreHole_Node(o, root_as_parent=True))
         return nodes
 
@@ -289,9 +292,7 @@ class TreeWidget(Tree):
         }
 
         if node.o.Type != "EXCAVATION":
-            child_mine_object_name = list(m.values()).__getitem__(
-                list(m.keys()).index(node.o.Type) + 1
-            )
+            child_mine_object_name = list(m.values()).__getitem__(list(m.keys()).index(node.o.Type) + 1)
             item = subnode_menu.Append(wx.ID_ANY, child_mine_object_name)
             subnode_menu.Bind(wx.EVT_MENU, self._on_create_mine_object, item)
             subnode_menu.AppendSeparator()
@@ -313,6 +314,7 @@ class TreeWidget(Tree):
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
         item.SetBitmap(get_icon("versions"))
+        menu.Bind(wx.EVT_MENU, self._on_open_supplied_data, item)
         self.PopupMenu(menu, point)
 
     def change_mode(self, mode):
@@ -339,7 +341,7 @@ class TreeWidget(Tree):
         elif instance_class == Station:
             dlg = DialogCreateStation(window, self._current_object)
         elif instance_class == BoreHole:
-            dlg = WizCreateBoreHole(window, self._current_object)
+            dlg = DialogCreateBoreHole(window, self._current_object)
         elif instance_class == OrigSampleSet:
             dlg = DialogCreateCore(window, self._current_object)
         if dlg.ShowModal() == wx.ID_OK:
@@ -393,10 +395,11 @@ class TreeWidget(Tree):
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Удалить")
         item.SetBitmap(get_icon("delete", scale_to=16))
-        menu.Bind(wx.EVT_MENU, self._on_delete_bore_hole, item)
+        menu.Bind(wx.EVT_MENU, self._on_delete_station, item)
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
         item.SetBitmap(get_icon("versions"))
+        menu.Bind(wx.EVT_MENU, self._on_open_supplied_data, item)
         self.PopupMenu(menu, point)
 
     def _on_delete_station(self, event):
@@ -422,12 +425,13 @@ class TreeWidget(Tree):
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Удалить")
         item.SetBitmap(get_icon("delete", scale_to=16))
-        
+
         menu.Bind(wx.EVT_MENU, self._on_delete_bore_hole, item)
         menu.AppendSeparator()
-        
+
         item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
         item.SetBitmap(get_icon("versions"))
+        menu.Bind(wx.EVT_MENU, self._on_open_supplied_data, item)
         self.PopupMenu(menu, point)
 
     def _on_create_core(self, event):
@@ -448,9 +452,18 @@ class TreeWidget(Tree):
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Разгрузочные замеры")
         item.SetBitmap(get_icon("book-stack"))
+        menu.Bind(wx.EVT_MENU, self._on_select_dm, item)
         item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
         item.SetBitmap(get_icon("versions"))
+        menu.Bind(wx.EVT_MENU, self._on_open_supplied_data, item)
         self.PopupMenu(menu, point)
+
+    def _on_select_dm(self, event):
+        o = self._current_object
+        pubsub.pub.sendMessage("cmd.dm.select", target=self, identity=Identity(o, o, None))
+
+    def _on_open_supplied_data(self, event):
+        pubsub.pub.sendMessage("cmd.supplied_data.show", target=self)
 
     def _on_delete_core(self, event):
         self._delete_object(self._current_node)
@@ -472,13 +485,16 @@ class TreeWidget(Tree):
 
     def reload_object(self, o):
         if isinstance(o, MineObject):
-            self.soft_reload_node(_MineObject_Node(o))
+            node = _MineObject_Node(o)
         elif isinstance(o, Station):
-            self.soft_reload_node(_Station_Node(o))
+            node = _Station_Node(o)
         elif isinstance(o, BoreHole):
-            self.soft_reload_node(_BoreHole_Node(o))
+            node = _BoreHole_Node(o)
         elif isinstance(o, OrigSampleSet) and o.SampleType == "CORE":
-            self.soft_reload_node(_Core_Node(o))
+            node = _Core_Node(o)
+        else:
+            return
+        self.soft_reload_node(node)
 
     def _on_open_self_editor(self, event):
         wx.PostEvent(self, OpenSelfEditorEvent(target=self._current_object))
@@ -488,24 +504,18 @@ class TreeWidget(Tree):
             "all",
             "mine_objects",
         ]:
-            node = _MineObject_Node(
-                identity.rel_data_o, mine_objects_only=self._mode == "mine_objects"
-            )
+            node = _MineObject_Node(identity.rel_data_o, mine_objects_only=self._mode == "mine_objects")
         elif isinstance(identity.rel_data_o, Station) and self._mode in [
             "all",
             "stations",
         ]:
-            node = _Station_Node(
-                identity.rel_data_o, root_as_parent=self._mode == "stations"
-            )
+            node = _Station_Node(identity.rel_data_o, root_as_parent=self._mode == "stations")
         elif isinstance(identity.rel_data_o, BoreHole) and self._mode in [
             "all",
             "stations",
             "bore_holes",
         ]:
-            node = _BoreHole_Node(
-                identity.rel_data_o, root_as_parent=self._mode == "bore_holes"
-            )
+            node = _BoreHole_Node(identity.rel_data_o, root_as_parent=self._mode == "bore_holes")
         elif isinstance(identity.rel_data_o, OrigSampleSet) and self._mode in [
             "all",
             "stations",

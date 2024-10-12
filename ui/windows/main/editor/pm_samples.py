@@ -14,6 +14,7 @@ class _Row:
     changed_fields: Dict = field(default_factory=lambda: {})
     is_changed: bool = False
 
+
 class PmSamplesModel(Model):
     def __init__(self, config_provider) -> None:
         super().__init__()
@@ -27,7 +28,7 @@ class PmSamplesModel(Model):
         if column_width != None and name in column_width:
             return column_width[name]
         return -1
-    
+
     def _build_columns(self):
         return [
             Column(
@@ -178,10 +179,10 @@ class PmSamplesModel(Model):
                 self._get_column_width("DiffStrength"),
             ),
         ]
-    
+
     def get_columns(self) -> List[Column]:
         return self._columns
-    
+
     def get_columns(self) -> Iterable[Column]:
         return self._columns
 
@@ -191,11 +192,7 @@ class PmSamplesModel(Model):
     def get_value_at(self, col: int, row: int) -> str:
         row = self._rows[row]
         _id = self._columns[col].id
-        return (
-            getattr(row.e, _id)
-            if _id not in row.changed_fields
-            else row.changed_fields[_id]
-        )
+        return getattr(row.e, _id) if _id not in row.changed_fields else row.changed_fields[_id]
 
     def set_value_at(self, col: int, row: int, value: str):
         if self.get_value_at(col, row) != value:
@@ -224,15 +221,12 @@ class PmSamplesModel(Model):
         return False
 
 
-
 __CONFIG_VERSION__ = 1
 
 
 class PmSamplesEditor(BaseEditor):
     def __init__(self, parent, identity, menubar, toolbar, statusbar):
-        self._config_provider = ClassConfigProvider(
-            __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
-        )
+        self._config_provider = ClassConfigProvider(__name__ + "." + self.__class__.__name__, __CONFIG_VERSION__)
         self._config_provider.flush()
         super().__init__(
             parent,

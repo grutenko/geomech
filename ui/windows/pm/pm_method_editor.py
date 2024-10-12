@@ -12,9 +12,7 @@ from ui.datetimeutil import decode_date, encode_date
 class PmMethodEditor(wx.Dialog):
     @db_session
     def __init__(self, parent, o=None, _type="CREATE"):
-        super().__init__(
-            parent, title="Добавить Метод испытаний", size=wx.Size(300, 400)
-        )
+        super().__init__(parent, title="Добавить Метод испытаний", size=wx.Size(300, 400))
         self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnParent()
 
@@ -43,9 +41,7 @@ class PmMethodEditor(wx.Dialog):
 
         label = wx.StaticText(comment_pane, label="Комментарий")
         comment_sizer.Add(label, 0)
-        self.field_comment = wx.TextCtrl(
-            comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE
-        )
+        self.field_comment = wx.TextCtrl(comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE)
         self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
         comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
@@ -56,9 +52,7 @@ class PmMethodEditor(wx.Dialog):
 
         label = wx.StaticText(self, label="Дата аннулирования метода")
         main_sizer.Add(label, 0)
-        self.field_end_date = DatePickerCtrl(
-            self, style=DP_DEFAULT | DP_SHOWCENTURY | DP_ALLOWNONE
-        )
+        self.field_end_date = DatePickerCtrl(self, style=DP_DEFAULT | DP_SHOWCENTURY | DP_ALLOWNONE)
         main_sizer.Add(self.field_end_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         self.field_analytic = wx.CheckBox(self, label="Аналитический метод?")
@@ -119,6 +113,4 @@ class PmMethodEditor(wx.Dialog):
         self.field_start_date.SetValue(decode_date(o.StartDate))
         if o.EndDate != None:
             self.field_end_date.SetValue(decode_date(o.EndDate))
-        self.field_analytic.Set3StateValue(
-            wx.CHK_CHECKED if o.Analytic != None and o.Analytic else wx.CHK_UNCHECKED
-        )
+        self.field_analytic.Set3StateValue(wx.CHK_CHECKED if o.Analytic != None and o.Analytic else wx.CHK_UNCHECKED)

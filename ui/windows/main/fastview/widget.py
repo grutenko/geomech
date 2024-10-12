@@ -27,6 +27,7 @@ class _deputy(wx.Panel):
         main_sizer.Add(label, 1, wx.EXPAND | wx.ALL, border=20)
         self.SetSizer(main_sizer)
         self.Layout()
+
     def start(self, o): ...
     def end(self): ...
 
@@ -34,9 +35,7 @@ class _deputy(wx.Panel):
 class FastView(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
-        self._config_provider = ClassConfigProvider(
-            __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
-        )
+        self._config_provider = ClassConfigProvider(__name__ + "." + self.__class__.__name__, __CONFIG_VERSION__)
         self._deputy = _deputy(self)
         self._bore_hole = BoreHoleFastview(self)
         self._core = CoreFastview(self)
@@ -65,10 +64,7 @@ class FastView(wx.Panel):
         self._config_provider.flush()
 
     def start(self, identity: Identity):
-        if (
-            isinstance(identity.rel_data_o, MineObject)
-            and identity.rel_data_target == RockBurst
-        ):
+        if isinstance(identity.rel_data_o, MineObject) and identity.rel_data_target == RockBurst:
             new_win = self._rock_bursts_list
         elif isinstance(identity.rel_data_o, MineObject):
             new_win = self._mine_object
@@ -76,17 +72,11 @@ class FastView(wx.Panel):
             new_win = self._station
         elif isinstance(identity.rel_data_o, BoreHole):
             new_win = self._bore_hole
-        elif (
-            isinstance(identity.rel_data_o, OrigSampleSet)
-            and identity.rel_data_o.bore_hole != None
-        ):
+        elif isinstance(identity.rel_data_o, OrigSampleSet) and identity.rel_data_o.bore_hole != None:
             new_win = self._core
         elif isinstance(identity.rel_data_o, RockBurst):
             new_win = self._rock_burst
-        elif (
-            isinstance(identity.rel_data_o, OrigSampleSet)
-            and identity.rel_data_target == PMSampleSet
-        ):
+        elif isinstance(identity.rel_data_o, OrigSampleSet) and identity.rel_data_target == PMSampleSet:
             new_win = self._pm_samples_sets_list
         elif isinstance(identity.rel_data_o, PMSampleSet):
             new_win = self._pm_samples_list
@@ -101,7 +91,7 @@ class FastView(wx.Panel):
         self._sizer.Add(new_win, 1, wx.EXPAND)
         new_win.start(identity.rel_data_o, identity.rel_data_target)
         if identity.rel_data_target == None:
-            if hasattr(identity.rel_data_o, 'get_tree_name'):
+            if hasattr(identity.rel_data_o, "get_tree_name"):
                 self.statusbar.SetStatusText(identity.rel_data_o.get_tree_name())
             else:
                 self.statusbar.SetStatusText("")

@@ -17,20 +17,20 @@ class MgrPanelToolbar(wx.ToolBar):
     def __init__(self, parent):
         super().__init__(parent, style=wx.TB_DEFAULT_STYLE | wx.TB_FLAT | wx.TB_LEFT | wx.TB_RIGHT)
 
-        tool = self.AddTool(ID_TOGGLE_CONTAINER, "База данных", get_icon('book-stack'))
+        tool = self.AddTool(ID_TOGGLE_CONTAINER, "База данных", get_icon("book-stack"))
         menu = wx.Menu()
         item = menu.AppendCheckItem(ID_TOGGLE_DISCHARGE, "Разгрузочные замеры", "Показать/Скрыть разгрузка")
-        item.SetBitmap(get_icon('check'))
+        item.SetBitmap(get_icon("check"))
         item = menu.AppendCheckItem(ID_TOGGLE_PM, "[Физ. Мех. Свойства] Наборы замеров (договоры)", "Показать/Скрыть Физ. мех. свойства")
-        item.SetBitmap(get_icon('check'))
+        item.SetBitmap(get_icon("check"))
         item = menu.AppendCheckItem(ID_TOGGLE_ROCK_BURST, "Горные удары", "Показать/Скрыть Горные удары")
-        item.SetBitmap(get_icon('check'))
+        item.SetBitmap(get_icon("check"))
         self._dropdown = menu
         self.AddSeparator()
         tool = self.AddCheckTool(
             ID_TOGGLE_OBJECTS,
             "Объекты",
-            get_icon('hierarchy'),
+            get_icon("hierarchy"),
             shortHelp="Показать/Скрыть объекты",
         )
         tool = self.AddCheckTool(

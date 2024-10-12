@@ -128,9 +128,7 @@ class DMModel(Model):
         fields["PWSpeed"] = str(o.PWSpeed) if o.PWSpeed != None else ""
         fields["RWSpeed"] = str(o.RWSpeed) if o.RWSpeed != None else ""
         fields["SWSpeed"] = str(o.SWSpeed) if o.SWSpeed != None else ""
-        fields["PuassonStatic"] = (
-            str(o.PuassonStatic) if o.PuassonStatic != None else ""
-        )
+        fields["PuassonStatic"] = str(o.PuassonStatic) if o.PuassonStatic != None else ""
         fields["YungStatic"] = str(o.YungStatic) if o.YungStatic != None else ""
         r.fields = fields
         return r
@@ -138,9 +136,7 @@ class DMModel(Model):
     @db_session
     def load(self):
         self._rows = []
-        dm = select(
-            o for o in DischargeMeasurement if o.orig_sample_set == self._core
-        ).order_by(lambda p: int(p.DschNumber))
+        dm = select(o for o in DischargeMeasurement if o.orig_sample_set == self._core).order_by(lambda p: int(p.DschNumber))
         o: DischargeMeasurement
         for o in dm:
             self._rows.append(self._prepare_o(o))
@@ -304,11 +300,7 @@ class DMModel(Model):
     def get_value_at(self, col: int, row: int) -> str:
         row = self._rows[row]
         _id = self._columns[col].id
-        return (
-            row.fields[_id]
-            if _id not in row.changed_fields
-            else row.changed_fields[_id]
-        )
+        return row.fields[_id] if _id not in row.changed_fields else row.changed_fields[_id]
 
     def set_value_at(self, col: int, row: int, value: str):
         if self.get_value_at(col, row) != value:
@@ -383,17 +375,13 @@ class DMModel(Model):
             fields = {}
             fields["orig_sample_set"] = sample_set
             fields["SampleNumber"] = f["SampleNumber"]
-            fields["Diameter"] = columns["Diameter"].cell_type.from_string(
-                f["Diameter"]
-            )
+            fields["Diameter"] = columns["Diameter"].cell_type.from_string(f["Diameter"])
             fields["Length"] = columns["Length"].cell_type.from_string(f["Length"])
             fields["Weight"] = columns["Weight"].cell_type.from_string(f["Weight"])
             fields["RockType"] = f["RockType"]
             fields["PartNumber"] = f["PartNumber"]
             fields["RTens"] = columns["RTens"].cell_type.from_string(f["RTens"])
-            fields["Sensitivity"] = columns["Sensitivity"].cell_type.from_string(
-                f["Sensitivity"]
-            )
+            fields["Sensitivity"] = columns["Sensitivity"].cell_type.from_string(f["Sensitivity"])
             tp = columns["TP1"].cell_type.from_string(f["TP1"])
             if len(tp) > 0:
                 fields["TP1_1"] = tp[0]
@@ -417,15 +405,9 @@ class DMModel(Model):
             fields["PWSpeed"] = columns["PWSpeed"].cell_type.from_string(f["PWSpeed"])
             fields["RWSpeed"] = columns["RWSpeed"].cell_type.from_string(f["RWSpeed"])
             fields["SWSpeed"] = columns["SWSpeed"].cell_type.from_string(f["SWSpeed"])
-            fields["PuassonStatic"] = columns["PuassonStatic"].cell_type.from_string(
-                f["PuassonStatic"]
-            )
-            fields["YungStatic"] = columns["YungStatic"].cell_type.from_string(
-                f["YungStatic"]
-            )
-            fields["CoreDepth"] = columns["CoreDepth"].cell_type.from_string(
-                f["CoreDepth"]
-            )
+            fields["PuassonStatic"] = columns["PuassonStatic"].cell_type.from_string(f["PuassonStatic"])
+            fields["YungStatic"] = columns["YungStatic"].cell_type.from_string(f["YungStatic"])
+            fields["CoreDepth"] = columns["CoreDepth"].cell_type.from_string(f["CoreDepth"])
             e0 = [0.0, 0.0, 0.0, 0.0]
             e = columns["E"].cell_type.from_string(f["E"])
             for i, v in enumerate(e):
@@ -447,7 +429,7 @@ class DMModel(Model):
             else:
                 max_dsch_number += 1
                 try:
-                    fields['DschNumber'] = str(max_dsch_number)
+                    fields["DschNumber"] = str(max_dsch_number)
                     o = DischargeMeasurement(**fields)
                 except:
                     rollback()
@@ -461,9 +443,7 @@ class DMModel(Model):
 class DMEditor(BaseEditor):
     @db_session
     def __init__(self, parent, identity, menubar, toolbar, statusbar):
-        self._config_provider = ClassConfigProvider(
-            __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
-        )
+        self._config_provider = ClassConfigProvider(__name__ + "." + self.__class__.__name__, __CONFIG_VERSION__)
         self._config_provider.flush()
         self.o = OrigSampleSet[identity.o.RID]
         super().__init__(
@@ -474,6 +454,7 @@ class DMEditor(BaseEditor):
             menubar,
             toolbar,
             statusbar,
+            header_height=50
         )
         self.editor.Bind(EVT_GRID_COLUMN_RESIZED, self._on_editor_column_resized)
 

@@ -2,6 +2,7 @@ import wx
 
 from ui.icon import get_art, get_icon
 
+
 class MainToolbar(wx.ToolBar):
     def __init__(self, parent):
         super().__init__(parent, style=wx.TB_DEFAULT_STYLE | wx.TB_HORZ_TEXT | wx.TB_DOCKABLE | wx.TB_FLAT)

@@ -1,7 +1,8 @@
-
 from typing import Text
+import dateutil.parser
 import wx
 import re
+import dateutil
 
 
 class Validator(wx.Validator):
@@ -51,5 +52,40 @@ class TextValidator(Validator):
 
     def Clone(self):
         c = TextValidator()
+        c.__dict__.update(self.__dict__)
+        return c
+
+class DateValidator(Validator):
+    def __init__(self, msg: str = None, allow_empty = False):
+        super().__init__(msg)
+        self.allow_empty = allow_empty
+
+    def Validate(self, ctrl: wx.TextCtrl):
+        ok = True
+        if self.allow_empty and len(ctrl.GetValue()) == 0:
+            ok = True
+        else:
+            try:
+                date = dateutil.parser.parse(ctrl.GetValue())
+            except:
+                ok = False
+            else:
+                ok = True
+        if not ok:
+            ctrl.SetBackgroundColour("red")
+            ctrl.Refresh()
+        else:
+            ctrl.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
+            ctrl.Refresh()
+        return ok
+
+    def TransferFromWindow(self):
+        return True
+
+    def TransferToWindow(self):
+        return True
+
+    def Clone(self):
+        c = DateValidator()
         c.__dict__.update(self.__dict__)
         return c

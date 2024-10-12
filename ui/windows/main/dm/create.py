@@ -17,11 +17,7 @@ class DialogCreateDischargeSeries(wx.Dialog):
         self.SetTitle("Мастер добавления набора замеров")
         self.CenterOnParent()
         self._history = []
-        self._pages = {
-            "first": wx.Panel(self),
-            "second": wx.Panel(self),
-            "third": wx.Panel(self)
-        }
+        self._pages = {"first": wx.Panel(self), "second": wx.Panel(self), "third": wx.Panel(self)}
         self._current_page_name = "first"
         self._calc_next_page_name()
 
@@ -53,8 +49,7 @@ class DialogCreateDischargeSeries(wx.Dialog):
 
         self._update_controls_state()
 
-    def _finalize(self):
-        ...
+    def _finalize(self): ...
 
     def _on_next(self, event):
         if self.is_last_page():
@@ -98,16 +93,14 @@ class DialogCreateDischargeSeries(wx.Dialog):
     def _calc_next_page_name(self):
         names = list(self._pages.keys())
         if len(names) > names.index(self._current_page_name) + 1:
-            self._next_page_name = names.__getitem__(
-                names.index(self._current_page_name) + 1
-            )
+            self._next_page_name = names.__getitem__(names.index(self._current_page_name) + 1)
         else:
             self._next_page_name = None
 
     def go_next(self):
         if not self._next_enabled:
             return
-        
+
         self._history.append(self._current_page_name)
         self._current_page_name = self._next_page_name
         self._calc_next_page_name()
@@ -117,7 +110,7 @@ class DialogCreateDischargeSeries(wx.Dialog):
     def go_back(self):
         if not self.can_back():
             return
-        
+
         page_name = self._history.pop()
         self._current_page_name = page_name
         self._calc_next_page_name()

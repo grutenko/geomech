@@ -98,9 +98,7 @@ class StringCellType(CellType):
         return GridCellAutoWrapStringEditor()
 
     def open_editor(self, parent, value: str) -> str:
-        dlg = wx.TextEntryDialog(
-            parent, "Значение ячеек", "Веедите новое значения для выбраных ячеек", value
-        )
+        dlg = wx.TextEntryDialog(parent, "Значение ячеек", "Веедите новое значения для выбраных ячеек", value)
         if dlg.ShowModal() == wx.ID_OK:
             return dlg.GetValue()
         return None
@@ -150,14 +148,10 @@ class FloatCellType(CellType):
         return str(value)
 
     def get_grid_renderer(self) -> GridCellRenderer:
-        return wx.grid.GridCellFloatRenderer(
-            precision=2, format=wx.grid.GRID_FLOAT_FORMAT_FIXED
-        )
+        return wx.grid.GridCellFloatRenderer(precision=2, format=wx.grid.GRID_FLOAT_FORMAT_FIXED)
 
     def get_grid_editor(self) -> GridCellEditor:
-        return wx.grid.GridCellFloatEditor(
-            precision=2, format=wx.grid.GRID_FLOAT_FORMAT_FIXED
-        )
+        return wx.grid.GridCellFloatEditor(precision=2, format=wx.grid.GRID_FLOAT_FORMAT_FIXED)
 
     def __eq__(self, value: object) -> bool:
         return type(value) == FloatCellType
@@ -209,6 +203,7 @@ class Column:
     name_short: str
     name_long: str | None
     init_width: int = -1
+    optional: bool = False
 
     def __eq__(self, value: object) -> bool:
         return type(value) == Column and value.id == self.id
@@ -247,20 +242,28 @@ class ErrorsView(wx.Panel):
         super().__init__(parent)
 
         top_sizer = wx.BoxSizer(wx.VERTICAL)
-        self._main_notebook = wx.lib.agw.flatnotebook.FlatNotebook(
-            self, agwStyle=wx.lib.agw.flatnotebook.FNB_NO_NAV_BUTTONS
-        )
+        self._main_notebook = wx.lib.agw.flatnotebook.FlatNotebook(self, agwStyle=wx.lib.agw.flatnotebook.FNB_NO_NAV_BUTTONS)
         top_sizer.Add(self._main_notebook, 1, wx.EXPAND)
         main_panel = wx.Panel(self._main_notebook)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._list = wx.ListCtrl(main_panel, style=wx.LC_REPORT)
-        self._list.AppendColumn("Столбец")
-        self._list.AppendColumn("Строка")
-        self._list.AppendColumn("Ошибка")
+        self._list.AppendColumn("Столбец", width=200)
+        self._list.AppendColumn("Строка", width=70)
+        self._list.AppendColumn("Ошибка", width=500)
         main_sizer.Add(self._list, 1, wx.EXPAND)
         main_panel.SetSizer(main_sizer)
-        self._main_notebook.AddPage(main_panel, "Ошибки", True)
+        self._image_list = wx.ImageList(16, 16)
+        self._main_notebook.AssignImageList(self._image_list)
+        self._main_notebook.AddPage(main_panel, "Ошибки", True, self._image_list.Add(get_icon("error")))
         self.SetSizer(top_sizer)
+
+    def set_errors(self, errors):
+        self._list.DeleteAllItems()
+        for index, (col, row, msg) in enumerate(errors):
+            self._list.InsertItem(index, str(col.name_long))
+            self._list.SetItem(index, 1, str(row + 1))
+            self._list.SetItem(index, 2, msg)
+        self._main_notebook.SetPageText(0, "Ошибки (%d)" % len(errors))
 
 
 class Model(Protocol):
@@ -271,6 +274,7 @@ class Model(Protocol):
 
 
 GridEditorStateChangedEvent, EVT_GRID_EDITOR_STATE_CHANGED = wx.lib.newevent.NewEvent()
+GridModelStateChangedEvent, EVT_GRID_MODEL_STATE_CHANGED = wx.lib.newevent.NewEvent()
 
 from wx.core import EmptyString
 
@@ -356,7 +360,7 @@ ID_COPY_WITH_HEADER = ID_ADD_ROW + 7
 
 
 class GridEditor(wx.Panel):
-    def __init__(self, parent, model, menubar, toolbar, statusbar):
+    def __init__(self, parent, model, menubar, toolbar, statusbar, header_height=-1):
         super().__init__(parent)
         self.menubar: wx.MenuBar = menubar
         self.toolbar: wx.ToolBar = toolbar
@@ -366,9 +370,7 @@ class GridEditor(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._splitter = wx.SplitterWindow(self, style=wx.SP_3DSASH | wx.SP_LIVE_UPDATE)
 
-        self._hor_splitter = wx.SplitterWindow(
-            self._splitter, style=wx.SP_3DSASH | wx.SP_LIVE_UPDATE
-        )
+        self._hor_splitter = wx.SplitterWindow(self._splitter, style=wx.SP_3DSASH | wx.SP_LIVE_UPDATE)
         main_sizer.Add(self._splitter, 1, wx.EXPAND)
 
         self._view = wx.grid.Grid(
@@ -377,12 +379,14 @@ class GridEditor(wx.Panel):
         )
         self._view.SetDoubleBuffered(True)
         self._view.DisableDragRowSize()
-        self._view.SetSelectionBackground(
-            wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT)
-        )
+        self._view.SetSelectionBackground(wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT))
         self._view.EnableDragRowSize(True)
         self._view.SetRowLabelSize(30)
-        self._view.SetColLabelSize(50)
+        if header_height == -1:
+            height = header_height
+        else:
+            height = header_height
+        self._view.SetColLabelSize(height)
         self._view.CreateGrid(0, 0)
         self._view.EnableEditing(True)
         self._view.SetColMinimalAcceptableWidth(2)
@@ -395,9 +399,7 @@ class GridEditor(wx.Panel):
         self._original_col_sizes = initial_columns
         self._original_font_size = 9
 
-        self._view.GridLineColour = wx.SystemSettings.GetColour(
-            wx.SYS_COLOUR_ACTIVEBORDER
-        )
+        self._view.GridLineColour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_ACTIVEBORDER)
         font: wx.Font = self._view.GetLabelFont()
         info: wx.NativeFontInfo = font.GetNativeFontInfo()
         info.SetNumericWeight(400)
@@ -418,6 +420,7 @@ class GridEditor(wx.Panel):
         self.SetSizer(main_sizer)
         self.Layout()
 
+        self._auto_size_columns = False
         self._state = {
             "can_copy": False,
             "can_cut": False,
@@ -438,6 +441,7 @@ class GridEditor(wx.Panel):
         self._set_cell_value_undo_stack = []
         self._delete_rows_undo_stack = []
         self._past_undo_stack = []
+        self._hightlight_cells = []
         self._render(initial=True)
 
     def _bind_all(self):
@@ -457,6 +461,15 @@ class GridEditor(wx.Panel):
         self._view.Bind(wx.grid.EVT_GRID_EDITOR_SHOWN, self._on_editor_shown)
         self._view.Bind(wx.grid.EVT_GRID_EDITOR_HIDDEN, self._on_editor_hidden)
 
+    def auto_size_columns(self, autosize=True):
+        self._auto_size_columns = autosize
+        self._render()
+
+    def show_errors_view(self, show=True):
+        if show != (self._splitter.GetWindow2() != None):
+            self._on_toggle_errors()
+            # self.menubar.Check(ID_TOGGLE_ERRORS, show)
+
     def _on_editor_shown(self, event):
         self._in_edit_mode = True
         self._update_controls_state()
@@ -472,7 +485,7 @@ class GridEditor(wx.Panel):
         if event.GetRow() == -1:
             menu = wx.Menu()
             item = menu.Append(wx.ID_INFO, "Свойства столбца")
-            # menu.Bind(wx.EVT_MENU, self._on_copy_headers, item)
+            menu.Bind(wx.EVT_MENU, self._on_copy_headers, item)
             item.SetBitmap(get_art(wx.ART_INFORMATION))
             item = menu.Append(ID_COPY_HEADERS, "Копировать заголовки")
             menu.Bind(wx.EVT_MENU, self._on_copy_headers, item)
@@ -525,21 +538,22 @@ class GridEditor(wx.Panel):
         item.SetBitmap(get_art(wx.ART_COPY))
         item.Enable(self._state["can_copy"])
         submenu.Bind(wx.EVT_MENU, self._on_copy, item)
-        item = submenu.Append(
-            ID_COPY_WITH_HEADER, "Копировать с заголовоком\tCTRL+SHIFT+C"
-        )
+        item = submenu.Append(ID_COPY_WITH_HEADER, "Копировать с заголовоком\tCTRL+SHIFT+C")
         item.SetBitmap(get_art(wx.ART_COPY))
         item.Enable(self._state["can_copy"])
         submenu.Bind(wx.EVT_MENU, self._on_copy_with_headers, item)
         item = menu.AppendSubMenu(submenu, "Копировать")
         item.SetBitmap(get_art(wx.ART_COPY))
         item.Enable(self._state["can_copy"])
+        menu.Bind(wx.EVT_MENU, self._on_copy, item)
         item = menu.Append(wx.ID_CUT, "Вырезать\tCTRL+X")
         item.SetBitmap(get_art(wx.ART_CUT))
         item.Enable(self._state["can_cut"])
+        menu.Bind(wx.EVT_MENU, self._on_cut, item)
         item = menu.Append(wx.ID_PASTE, "Вставить\tCTRL+V")
         item.SetBitmap(get_art(wx.ART_PASTE))
         item.Enable(self._state["can_paste"])
+        menu.Bind(wx.EVT_MENU, self._on_paste, item)
         menu.AppendSeparator()
         global_enable = not self._in_edit_mode
         item = menu.Append(ID_ADD_ROW, "Добавить строку\tCTRL+R")
@@ -554,7 +568,7 @@ class GridEditor(wx.Panel):
         item.SetBitmap(get_icon("add-row"))
         item = menu.Append(ID_REMOVE_ROW, "Удалить строку\tDEL")
         item.SetBitmap(get_icon("delete-row"))
-        item.Enable(False)
+        item.Enable(self._state["can_delete_row"])
         menu.Bind(wx.EVT_MENU, self._on_delete_row, item)
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ANY, "Выделить все")
@@ -568,6 +582,12 @@ class GridEditor(wx.Panel):
 
     def _on_copy_with_headers(self, event):
         self.copy(True)
+
+    def _on_cut(self, event):
+        self.cut()
+
+    def _on_paste(self, event):
+        self.paste()
 
     def _on_copy_headers(self, event):
         header = []
@@ -618,17 +638,11 @@ class GridEditor(wx.Panel):
 
         for row_index in range(self._model.total_rows()):
             for col_index, column in enumerate(self._columns):
-                self._view.SetCellValue(
-                    row_index, col_index, self._model.get_value_at(col_index, row_index)
-                )
+                self._view.SetCellValue(row_index, col_index, self._model.get_value_at(col_index, row_index))
 
         self._render_sizing(begin_batch=False)
 
-        if (
-            last_cursor_pos != None
-            and self._view.GetNumberCols() > 0
-            and self._view.GetNumberRows() > 0
-        ):
+        if last_cursor_pos != None and self._view.GetNumberCols() > 0 and self._view.GetNumberRows() > 0:
             cursor_row, cursor_col = last_cursor_pos
 
             if cursor_col >= self._view.GetNumberCols():
@@ -638,6 +652,8 @@ class GridEditor(wx.Panel):
 
             self._view.SetGridCursor(cursor_row, cursor_col)
 
+        if self._auto_size_columns:
+            self._view.AutoSizeColumns()
         self._view.EndBatch()
 
     def _render_sizing(self, begin_batch=False):
@@ -667,9 +683,7 @@ class GridEditor(wx.Panel):
         else:
             name = column.name_short
         self.statusbar.SetStatusText("Столбец: " + name, 1)
-        self.statusbar.SetStatusText(
-            "Тип ячейки: " + column.cell_type.get_type_descr(), 2
-        )
+        self.statusbar.SetStatusText("Тип ячейки: " + column.cell_type.get_type_descr(), 2)
         self._update_controls_state()
         event.Skip()
 
@@ -681,9 +695,7 @@ class GridEditor(wx.Panel):
 
     def _on_cell_dragged(self, event):
         column_index = event.GetRowOrCol()
-        self._original_col_sizes[column_index] = (
-            self._view.GetColSize(column_index) / self._zoom
-        )
+        self._original_col_sizes[column_index] = self._view.GetColSize(column_index) / self._zoom
         wx.PostEvent(
             self,
             GridColumnResized(
@@ -697,9 +709,7 @@ class GridEditor(wx.Panel):
         row_index = event.GetRow()
         col_index = event.GetCol()
         value = event.GetString()
-        self._command_processor.Submit(
-            cmdSetValue(self, [(row_index, col_index)], value)
-        )
+        self._command_processor.Submit(cmdSetValue(self, [(row_index, col_index)], value))
         self._update_controls_state()
 
     def _set_state(self, state):
@@ -732,15 +742,18 @@ class GridEditor(wx.Panel):
         return self._state["can_redo"]
 
     def save(self):
-        if self._model.save():
-            self._update_controls_state()
-            return True
-        return False
+        try:
+            self._model.save()
+        except Exception as e:
+            wx.MessageBox(str(e), "Ошибка записи в БД", style=wx.OK | wx.ICON_ERROR)
+            return False
+        
+        self._render()
+        self._update_controls_state()
+        return True
 
     def copy(self, with_headers=False):
-        blocks: List[wx.grid.GridBlockCoords] = [
-            x for x in self._view.GetSelectedBlocks()
-        ]
+        blocks: List[wx.grid.GridBlockCoords] = [x for x in self._view.GetSelectedBlocks()]
 
         if len(blocks) == 0:
             blocks.append(
@@ -753,16 +766,10 @@ class GridEditor(wx.Panel):
             )
         else:
             for i in range(len(blocks) - 1):
-                if (
-                    blocks[i].TopRow != blocks[i + 1].TopRow
-                    or blocks[i].BottomRow != blocks[i + 1].BottomRow
-                ) and (
-                    blocks[i].LeftCol != blocks[i + 1].LeftCol
-                    or blocks[i].RightCol != blocks[i + 1].RightCol
+                if (blocks[i].TopRow != blocks[i + 1].TopRow or blocks[i].BottomRow != blocks[i + 1].BottomRow) and (
+                    blocks[i].LeftCol != blocks[i + 1].LeftCol or blocks[i].RightCol != blocks[i + 1].RightCol
                 ):
-                    raise RuntimeError(
-                        "Копирование недоступно для выделеных фрагментов"
-                    )
+                    raise RuntimeError("Копирование недоступно для выделеных фрагментов")
 
         table = []
 
@@ -770,35 +777,23 @@ class GridEditor(wx.Panel):
             for row_index in range(blocks[0].TopRow, blocks[0].BottomRow + 1):
                 table.append([])
                 for col_index in range(blocks[0].LeftCol, blocks[0].RightCol + 1):
-                    table[len(table) - 1].append(
-                        self._view.GetCellValue(row_index, col_index)
-                    )
-        elif (
-            blocks[0].TopRow == blocks[1].TopRow
-            and blocks[0].BottomRow == blocks[1].BottomRow
-        ):
+                    table[len(table) - 1].append(self._view.GetCellValue(row_index, col_index))
+        elif blocks[0].TopRow == blocks[1].TopRow and blocks[0].BottomRow == blocks[1].BottomRow:
             blocks = sorted(blocks, key=lambda x: x.LeftCol)
 
             for row_index in range(blocks[0].TopRow, blocks[0].BottomRow + 1):
                 table.append([])
                 for block in blocks:
                     for col_index in range(block.LeftCol, block.RightCol + 1):
-                        table[len(table) - 1].append(
-                            self._view.GetCellValue(row_index, col_index)
-                        )
-        elif (
-            blocks[0].LeftCol == blocks[1].LeftCol
-            and blocks[0].RightCol == blocks[1].RightCol
-        ):
+                        table[len(table) - 1].append(self._view.GetCellValue(row_index, col_index))
+        elif blocks[0].LeftCol == blocks[1].LeftCol and blocks[0].RightCol == blocks[1].RightCol:
             blocks = sorted(blocks, key=lambda x: x.TopRow)
 
             for block in blocks:
                 for row_index in range(block.TopRow, block.BottomRow + 1):
                     table.append([])
                     for col_index in range(block.LeftCol, block.RightCol + 1):
-                        table[len(table) - 1].append(
-                            self._view.GetCellValue(row_index, col_index)
-                        )
+                        table[len(table) - 1].append(self._view.GetCellValue(row_index, col_index))
 
         buffer = io.StringIO()
         writer = csv.writer(buffer, dialect="excel-tab")
@@ -813,9 +808,7 @@ class GridEditor(wx.Panel):
 
     def cut(self):
         self.copy()
-        blocks: List[wx.grid.GridBlockCoords] = [
-            x for x in self._view.GetSelectedBlocks()
-        ]
+        blocks: List[wx.grid.GridBlockCoords] = [x for x in self._view.GetSelectedBlocks()]
         cells = []
         if len(blocks) == 0:
             cells.append((self._view.GetGridCursorRow(), self._view.GetGridCursorCol()))
@@ -868,9 +861,7 @@ class GridEditor(wx.Panel):
             if len(blocks) > 0:
                 for block in blocks:
                     for rowIndex in range(block.GetTopRow(), block.GetBottomRow() + 1):
-                        for colIndex in range(
-                            block.GetLeftCol(), block.GetRightCol() + 1
-                        ):
+                        for colIndex in range(block.GetLeftCol(), block.GetRightCol() + 1):
                             cells.append((rowIndex, colIndex))
             else:
                 cells.append((cursor_row, cursor_col))
@@ -884,9 +875,7 @@ class GridEditor(wx.Panel):
             if len(blocks) == 1:
                 start_row, start_col = blocks[0].TopRow, blocks[0].LeftCol
 
-                if abs(blocks[0].RightCol - blocks[0].LeftCol) + 1 != len(
-                    table[0]
-                ) or abs(blocks[0].TopRow - blocks[0].BottomRow) + 1 != len(table):
+                if abs(blocks[0].RightCol - blocks[0].LeftCol) + 1 != len(table[0]) or abs(blocks[0].TopRow - blocks[0].BottomRow) + 1 != len(table):
                     ret = wx.MessageBox(
                         "Выделеный диапазон не соответствует вставляемой таблице. Игнорировать это?",
                         "Несоответствие выделения",
@@ -941,31 +930,23 @@ class GridEditor(wx.Panel):
         menu: wx.Menu = self.menubar.GetMenu(2)
 
         self._sep_2 = menu.AppendSeparator()
-        self._item_5 = menu.AppendCheckItem(
-            ID_TOGGLE_ERRORS, "[Таблица:Ошибки] показать/скрыть\tCTRL+ALT+E"
-        )
+        self._item_5 = menu.AppendCheckItem(ID_TOGGLE_ERRORS, "[Таблица:Ошибки] показать/скрыть\tCTRL+ALT+E")
         menu.Bind(wx.EVT_MENU, self._on_toggle_errors, self._item_5)
         self._tool_sep_0 = self.toolbar.AddSeparator()
-        self._tool_item_0 = self.toolbar.AddTool(
-            ID_ADD_ROW, "Добавить строку", get_icon("add-row")
-        )
+        self._tool_item_0 = self.toolbar.AddTool(ID_ADD_ROW, "Добавить строку", get_icon("add-row"))
         self._tool_item_0.Enable(False)
         self.toolbar.Bind(wx.EVT_TOOL, self._on_add_row, id=ID_ADD_ROW)
-        self._tool_item_0 = self.toolbar.AddTool(
-            ID_REMOVE_ROW, "Удалить строки", get_icon("delete-row")
-        )
+        self._tool_item_0 = self.toolbar.AddTool(ID_REMOVE_ROW, "Удалить строки", get_icon("delete-row"))
         self._tool_item_0.Enable(False)
         self.toolbar.Bind(wx.EVT_TOOL, self._on_delete_row, id=ID_REMOVE_ROW)
         self.toolbar.Realize()
         self._update_controls_state()
 
-    def _on_toggle_errors(self, event):
+    def _on_toggle_errors(self, event=None):
         if self._splitter.GetWindow2() != None:
             self._splitter.Unsplit(None)
         else:
-            self._splitter.SplitHorizontally(
-                self._hor_splitter, self._errors_view, -200
-            )
+            self._splitter.SplitHorizontally(self._hor_splitter, self._errors_view, -200)
         self._update_controls_state()
 
     def _on_select_all(self, event):
@@ -979,9 +960,7 @@ class GridEditor(wx.Panel):
         self._update_controls_state()
 
     def _on_delete_row(self, event):
-        self._command_processor.Submit(
-            cmdDeleteRows(self, self._view.GetSelectedRows())
-        )
+        self._command_processor.Submit(cmdDeleteRows(self, self._view.GetSelectedRows()))
         self._update_controls_state()
 
     def remove_controls(self):
@@ -1007,10 +986,7 @@ class GridEditor(wx.Panel):
         self.statusbar.SetStatusText("", 2)
 
     def _update_undo_redo_state(self):
-        if (
-            self._state["can_undo"] != self._command_processor.CanUndo()
-            or self._state["can_redo"] != self._command_processor.CanRedo()
-        ):
+        if self._state["can_undo"] != self._command_processor.CanUndo() or self._state["can_redo"] != self._command_processor.CanRedo():
             self._set_state(
                 {
                     "can_undo": self._command_processor.CanUndo(),
@@ -1035,6 +1011,12 @@ class GridEditor(wx.Panel):
         is_cells_selected = is_cursor_valid or blocks_selected
 
         global_enable = not self._in_edit_mode
+        rows = self._view.GetSelectedRows()
+        is_rows_selected = len(rows) > 0
+
+        _e_add_row = global_enable
+        _e_remove_row = global_enable and is_rows_selected
+
         _can_copy = global_enable
         _can_cut = global_enable
         _can_paste = global_enable
@@ -1044,29 +1026,17 @@ class GridEditor(wx.Panel):
             or self._state["can_cut"] != _can_cut
             or self._state["can_paste"] != _can_paste
             or self._state["can_save"] != _can_save
+            or self._state["can_delete_row"] != _e_remove_row
         ):
             self._set_state(
-                {
-                    "can_copy": _can_copy,
-                    "can_cut": _can_cut,
-                    "can_paste": _can_paste,
-                    "can_save": _can_save,
-                }
+                {"can_copy": _can_copy, "can_cut": _can_cut, "can_paste": _can_paste, "can_save": _can_save, "can_delete_row": _e_remove_row}
             )
         self._update_undo_redo_state()
 
         if not self._controls_initialized:
             return
 
-        rows = self._view.GetSelectedRows()
-        is_rows_selected = len(rows) > 0
-
-        _e_add_row = global_enable
-        _e_remove_row = global_enable and is_rows_selected
-
-        if _e_add_row != self.toolbar.GetToolEnabled(
-            ID_ADD_ROW
-        ) or _e_remove_row != self.toolbar.GetToolEnabled(ID_REMOVE_ROW):
+        if _e_add_row != self.toolbar.GetToolEnabled(ID_ADD_ROW) or _e_remove_row != self.toolbar.GetToolEnabled(ID_REMOVE_ROW):
             self.toolbar.EnableTool(ID_ADD_ROW, _e_add_row)
             self.toolbar.EnableTool(ID_REMOVE_ROW, _e_remove_row)
             self.toolbar.Realize()
@@ -1087,12 +1057,11 @@ class GridEditor(wx.Panel):
         cursor_col = self._view.GetGridCursorCol()
         if cursor_col == -1:
             cursor_col = 0
-        self._view.GoToCell(
-            self._view.GetNumberRows() - 1, self._view.GetGridCursorCol()
-        )
+        self._view.GoToCell(self._view.GetNumberRows() - 1, self._view.GetGridCursorCol())
         _can_save = self._model.have_changes()
         if self._state["can_save"] != _can_save:
             self._set_state({"can_save": _can_save})
+        self._notify_model_changed()
 
     def _cmd_undo_append_rows(self):
         number_rows = self._append_rows_undo_stack.pop()
@@ -1106,6 +1075,7 @@ class GridEditor(wx.Panel):
         _can_save = self._model.have_changes()
         if self._state["can_save"] != _can_save:
             self._set_state({"can_save": _can_save})
+        self._notify_model_changed()
 
     def _cmd_delete_rows(self, rows_pos):
         undo = {}
@@ -1120,6 +1090,7 @@ class GridEditor(wx.Panel):
         _can_save = self._model.have_changes()
         if self._state["can_save"] != _can_save:
             self._set_state({"can_save": _can_save})
+        self._notify_model_changed()
 
     def _cmd_undo_delete_rows(self):
         rows_data = self._delete_rows_undo_stack.pop()
@@ -1129,13 +1100,12 @@ class GridEditor(wx.Panel):
         _can_save = self._model.have_changes()
         if self._state["can_save"] != _can_save:
             self._set_state({"can_save": _can_save})
+        self._notify_model_changed()
 
     def _cmd_set_cell_value(self, cells, value: str):
         undo = []
         for cell_row, cell_col in cells:
-            undo.append(
-                (cell_row, cell_col, self._model.get_value_at(cell_col, cell_row))
-            )
+            undo.append((cell_row, cell_col, self._model.get_value_at(cell_col, cell_row)))
         self._set_cell_value_undo_stack.append(undo)
 
         for cell_row, cell_col in cells:
@@ -1145,15 +1115,18 @@ class GridEditor(wx.Panel):
         _can_save = self._model.have_changes()
         if self._state["can_save"] != _can_save:
             self._set_state({"can_save": _can_save})
+        self._notify_model_changed()
 
     def _cmd_undo_set_cell_value(self):
         undo = self._set_cell_value_undo_stack.pop()
         for cell_row, cell_col, value in undo:
             self._model.set_value_at(cell_col, cell_row, value)
         self._render()
+
         _can_save = self._model.have_changes()
         if self._state["can_save"] != _can_save:
             self._set_state({"can_save": _can_save})
+        self._notify_model_changed()
 
     def _cmd_paste(self, start_row, start_col, table):
         undo = []
@@ -1163,9 +1136,7 @@ class GridEditor(wx.Panel):
                     (
                         row_index + start_row,
                         col_index + start_col,
-                        self._model.get_value_at(
-                            col_index + start_col, row_index + start_row
-                        ),
+                        self._model.get_value_at(col_index + start_col, row_index + start_row),
                     )
                 )
                 self._model.set_value_at(
@@ -1179,6 +1150,7 @@ class GridEditor(wx.Panel):
         _can_save = self._model.have_changes()
         if self._state["can_save"] != _can_save:
             self._set_state({"can_save": _can_save})
+        self._notify_model_changed()
 
     def _cmd_undo_paste(self):
         undo = self._past_undo_stack.pop()
@@ -1189,8 +1161,42 @@ class GridEditor(wx.Panel):
         _can_save = self._model.have_changes()
         if self._state["can_save"] != _can_save:
             self._set_state({"can_save": _can_save})
+        self._notify_model_changed()
+
+    def _notify_model_changed(self):
+        wx.PostEvent(self, GridModelStateChangedEvent(target=self))
 
     def is_changed(self):
         return self._model.have_changes()
 
     def end(self): ...
+
+    def _do_hightlight_cells(self):
+        self._view.BeginBatch()
+        for col_index, row_index in self._hightlight_cells:
+            if col_index < self._view.GetNumberCols() and row_index < self._view.GetNumberRows():
+                self._view.SetCellBackgroundColour(row_index, col_index, wx.Colour(255, 150, 150))
+                self._view.SetCellTextColour(row_index, col_index,wx.Colour(255, 255, 255))
+        self._view.EndBatch()
+
+    def validate(self, save_edit_control=True):
+        if save_edit_control:
+            self._view.SaveEditControlValue()
+            self._view.HideCellEditControl()
+        errors = self._model.validate()
+        if len(errors) > 0 and self._splitter.GetWindow2() == None:
+            self._on_toggle_errors()
+            self.menubar.Check(ID_TOGGLE_ERRORS, True)
+        self._errors_view.set_errors(errors)
+        hightlight = []
+        ids = list(map(lambda x: x.id, self._columns))
+        for column, row, msg in errors:
+            try:
+                col_index = ids.index(column.id)
+            except:
+                continue
+            else:
+                hightlight.append((col_index, row))
+        self._hightlight_cells = hightlight
+        self._do_hightlight_cells()
+        return len(errors) == 0

@@ -12,9 +12,7 @@ from ui.datetimeutil import decode_date, encode_date
 class PmEquipmentEditor(wx.Dialog):
     @db_session
     def __init__(self, parent, o=None, _type="CREATE"):
-        super().__init__(
-            parent, title="Добавить Оборудование", size=wx.Size(300, 400)
-        )
+        super().__init__(parent, title="Добавить Оборудование", size=wx.Size(300, 400))
         self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnParent()
 
@@ -43,9 +41,7 @@ class PmEquipmentEditor(wx.Dialog):
 
         label = wx.StaticText(comment_pane, label="Комментарий")
         comment_sizer.Add(label, 0)
-        self.field_comment = wx.TextCtrl(
-            comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE
-        )
+        self.field_comment = wx.TextCtrl(comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE)
         self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
         comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
@@ -93,7 +89,7 @@ class PmEquipmentEditor(wx.Dialog):
         fields["StartDate"] = encode_date(self.field_start_date.GetValue())
 
         try:
-            if self._type == 'CREATE':
+            if self._type == "CREATE":
                 self.o = PmTestEquipment(**fields)
             else:
                 self.o = PmTestEquipment[self._target.RID]
@@ -108,5 +104,4 @@ class PmEquipmentEditor(wx.Dialog):
         self.field_name.SetValue(o.Name)
         self.field_comment.SetValue(o.Comment if o.Comment != None else "")
         self.field_start_date.SetValue(decode_date(o.StartDate))
-        self.field_serial_no.SetValue(o.SerialNo if o.SerialNo != None else '')
-
+        self.field_serial_no.SetValue(o.SerialNo if o.SerialNo != None else "")

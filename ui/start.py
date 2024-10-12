@@ -25,48 +25,32 @@ class StartDialog(wx.Dialog):
         label = wx.StaticText(self, label="Логин*")
         grid_sizer.Add(label, 0, wx.EXPAND)
         self.field_login = wx.TextCtrl(self, size=wx.Size(320, -1))
-        self.field_login.SetValidator(
-            TextValidator("поле не должно быть пустым", lenMin=1)
-        )
+        self.field_login.SetValidator(TextValidator("поле не должно быть пустым", lenMin=1))
         grid_sizer.Add(self.field_login, 0, wx.EXPAND | wx.BOTTOM, border=10)
         label = wx.StaticText(self, label="Пароль*")
         grid_sizer.Add(label, 0, wx.EXPAND)
-        self.field_password = wx.TextCtrl(
-            self, size=wx.Size(320, -1), style=wx.TE_PASSWORD
-        )
-        self.field_password.SetValidator(
-            TextValidator("поле не должно быть пустым", lenMin=1)
-        )
+        self.field_password = wx.TextCtrl(self, size=wx.Size(320, -1), style=wx.TE_PASSWORD)
+        self.field_password.SetValidator(TextValidator("поле не должно быть пустым", lenMin=1))
         grid_sizer.Add(self.field_password, 0, wx.EXPAND | wx.BOTTOM, border=10)
-        main_sizer.Add(
-            grid_sizer, 1, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, border=10
-        )
+        main_sizer.Add(grid_sizer, 1, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, border=10)
         collapse = wx.CollapsiblePane(self, label="Параметры подключения")
         collapse_pane = collapse.GetPane()
         collapse_sizer = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(collapse_pane, label="Хост*")
         collapse_sizer.Add(label, 0, wx.LEFT | wx.RIGHT, border=10)
         self.field_host = wx.TextCtrl(collapse_pane)
-        self.field_host.SetValidator(
-            TextValidator("поле не должно быть пустым", lenMin=1)
-        )
-        collapse_sizer.Add(
-            self.field_host, 0, wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT, border=10
-        )
+        self.field_host.SetValidator(TextValidator("поле не должно быть пустым", lenMin=1))
+        collapse_sizer.Add(self.field_host, 0, wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT, border=10)
 
         label = wx.StaticText(collapse_pane, label="Порт*")
         collapse_sizer.Add(label, 0, wx.LEFT | wx.RIGHT, border=10)
         self.field_port = wx.SpinCtrl(collapse_pane, max=1000000)
-        collapse_sizer.Add(
-            self.field_port, 0, wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT, border=10
-        )
+        collapse_sizer.Add(self.field_port, 0, wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT, border=10)
 
         label = wx.StaticText(collapse_pane, label="База данных*")
         collapse_sizer.Add(label, 0, wx.LEFT | wx.RIGHT, border=10)
         self.field_database = wx.TextCtrl(collapse_pane)
-        self.field_database.SetValidator(
-            TextValidator("поле не должно быть пустым", lenMin=1)
-        )
+        self.field_database.SetValidator(TextValidator("поле не должно быть пустым", lenMin=1))
         collapse_sizer.Add(
             self.field_database,
             0,
@@ -81,9 +65,7 @@ class StartDialog(wx.Dialog):
         self.btn_login = wx.Button(self, label="Войти")
         self.btn_login.SetDefault()
         btns.Add(self.btn_login, 0, wx.EXPAND)
-        main_sizer.Add(
-            btns, 0, wx.ALIGN_RIGHT | wx.BOTTOM | wx.LEFT | wx.RIGHT, border=10
-        )
+        main_sizer.Add(btns, 0, wx.ALIGN_RIGHT | wx.BOTTOM | wx.LEFT | wx.RIGHT, border=10)
 
         self.SetSizer(main_sizer)
 

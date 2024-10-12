@@ -20,7 +20,8 @@ class Item_Node(TreeNode):
 
     def __eq__(self, node):
         return isinstance(node, Item_Node) and node._id == self._id
-    
+
+
 class Properties_Node(TreeNode):
     def get_name(self):
         return "Типовые свойства"
@@ -33,6 +34,7 @@ class Properties_Node(TreeNode):
 
     def __eq__(self, node):
         return isinstance(node, Support_Node)
+
 
 class Support_Node(TreeNode):
     def get_name(self):
@@ -55,13 +57,12 @@ class Root_Node(TreeNode):
         return "Объекты"
 
     def get_subnodes(self) -> List[TreeNode]:
-        return [
-            Support_Node()
-        ]
+        return [Support_Node()]
 
     def __eq__(self, node):
         return isinstance(node, Root_Node)
-    
+
+
 class Deputy(wx.Panel):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
@@ -77,14 +78,13 @@ class Deputy(wx.Panel):
     def end(self):
         self.Hide()
 
+
 ID_FIND_NEXT = wx.ID_HIGHEST + 250
 
 
 class PmSettingsWindow(wx.Frame):
     def __init__(self, parent):
-        super().__init__(
-            parent, style=wx.DEFAULT_FRAME_STYLE | wx.FRAME_FLOAT_ON_PARENT
-        )
+        super().__init__(parent, style=wx.DEFAULT_FRAME_STYLE | wx.FRAME_FLOAT_ON_PARENT)
         self.SetSize(1200, 600)
         self.SetMinSize(wx.Size(400, 200))
         self.SetTitle('Параметры "Физ. Мех. свойства"')
@@ -141,20 +141,19 @@ class PmSettingsWindow(wx.Frame):
         dlg.SetIcon(wx.Icon(get_art(wx.ART_FIND)))
         _current_panel = self._right_sizer.GetItem(0).GetWindow()
         q = _current_panel.get_last_q()
-        dlg.SetValue(q if q != None else '')
+        dlg.SetValue(q if q != None else "")
         if dlg.ShowModal() == wx.ID_OK:
             _current_panel.start_find(dlg.GetValue())
 
-    def _on_find_next(self, event):
-        ...
+    def _on_find_next(self, event): ...
 
     def _on_node_activated(self, event):
         node = event.node
 
         if isinstance(node, Item_Node):
-            if node._id == 'support.test_methods':
+            if node._id == "support.test_methods":
                 _panel = self._pm_methods
-            elif node._id == 'support.test_equipments':
+            elif node._id == "support.test_equipments":
                 _panel = self._pm_equipment
             else:
                 _panel = self._deputy

@@ -1,6 +1,7 @@
 import wx
 from typing import Protocol, runtime_checkable
 
+
 @runtime_checkable
 class MgrPaneProto(Protocol):
     def get_pane_info(self) -> str | None:

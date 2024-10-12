@@ -17,20 +17,12 @@ class DischargeSeriesFastview(wx.Panel):
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.StringProperty("Название", "Name"))
         self.propgrid.SetPropertyReadOnly(prop)
-        prop = self.propgrid.Append(
-            wx.propgrid.LongStringProperty("Комментарий", "Comment")
-        )
-        prop = self.propgrid.Append(
-            wx.propgrid.DateProperty("Дата начала", "StartMeasure")
-        )
+        prop = self.propgrid.Append(wx.propgrid.LongStringProperty("Комментарий", "Comment"))
+        prop = self.propgrid.Append(wx.propgrid.DateProperty("Дата начала", "StartMeasure"))
         self.propgrid.SetPropertyReadOnly(prop)
-        prop = self.propgrid.Append(
-            wx.propgrid.DateProperty("Дата окончания", "EndMeasure")
-        )
+        prop = self.propgrid.Append(wx.propgrid.DateProperty("Дата окончания", "EndMeasure"))
         self.propgrid.SetPropertyReadOnly(prop)
-        prop = self.propgrid.Append(
-            wx.propgrid.StringProperty("Документ", "foundation_document")
-        )
+        prop = self.propgrid.Append(wx.propgrid.StringProperty("Документ", "foundation_document"))
         self.propgrid.SetPropertyReadOnly(prop)
         main_sizer.Add(self.propgrid, 1, wx.EXPAND)
 
@@ -44,14 +36,8 @@ class DischargeSeriesFastview(wx.Panel):
             "RID": o.RID,
             "Name": o.Name,
             "Comment": o.Comment,
-            "StartMeasure": wx.DateTime(
-                start_date.day, start_date.month - 1, start_date.year
-            ),
-            "foundation_document": (
-                o.foundation_document.Name
-                if o.foundation_document != None
-                else "-- Без документа --"
-            ),
+            "StartMeasure": wx.DateTime(start_date.day, start_date.month - 1, start_date.year),
+            "foundation_document": (o.foundation_document.Name if o.foundation_document != None else "-- Без документа --"),
         }
         if o.EndMeasure != None:
             date = decode_date(o.EndMeasure)

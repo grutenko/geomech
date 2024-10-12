@@ -15,27 +15,19 @@ class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self._toolbar = wx.ToolBar(
-            self, style=wx.TB_FLAT | wx.TB_HORZ_TEXT | wx.TB_BOTTOM
-        )
+        self._toolbar = wx.ToolBar(self, style=wx.TB_FLAT | wx.TB_HORZ_TEXT | wx.TB_BOTTOM)
         tool = self._toolbar.AddTool(wx.ID_ADD, "Добавить метод", get_art(wx.ART_PLUS))
         self._toolbar.Bind(wx.EVT_TOOL, self._on_create_pm_method, id=wx.ID_ADD)
-        tool = self._toolbar.AddTool(
-            wx.ID_EDIT, "Редактировать метод", get_art(wx.ART_EDIT)
-        )
+        tool = self._toolbar.AddTool(wx.ID_EDIT, "Редактировать метод", get_art(wx.ART_EDIT))
         tool.Enable(False)
         self._toolbar.Bind(wx.EVT_TOOL, self._on_item_activated, id=wx.ID_EDIT)
-        tool = self._toolbar.AddTool(
-            wx.ID_DELETE, "Удалить метод", get_art(wx.ART_DELETE)
-        )
+        tool = self._toolbar.AddTool(wx.ID_DELETE, "Удалить метод", get_art(wx.ART_DELETE))
         tool.Enable(False)
         self._toolbar.Bind(wx.EVT_TOOL, self._on_delete_pm_method, id=wx.ID_DELETE)
         self._toolbar.Realize()
         main_sizer.Add(self._toolbar, 0, wx.EXPAND)
 
-        self.table = wx.ListCtrl(
-            self, style=wx.LC_REPORT | wx.BORDER_NONE | wx.LC_SORT_ASCENDING
-        )
+        self.table = wx.ListCtrl(self, style=wx.LC_REPORT | wx.BORDER_NONE | wx.LC_SORT_ASCENDING)
         self.table.AppendColumn("Название", width=400)
         self.table.AppendColumn("Комментарий", width=100)
         self.table.AppendColumn("Дата введения", width=100)
@@ -60,7 +52,7 @@ class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
         self._methods = {}
         self.itemDataMap = {}
 
-        self._q = ''
+        self._q = ""
 
     def GetListCtrl(self):
         return self.table
@@ -81,7 +73,7 @@ class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
         for index, method in enumerate(methods):
             self._methods[method.RID] = method
             item = self.table.InsertItem(index, method.Name)
-            self.table.SetItem(item, 1, method.Comment if method.Comment != None else '')
+            self.table.SetItem(item, 1, method.Comment if method.Comment != None else "")
             self.table.SetItem(item, 2, decode_date(method.StartDate).__str__())
             if method.EndDate != None:
                 end_date = decode_date(method.EndDate).__str__()
@@ -94,12 +86,7 @@ class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
                 analytic = "Нет"
             self.table.SetItem(item, 4, analytic)
             self.table.SetItemData(item, method.RID)
-            self.itemDataMap[method.RID] = [
-                method.Name,
-                decode_date(method.StartDate).__str__(),
-                end_date,
-                analytic
-            ]
+            self.itemDataMap[method.RID] = [method.Name, decode_date(method.StartDate).__str__(), end_date, analytic]
         self.statusbar.SetStatusText("Элементов:%d" % len(methods))
         self._update_controls_state()
 
@@ -130,9 +117,7 @@ class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
             self._render()
 
     def _on_item_activated(self, event):
-        self._edit_pm_method(
-            self._methods[self.table.GetItemData(self.table.GetFirstSelected())]
-        )
+        self._edit_pm_method(self._methods[self.table.GetItemData(self.table.GetFirstSelected())])
 
     def _edit_pm_method(self, method):
         dlg = PmMethodEditor(self, method, _type="UPDATE")
@@ -145,7 +130,7 @@ class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
     @db_session
     def _on_delete_pm_method(self, event):
         method_id = self.table.GetItemData(self.table.GetFirstSelected())
-        method  = select(o for o in PmTestMethod if o.RID == method_id).first()
+        method = select(o for o in PmTestMethod if o.RID == method_id).first()
         if method != None:
             if delete_object(method, ["pm_sample_property_values"]):
                 self._render()
@@ -162,6 +147,5 @@ class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
 
     def can_find_next(self):
         return False
-    
-    def find_next(self):
-        ...
+
+    def find_next(self): ...

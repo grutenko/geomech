@@ -31,9 +31,7 @@ class Tree(wx.Panel):
         self.SetDoubleBuffered(True)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self._tree = wx.TreeCtrl(
-            self, style=wx.TR_DEFAULT_STYLE | wx.TR_HIDE_ROOT | wx.BORDER_NONE
-        )
+        self._tree = wx.TreeCtrl(self, style=wx.TR_DEFAULT_STYLE | wx.TR_HIDE_ROOT | wx.BORDER_NONE)
         self._use_icons = use_icons
 
         if self._use_icons:
@@ -57,15 +55,9 @@ class Tree(wx.Panel):
         self._tree.Bind(wx.EVT_TREE_ITEM_MENU, self._on_native_item_menu)
 
     def unbind_all(self):
-        self._tree.Unbind(
-            wx.EVT_TREE_ITEM_EXPANDED, handler=self._on_native_item_expanded
-        )
-        self._tree.Unbind(
-            wx.EVT_TREE_SEL_CHANGED, handler=self._on_native_item_selection_changed
-        )
-        self._tree.Unbind(
-            wx.EVT_TREE_ITEM_ACTIVATED, handler=self._on_native_item_activated
-        )
+        self._tree.Unbind(wx.EVT_TREE_ITEM_EXPANDED, handler=self._on_native_item_expanded)
+        self._tree.Unbind(wx.EVT_TREE_SEL_CHANGED, handler=self._on_native_item_selection_changed)
+        self._tree.Unbind(wx.EVT_TREE_ITEM_ACTIVATED, handler=self._on_native_item_activated)
         self._tree.Unbind(wx.EVT_TREE_ITEM_MENU, handler=self._on_native_item_menu)
 
     def set_root_node(self, root_node: TreeNode):
@@ -91,9 +83,7 @@ class Tree(wx.Panel):
             context = self._tree.GetItemData(item)
             if isinstance(context, Context) and context.node.__eq__(node):
                 return item
-            child_item = self._find_native_item(
-                node, item, depth - 1 if depth != -1 else -1
-            )
+            child_item = self._find_native_item(node, item, depth - 1 if depth != -1 else -1)
             if child_item != None:
                 return child_item
             item = self._tree.GetNextSibling(item)
@@ -119,6 +109,9 @@ class Tree(wx.Panel):
                 self._append_node(native_item, subnode)
             if _item_deputy != None:
                 context.subnodes.insert(0, _first_subnode)
+        else:
+            if _item_deputy != None:
+                wx.CallAfter(self._tree.Delete, _item_deputy)
 
     def select_node(self, node: TreeNode):
         if node == None:
@@ -219,16 +212,12 @@ class Tree(wx.Panel):
             self._icons[icon_name] = self._image_list.Add(icon)
         return self._icons[icon_name]
 
-    def _append_node(self, parent_native_item: wx.TreeItemId, node: TreeNode, index=-1, native_item = None):
+    def _append_node(self, parent_native_item: wx.TreeItemId, node: TreeNode, index=-1, native_item=None):
         if native_item == None:
             if index == -1:
-                item = self._tree.AppendItem(
-                    parent_native_item, node.get_name(), data=Context(node)
-                )
+                item = self._tree.AppendItem(parent_native_item, node.get_name(), data=Context(node))
             else:
-                item = self._tree.InsertItem(
-                    parent_native_item, index, node.get_name(), data=Context(node)
-                )
+                item = self._tree.InsertItem(parent_native_item, index, node.get_name(), data=Context(node))
         else:
             item = native_item
             self._tree.SetItemText(item, node.get_name())
@@ -275,19 +264,11 @@ class Tree(wx.Panel):
 
         wx.PostEvent(
             self,
-            WidgetTreeSelChanged(
-                node=(
-                    self._tree.GetItemData(event.GetItem()).node
-                    if self._tree.GetSelection().IsOk()
-                    else None
-                )
-            ),
+            WidgetTreeSelChanged(node=(self._tree.GetItemData(event.GetItem()).node if self._tree.GetSelection().IsOk() else None)),
         )
 
     def _on_native_item_activated(self, event: wx.TreeEvent):
-        wx.PostEvent(
-            self, WidgetTreeActivated(node=self._tree.GetItemData(event.GetItem()).node)
-        )
+        wx.PostEvent(self, WidgetTreeActivated(node=self._tree.GetItemData(event.GetItem()).node))
 
     def _on_native_item_menu(self, event: wx.TreeEvent):
         self._tree.SelectItem(event.GetItem())

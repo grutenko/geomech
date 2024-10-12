@@ -10,6 +10,7 @@ from ui.delete_object import delete_object
 
 from .create import CreateCoordSystemDialog
 
+
 class _CoordSystem_Node(TreeNode):
     def __init__(self, o):
         self.o = o
@@ -24,24 +25,25 @@ class _CoordSystem_Node(TreeNode):
 
     def get_name(self):
         return self.o.Name
-    
+
     def get_icon(self) -> Tuple[str, wx.Bitmap] | None:
         return "coord_system", get_icon("coord_system", scale_to=16)
-    
+
     @db_session
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
         for o in select(o for o in CoordSystem if o.parent == self.o):
             nodes.append(_CoordSystem_Node(o))
         return nodes
-    
+
     def __eq__(self, node):
         return isinstance(node, _CoordSystem_Node) and node.o.RID == self.o.RID
-    
+
     @db_session
     def is_leaf(self) -> bool:
         return select(o for o in CoordSystem if o.parent == self.o).first() == None
-    
+
+
 class _Root_Node(TreeNode):
     def get_name(self):
         return "Системы координат"
@@ -52,9 +54,10 @@ class _Root_Node(TreeNode):
         for o in select(o for o in CoordSystem if o.Level == 0):
             nodes.append(_CoordSystem_Node(o))
         return nodes
-    
+
     def __eq__(self, node):
         return isinstance(node, _Root_Node)
+
 
 class CoordSystemTree(Tree):
     def __init__(self, parent):
@@ -97,13 +100,13 @@ class CoordSystemTree(Tree):
             self.select_node(_CoordSystem_Node(dlg.o))
 
     def _edit_coord_system(self, node):
-        dlg = CreateCoordSystemDialog(self, node.o, type='UPDATE')
+        dlg = CreateCoordSystemDialog(self, node.o, type="UPDATE")
         if dlg.ShowModal() == wx.ID_OK:
             self.soft_reload_node(node)
 
     def _delete_coord_system(self, node):
         p = node.get_parent()
-        if delete_object(node.o, ['mine_objects', 'childrens']):
+        if delete_object(node.o, ["mine_objects", "childrens"]):
             self.soft_reload_childrens(p)
 
     def _on_node_activated(self, event):

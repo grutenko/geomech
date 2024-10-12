@@ -15,15 +15,13 @@ from ui.windows.cs.transl import CsTransl
 
 class DialogCreateStation(wx.Dialog):
     @db_session
-    def __init__(self, parent, o=None, _type = 'CREATE'):
-        super().__init__(
-            parent, title="Добавить измерительную станцию", size=wx.Size(400, 600)
-        )
+    def __init__(self, parent, o=None, _type="CREATE"):
+        super().__init__(parent, title="Добавить измерительную станцию", size=wx.Size(400, 600))
         self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnParent()
 
         self._type = _type
-        if _type == 'CREATE':
+        if _type == "CREATE":
             self.parent = o
         else:
             self.SetTitle("Изменить: %s" % o.Name)
@@ -34,7 +32,7 @@ class DialogCreateStation(wx.Dialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         top_sizer.Add(main_sizer, 1, wx.EXPAND | wx.ALL, border=10)
 
-        if _type == 'CREATE':
+        if _type == "CREATE":
             autofill_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Поля для автозаполнения")
             label = wx.StaticText(self, label="Числовой № станции")
             autofill_sizer.Add(label, 0)
@@ -43,15 +41,13 @@ class DialogCreateStation(wx.Dialog):
             autofill_sizer.Add(self.field_orig_no, 0, wx.EXPAND)
             main_sizer.Add(autofill_sizer, 0, wx.EXPAND)
 
-        label = wx.StaticText(
-            self, label="Регистрационный номер " + ("(автом. из Числового №)*" if _type == 'CREATE' else '*')
-        )
+        label = wx.StaticText(self, label="Регистрационный номер " + ("(автом. из Числового №)*" if _type == "CREATE" else "*"))
         main_sizer.Add(label, 0, wx.EXPAND | wx.TOP, border=10)
         self.field_number = wx.TextCtrl(self, size=wx.Size(250, -1))
         self.field_number.SetValidator(TextValidator(lenMin=1, lenMax=32))
         main_sizer.Add(self.field_number, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
-        label = wx.StaticText(self, label="Название " + ("(автом. из Числового №)*" if _type == 'CREATE' else '*'))
+        label = wx.StaticText(self, label="Название " + ("(автом. из Числового №)*" if _type == "CREATE" else "*"))
         main_sizer.Add(label, 0)
         self.field_name = wx.TextCtrl(self, size=wx.Size(250, -1))
         self.field_name.SetValidator(TextValidator(lenMin=1, lenMax=256))
@@ -66,9 +62,7 @@ class DialogCreateStation(wx.Dialog):
 
         label = wx.StaticText(comment_pane, label="Комментарий")
         comment_sizer.Add(label, 0)
-        self.field_comment = wx.TextCtrl(
-            comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE
-        )
+        self.field_comment = wx.TextCtrl(comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE)
         self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
         comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
@@ -79,9 +73,7 @@ class DialogCreateStation(wx.Dialog):
 
         label = wx.StaticText(self, label="Дата завершения измерений")
         main_sizer.Add(label, 0)
-        self.field_end_date = DatePickerCtrl(
-            self, style=DP_DEFAULT | DP_SHOWCENTURY | DP_ALLOWNONE
-        )
+        self.field_end_date = DatePickerCtrl(self, style=DP_DEFAULT | DP_SHOWCENTURY | DP_ALLOWNONE)
         main_sizer.Add(self.field_end_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         collpane = wx.CollapsiblePane(self, wx.ID_ANY, "Координаты")
@@ -91,14 +83,11 @@ class DialogCreateStation(wx.Dialog):
         coords_sizer = wx.BoxSizer(wx.VERTICAL)
         coords_pane.SetSizer(coords_sizer)
 
-        
         cs_name = MineObject[self.parent.RID].coord_system.Name
-        label = wx.StaticText(coords_pane, label="Система координат: " + (cs_name if len(cs_name) < 24 else cs_name[:24] + '...'))
+        label = wx.StaticText(coords_pane, label="Система координат: " + (cs_name if len(cs_name) < 24 else cs_name[:24] + "..."))
         coords_sizer.Add(label, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
-        self.open_cs_transf = wx.Button(
-            coords_pane, label="Открыть утилиту перевода координат"
-        )
+        self.open_cs_transf = wx.Button(coords_pane, label="Открыть утилиту перевода координат")
         coords_sizer.Add(self.open_cs_transf, 0, wx.EXPAND)
         self.open_cs_transf.Bind(wx.EVT_BUTTON, self._on_open_cs_transf)
 
@@ -124,10 +113,10 @@ class DialogCreateStation(wx.Dialog):
         main_sizer.Add(line, 0, wx.EXPAND | wx.TOP, border=10)
 
         btn_sizer = wx.StdDialogButtonSizer()
-        if _type == 'CREATE':
-            label = 'Создать'
+        if _type == "CREATE":
+            label = "Создать"
         else:
-            label = 'Изменить'
+            label = "Изменить"
         self.btn_save = wx.Button(self, label=label)
         self.btn_save.Bind(wx.EVT_BUTTON, self._on_save)
         btn_sizer.Add(self.btn_save, 0)
@@ -138,7 +127,7 @@ class DialogCreateStation(wx.Dialog):
         self.Layout()
         self.Fit()
 
-        if _type == 'UPDATE':
+        if _type == "UPDATE":
             self._set_fields()
 
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyUP)
@@ -147,13 +136,14 @@ class DialogCreateStation(wx.Dialog):
         keyCode = event.GetKeyCode()
         if keyCode == wx.WXK_ESCAPE:
             self.EndModal(wx.ID_CANCEL)
-        event.Skip() 
+        else:
+            event.Skip()
 
     def _set_fields(self):
         o = self._target
         self.field_number.SetValue(o.Number)
         self.field_name.SetValue(o.Name)
-        self.field_comment.SetValue(o.Comment if o.Comment != None else '')
+        self.field_comment.SetValue(o.Comment if o.Comment != None else "")
         self.field_x.SetValue(o.X)
         self.field_y.SetValue(o.Y)
         self.field_z.SetValue(o.Z)
@@ -181,7 +171,7 @@ class DialogCreateStation(wx.Dialog):
 
     @db_session
     def _create_object(self, fields):
-        fields['mine_object'] = MineObject[fields['mine_object'].RID]
+        fields["mine_object"] = MineObject[fields["mine_object"].RID]
         self.o = Station(**fields)
 
     @db_session
@@ -199,26 +189,18 @@ class DialogCreateStation(wx.Dialog):
             "HoleCount": 0,
         }
 
-        fields["StartDate"] = ui.datetimeutil.encode_date(
-            self.field_start_date.GetValue()
-        )
+        fields["StartDate"] = ui.datetimeutil.encode_date(self.field_start_date.GetValue())
 
-        if self._type == 'CREATE':
+        if self._type == "CREATE":
             fields["mine_object"] = self.parent
 
         date: wx.DateTime = self.field_end_date.GetValue()
         if date.IsValid():
             fields["EndDate"] = ui.datetimeutil.encode_date(date)
 
-        try:
-            if self._type == 'CREATE':
-                self._create_object(fields)
-            else:
-                self.o = Station[self._target.RID]
-                self.o.set(**fields)
-        except Exception as e:
-            wx.MessageBox(str(e))
+        if self._type == "CREATE":
+            self._create_object(fields)
         else:
-            self.EndModal(wx.ID_OK)
-
-        
+            self.o = Station[self._target.RID]
+            self.o.set(**fields)
+        commit()

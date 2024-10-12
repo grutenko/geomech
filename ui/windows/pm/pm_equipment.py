@@ -17,29 +17,19 @@ class PmEquipment(wx.Panel, listmix.ColumnSorterMixin):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self._toolbar = wx.ToolBar(
-            self, style=wx.TB_FLAT | wx.TB_HORZ_TEXT | wx.TB_BOTTOM
-        )
-        tool = self._toolbar.AddTool(
-            wx.ID_ADD, "Добавить оборудование", get_art(wx.ART_PLUS)
-        )
+        self._toolbar = wx.ToolBar(self, style=wx.TB_FLAT | wx.TB_HORZ_TEXT | wx.TB_BOTTOM)
+        tool = self._toolbar.AddTool(wx.ID_ADD, "Добавить оборудование", get_art(wx.ART_PLUS))
         self._toolbar.Bind(wx.EVT_TOOL, self._on_create, id=wx.ID_ADD)
-        tool = self._toolbar.AddTool(
-            wx.ID_EDIT, "Редактировать оборудование", get_art(wx.ART_EDIT)
-        )
+        tool = self._toolbar.AddTool(wx.ID_EDIT, "Редактировать оборудование", get_art(wx.ART_EDIT))
         tool.Enable(False)
         self._toolbar.Bind(wx.EVT_TOOL, self._on_update, id=wx.ID_EDIT)
-        tool = self._toolbar.AddTool(
-            wx.ID_DELETE, "Удалить оборудование", get_art(wx.ART_DELETE)
-        )
+        tool = self._toolbar.AddTool(wx.ID_DELETE, "Удалить оборудование", get_art(wx.ART_DELETE))
         tool.Enable(False)
         self._toolbar.Bind(wx.EVT_TOOL, self._on_delete, id=wx.ID_DELETE)
         self._toolbar.Realize()
         main_sizer.Add(self._toolbar, 0, wx.EXPAND)
 
-        self.table = wx.ListCtrl(
-            self, style=wx.LC_REPORT | wx.BORDER_NONE | wx.LC_SORT_ASCENDING
-        )
+        self.table = wx.ListCtrl(self, style=wx.LC_REPORT | wx.BORDER_NONE | wx.LC_SORT_ASCENDING)
         self.table.AppendColumn("Название", width=400)
         self.table.AppendColumn("Серийный номер", width=100)
         self.table.AppendColumn("Дата ввода в экспуатацию", width=150)
@@ -61,7 +51,7 @@ class PmEquipment(wx.Panel, listmix.ColumnSorterMixin):
 
         self._methods = {}
         self.itemDataMap = {}
-        self._q = ''
+        self._q = ""
 
     def GetListCtrl(self):
         return self.table
@@ -148,6 +138,5 @@ class PmEquipment(wx.Panel, listmix.ColumnSorterMixin):
 
     def can_find_next(self):
         return False
-    
-    def find_next(self):
-        ...
+
+    def find_next(self): ...

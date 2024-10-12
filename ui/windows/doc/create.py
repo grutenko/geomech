@@ -6,6 +6,7 @@ from database import FoundationDocument
 from ui.validators import *
 from ui.icon import get_icon
 
+
 class CreateDocumentDialog(wx.Dialog):
     def __init__(self, parent, o=None, type="CREATE"):
         super().__init__(parent, title="Добавить Документ")
@@ -43,9 +44,7 @@ class CreateDocumentDialog(wx.Dialog):
 
         label = wx.StaticText(comment_pane, label="Комментарий")
         comment_sizer.Add(label, 0)
-        self.field_comment = wx.TextCtrl(
-            comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE
-        )
+        self.field_comment = wx.TextCtrl(comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE)
         self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
         comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
@@ -59,10 +58,10 @@ class CreateDocumentDialog(wx.Dialog):
         main_sizer.Add(line, 0, wx.EXPAND | wx.TOP, border=10)
 
         btn_sizer = wx.StdDialogButtonSizer()
-        if type == 'CREATE':
-            label = 'Cоздать'
+        if type == "CREATE":
+            label = "Cоздать"
         else:
-            label = 'Изменить'
+            label = "Изменить"
         self.btn_save = wx.Button(self, label=label)
         self.btn_save.Bind(wx.EVT_BUTTON, self._on_save)
         btn_sizer.Add(self.btn_save, 0)
@@ -76,15 +75,15 @@ class CreateDocumentDialog(wx.Dialog):
     def _on_save(self, event):
         if not self.Validate():
             return
-        
+
         fields = {
             "Name": self.field_name.GetValue(),
             "Type": self.field_type.GetValue(),
             "Comment": self.field_comment.GetValue(),
-            "Number": self.field_number.GetValue()
+            "Number": self.field_number.GetValue(),
         }
 
-        if self._type == 'CREATE':
+        if self._type == "CREATE":
             try:
                 self.o = FoundationDocument(**fields)
             except Exception as e:

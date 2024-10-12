@@ -27,20 +27,14 @@ class DialogCreateBoreHole(wx.Dialog):
         else:
             self.SetTitle("Изменить: %s" % o.Name)
             self._target = o
-            self.parent = (
-                MineObject[o.mine_object.RID]
-                if o.station == None
-                else Station[o.station.RID]
-            )
+            self.parent = MineObject[o.mine_object.RID] if o.station == None else Station[o.station.RID]
 
         top_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         top_sizer.Add(main_sizer, 1, wx.EXPAND | wx.ALL, border=10)
 
         if _type == "CREATE":
-            autofill_sizer = wx.StaticBoxSizer(
-                wx.VERTICAL, self, "Поля для автозаполнения"
-            )
+            autofill_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Поля для автозаполнения")
             label = wx.StaticText(self, label="Числовой № скважины")
             autofill_sizer.Add(label, 0)
             self.field_orig_no = wx.TextCtrl(self, size=wx.Size(250, -1))
@@ -50,8 +44,7 @@ class DialogCreateBoreHole(wx.Dialog):
 
         label = wx.StaticText(
             self,
-            label="Регистрационный номер "
-            + ("(автом. из Числового №)*" if _type == "CREATE" else "*"),
+            label="Регистрационный номер " + ("(автом. из Числового №)*" if _type == "CREATE" else "*"),
         )
         main_sizer.Add(label, 0, wx.EXPAND | wx.TOP, border=10)
         self.field_number = wx.TextCtrl(self, size=wx.Size(250, -1))
@@ -60,8 +53,7 @@ class DialogCreateBoreHole(wx.Dialog):
 
         label = wx.StaticText(
             self,
-            label="Название "
-            + ("(автом. из Числового №)*" if _type == "CREATE" else "*"),
+            label="Название " + ("(автом. из Числового №)*" if _type == "CREATE" else "*"),
         )
         main_sizer.Add(label, 0)
         self.field_name = wx.TextCtrl(self, size=wx.Size(250, -1))
@@ -77,29 +69,27 @@ class DialogCreateBoreHole(wx.Dialog):
 
         label = wx.StaticText(comment_pane, label="Комментарий")
         comment_sizer.Add(label, 0)
-        self.field_comment = wx.TextCtrl(
-            comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE
-        )
+        self.field_comment = wx.TextCtrl(comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE)
         self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
         comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(self, label="Дата закладки скважины / начала измерений*")
         main_sizer.Add(label, 0)
-        self.field_start_date = DatePickerCtrl(self)
+        self.field_start_date = wx.TextCtrl(self)
+        self.field_start_date.SetValidator(DateValidator())
+
         main_sizer.Add(self.field_start_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(self, label="Дата завершения измерений")
         main_sizer.Add(label, 0)
-        self.field_end_date = DatePickerCtrl(
-            self, style=DP_DEFAULT | DP_SHOWCENTURY | DP_ALLOWNONE
-        )
+        self.field_end_date = wx.TextCtrl(self)
+        self.field_end_date.SetValidator(DateValidator(allow_empty=True))
         main_sizer.Add(self.field_end_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(self, label="Дата ликвидации скважины")
         main_sizer.Add(label, 0)
-        self.field_destroy_date = DatePickerCtrl(
-            self, style=DP_DEFAULT | DP_SHOWCENTURY | DP_ALLOWNONE
-        )
+        self.field_destroy_date = wx.TextCtrl(self)
+        self.field_destroy_date.SetValidator(DateValidator(allow_empty=True))
         main_sizer.Add(self.field_destroy_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         collpane = wx.CollapsiblePane(self, wx.ID_ANY, "Координаты")
@@ -116,38 +106,29 @@ class DialogCreateBoreHole(wx.Dialog):
             cs_name = MineObject[self.parent.RID].coord_system.Name
         label = wx.StaticText(
             coords_pane,
-            label="Система координат: "
-            + (cs_name if len(cs_name) < 24 else cs_name[:24] + "..."),
+            label="Система координат: " + (cs_name if len(cs_name) < 24 else cs_name[:24] + "..."),
         )
         coords_sizer.Add(label, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
-        self.open_cs_transf = wx.Button(
-            coords_pane, label="Открыть утилиту перевода координат"
-        )
+        self.open_cs_transf = wx.Button(coords_pane, label="Открыть утилиту перевода координат")
         coords_sizer.Add(self.open_cs_transf, 0, wx.EXPAND)
         self.open_cs_transf.Bind(wx.EVT_BUTTON, self._on_open_cs_transf)
 
         label = wx.StaticText(coords_pane, label="X (м)")
         coords_sizer.Add(label, 0)
-        self.field_x = wx.SpinCtrlDouble(
-            coords_pane, min=-100000000.0, max=10000000000.0
-        )
+        self.field_x = wx.SpinCtrlDouble(coords_pane, min=-100000000.0, max=10000000000.0)
         self.field_x.SetDigits(2)
         coords_sizer.Add(self.field_x, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(coords_pane, label="Y (м)")
         coords_sizer.Add(label, 0)
-        self.field_y = wx.SpinCtrlDouble(
-            coords_pane, min=-100000000.0, max=10000000000.0
-        )
+        self.field_y = wx.SpinCtrlDouble(coords_pane, min=-100000000.0, max=10000000000.0)
         self.field_y.SetDigits(2)
         coords_sizer.Add(self.field_y, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(coords_pane, label="Z (м)")
         coords_sizer.Add(label, 0)
-        self.field_z = wx.SpinCtrlDouble(
-            coords_pane, min=-100000000.0, max=10000000000.0
-        )
+        self.field_z = wx.SpinCtrlDouble(coords_pane, min=-100000000.0, max=10000000000.0)
         self.field_z.SetDigits(2)
         coords_sizer.Add(self.field_z, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
@@ -160,33 +141,25 @@ class DialogCreateBoreHole(wx.Dialog):
 
         label = wx.StaticText(props_pane, label="Азимут (град.)")
         props_sizer.Add(label, 0)
-        self.field_azimuth = wx.SpinCtrlDouble(
-            props_pane, min=-100000000.0, max=10000000000.0
-        )
+        self.field_azimuth = wx.SpinCtrlDouble(props_pane, min=-100000000.0, max=10000000000.0)
         self.field_azimuth.SetDigits(2)
         props_sizer.Add(self.field_azimuth, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(props_pane, label="Наклон (град.)")
         props_sizer.Add(label, 0)
-        self.field_tilt = wx.SpinCtrlDouble(
-            props_pane, min=-100000000.0, max=10000000000.0
-        )
+        self.field_tilt = wx.SpinCtrlDouble(props_pane, min=-100000000.0, max=10000000000.0)
         self.field_tilt.SetDigits(2)
         props_sizer.Add(self.field_tilt, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(props_pane, label="Диаметр (м)")
         props_sizer.Add(label, 0)
-        self.field_diameter = wx.SpinCtrlDouble(
-            props_pane, min=-100000000.0, max=10000000000.0
-        )
+        self.field_diameter = wx.SpinCtrlDouble(props_pane, min=-100000000.0, max=10000000000.0)
         self.field_diameter.SetDigits(2)
         props_sizer.Add(self.field_diameter, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(props_pane, label="Длина (м)")
         props_sizer.Add(label, 0)
-        self.field_length = wx.SpinCtrlDouble(
-            props_pane, min=-100000000.0, max=10000000000.0
-        )
+        self.field_length = wx.SpinCtrlDouble(props_pane, min=-100000000.0, max=10000000000.0)
         self.field_length.SetDigits(2)
         props_sizer.Add(self.field_length, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
@@ -218,21 +191,22 @@ class DialogCreateBoreHole(wx.Dialog):
         keyCode = event.GetKeyCode()
         if keyCode == wx.WXK_ESCAPE:
             self.EndModal(wx.ID_CANCEL)
-        event.Skip() 
+        else:
+            event.Skip()
 
     def _set_fields(self):
         o = self._target
         self.field_number.SetValue(o.Number)
         self.field_name.SetValue(o.Name)
-        self.field_comment.SetValue(o.Comment if o.Comment != None else '')
+        self.field_comment.SetValue(o.Comment if o.Comment != None else "")
         self.field_x.SetValue(o.X)
         self.field_y.SetValue(o.Y)
         self.field_z.SetValue(o.Z)
-        self.field_start_date.SetValue(ui.datetimeutil.decode_date(o.StartDate))
+        self.field_start_date.SetValue(str(ui.datetimeutil.decode_date(o.StartDate)))
         if o.EndDate != None:
-            self.field_end_date.SetValue(ui.datetimeutil.decode_date(o.EndDate))
+            self.field_end_date.SetValue(str(ui.datetimeutil.decode_date(o.EndDate)))
         if o.DestroyDate != None:
-            self.field_destroy_date.SetValue(ui.datetimeutil.decode_date(o.DestroyDate))
+            self.field_destroy_date.SetValue(str(ui.datetimeutil.decode_date(o.DestroyDate)))
         self.field_azimuth.SetValue(o.Azimuth)
         self.field_tilt.SetValue(o.Tilt)
         self.field_diameter.SetValue(o.Diameter)
@@ -253,15 +227,8 @@ class DialogCreateBoreHole(wx.Dialog):
         else:
             station = Station[self.parent.RID]
             parent = station.mine_object
-            name = (
-                station.Number.split("@")[0]
-                + "/"
-                + str(self.field_orig_no.GetValue())
-                + " на"
-            )
-            number = (
-                str(self.field_orig_no.GetValue()) + "@" + station.Number.split("@")[0]
-            )
+            name = station.Number.split("@")[0] + "/" + str(self.field_orig_no.GetValue()) + " на"
+            number = str(self.field_orig_no.GetValue()) + "@" + station.Number.split("@")[0]
         while parent.Level > 0:
             name += " " + parent.Name
             number += "@" + (parent.Name if len(parent.Name) < 4 else parent.Name[:4])
@@ -292,7 +259,7 @@ class DialogCreateBoreHole(wx.Dialog):
             "Length": self.field_length.GetValue(),
         }
 
-        if self._type == 'CREATE':
+        if self._type == "CREATE":
             if isinstance(self.parent, MineObject):
                 fields["mine_object"] = MineObject[self.parent.RID]
                 fields["station"] = None
@@ -301,20 +268,18 @@ class DialogCreateBoreHole(wx.Dialog):
                 fields["mine_object"] = station.mine_object
                 fields["station"] = station
 
-        fields["StartDate"] = ui.datetimeutil.encode_date(
-            self.field_start_date.GetValue()
-        )
+        fields["StartDate"] = ui.datetimeutil.encode_date(self.field_start_date.GetValue())
 
-        date: wx.DateTime = self.field_end_date.GetValue()
-        if date.IsValid():
+        date = self.field_end_date.GetValue()
+        if len(date) > 0:
             fields["EndDate"] = ui.datetimeutil.encode_date(date)
 
-        date: wx.DateTime = self.field_destroy_date.GetValue()
-        if date.IsValid():
+        date = self.field_destroy_date.GetValue()
+        if len(date) > 0:
             fields["DestroyDate"] = ui.datetimeutil.encode_date(date)
 
         try:
-            if self._type == 'CREATE':
+            if self._type == "CREATE":
                 self.o = BoreHole(**fields)
             else:
                 self.o = BoreHole[self._target.RID]

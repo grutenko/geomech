@@ -107,9 +107,7 @@ class EditorNotebook(wx.Panel):
 
     def __init__(self, parent, menubar, statusbar, toolbar):
         super().__init__(parent)
-        self._config_provider = ClassConfigProvider(
-            __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
-        )
+        self._config_provider = ClassConfigProvider(__name__ + "." + self.__class__.__name__, __CONFIG_VERSION__)
 
         self.menubar = menubar
         self.statusbar = statusbar
@@ -154,7 +152,7 @@ class EditorNotebook(wx.Panel):
             self._notify_selection_changed(index, old_index)
             return True
         return False
-    
+
     def select_by_index(self, index):
         if index >= 0 and index < self._native_.GetPageCount():
             old_index = self._native_.GetSelection()
@@ -182,9 +180,7 @@ class EditorNotebook(wx.Panel):
 
     def _on_page_closed(self, event):
         wx.PostEvent(self, EditorNBStateChangedEvent(target=self))
-        wx.PostEvent(
-            self, EditorClosedEvent(target=self, identity=self._closed_page_identity)
-        )
+        wx.PostEvent(self, EditorClosedEvent(target=self, identity=self._closed_page_identity))
 
     def _on_page_changed(self, event):
         self._notify_selection_changed(event.GetSelection(), event.GetOldSelection())
@@ -205,11 +201,7 @@ class EditorNotebook(wx.Panel):
         icon = editor.get_icon()
         if icon != None:
             self._native_.SetPageImage(index, self._apply_icon(icon[0], icon[1]))
-        title = (
-            editor.get_title()
-            if len(editor.get_title()) < 50
-            else editor.get_title()[:50] + "..."
-        )
+        title = editor.get_title() if len(editor.get_title()) < 50 else editor.get_title()[:50] + "..."
         if editor.is_read_only():
             title = "[Чтение] " + title
         self._native_.SetPageText(index, title)
@@ -240,40 +232,22 @@ class EditorNotebook(wx.Panel):
             wx.PostEvent(self, EditorNBStateChangedEvent(target=self))
 
     def can_save(self):
-        return (
-            self._native_.GetPageCount() > 0
-            and self._native_.GetPage(self._native_.GetSelection()).can_save()
-        )
+        return self._native_.GetPageCount() > 0 and self._native_.GetPage(self._native_.GetSelection()).can_save()
 
     def can_copy(self):
-        return (
-            self._native_.GetPageCount() > 0
-            and self._native_.GetPage(self._native_.GetSelection()).can_copy()
-        )
+        return self._native_.GetPageCount() > 0 and self._native_.GetPage(self._native_.GetSelection()).can_copy()
 
     def can_cut(self):
-        return (
-            self._native_.GetPageCount() > 0
-            and self._native_.GetPage(self._native_.GetSelection()).can_cut()
-        )
+        return self._native_.GetPageCount() > 0 and self._native_.GetPage(self._native_.GetSelection()).can_cut()
 
     def can_paste(self):
-        return (
-            self._native_.GetPageCount() > 0
-            and self._native_.GetPage(self._native_.GetSelection()).can_paste()
-        )
+        return self._native_.GetPageCount() > 0 and self._native_.GetPage(self._native_.GetSelection()).can_paste()
 
     def can_undo(self):
-        return (
-            self._native_.GetPageCount() > 0
-            and self._native_.GetPage(self._native_.GetSelection()).can_undo()
-        )
+        return self._native_.GetPageCount() > 0 and self._native_.GetPage(self._native_.GetSelection()).can_undo()
 
     def can_redo(self):
-        return (
-            self._native_.GetPageCount() > 0
-            and self._native_.GetPage(self._native_.GetSelection()).can_redo()
-        )
+        return self._native_.GetPageCount() > 0 and self._native_.GetPage(self._native_.GetSelection()).can_redo()
 
     def save(self):
         _saved = False
@@ -284,7 +258,6 @@ class EditorNotebook(wx.Panel):
         if _saved:
             wx.PostEvent(self, EditorSavedEvent(target=self, editor=_editor))
             pubsub.pub.sendMessage("editor.saved", target=self, editor=_editor)
-        
 
     def copy(self):
         if self._native_.GetPageCount() > 0:

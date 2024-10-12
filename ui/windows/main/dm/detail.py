@@ -46,30 +46,26 @@ class DischargeDetails(wx.Panel):
             index, page = n.get_by_identity(Identity(self.o, self.o, DischargeMeasurement))
             if index == -1:
                 item = menu.Append(wx.ID_ANY, "Открыть")
-                item.SetBitmap(get_icon('table'))
+                item.SetBitmap(get_icon("table"))
             else:
                 item = menu.Append(wx.ID_ANY, "Перейти к открытому редактору")
-                item.SetBitmap(get_icon('share'))
+                item.SetBitmap(get_icon("share"))
             menu.Bind(wx.EVT_MENU, self._open_editor, item)
         self.PopupMenu(menu, event.GetPoint())
 
     def _on_editor_saved(self, target, editor):
         _id = Identity(self.o, self.o, DischargeMeasurement)
-        if (
-            editor != None
-            and editor.get_identity() != None
-            and editor.get_identity().__eq__(_id)
-        ):
+        if editor != None and editor.get_identity() != None and editor.get_identity().__eq__(_id):
             self._render()
 
     def _on_item_activated(self, event: wx.ListEvent):
         if event.GetIndex() == 0:
             self._open_editor()
 
-    def _open_editor(self, event = None):
+    def _open_editor(self, event=None):
         if self.o == None:
             return
-        
+
         _id = Identity(self.o, self.o, DischargeMeasurement)
         n = EditorNotebook.get_instance()
         if not n.select_by_identity(_id):
@@ -86,9 +82,7 @@ class DischargeDetails(wx.Panel):
     @db_session
     def _render(self):
         if self.rid != None:
-            measure_count = select(
-                o for o in DischargeMeasurement if o.orig_sample_set == self.o
-            ).count()
+            measure_count = select(o for o in DischargeMeasurement if o.orig_sample_set == self.o).count()
             self._list.SetItemText(0, "Замеры (%d)" % measure_count)
 
     @db_session
@@ -102,7 +96,7 @@ class DischargeDetails(wx.Panel):
     def get_item_name(self):
         if self.discharge_o != None:
             return self.discharge_o.get_tree_name()
-        return ''
+        return ""
 
     def end(self):
         self.o = None

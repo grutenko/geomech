@@ -1,14 +1,30 @@
 import wx
 import datetime
+import dateutil.parser
 
 
-def encode_date(date: wx.DateTime):
+def encode_date(date):
+    if isinstance(date, wx.DateTime):
+        year = date.GetYear()
+        month = date.GetMonth() + 1
+        day = date.GetDay()
+    elif isinstance(date, datetime.date):
+        year = date.year
+        month = date.month
+        day = date.day
+    elif isinstance(date, str):
+        date = dateutil.parser.parse(date)
+        year = date.year
+        month = date.month
+        day = date.day
+    else:
+        raise Exception("Неподдерживаемый класс даты: %s" % str(type(date)))
     return int(
         "%s%s%s000000"
         % (
-            str(date.GetYear()),
-            str(date.GetMonth() + 1).zfill(2),
-            str(date.GetDay()).zfill(2),
+            str(year),
+            str(month).zfill(2),
+            str(day).zfill(2),
         )
     )
 

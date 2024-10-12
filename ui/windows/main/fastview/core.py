@@ -2,6 +2,7 @@ import wx
 from .fastview_propgrid import FastviewPropgrid
 from ui.datetimeutil import decode_date
 
+
 class CoreFastview(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
@@ -25,21 +26,22 @@ class CoreFastview(wx.Panel):
 
         self.Layout()
         self.Hide()
-        
-    def start(self, o, bounds = None):
+
+    def start(self, o, bounds=None):
         start_date = decode_date(o.StartSetDate)
         fields = {
             "RID": o.RID,
             "Number": o.Number,
             "Name": o.Name,
             "Comment": o.Comment,
-            "StartDate": wx.DateTime(start_date.day, start_date.month - 1, start_date.year)
+            "StartDate": wx.DateTime(start_date.day, start_date.month - 1, start_date.year),
         }
         if o.EndSetDate != None:
             date = decode_date(o.EndSetDate)
-            fields['EndDate'] = wx.DateTime(date.day, date.month - 1, date.year)
+            fields["EndDate"] = wx.DateTime(date.day, date.month - 1, date.year)
         self.propgrid.SetPropertyValues(fields)
 
         self.Show()
+
     def end(self):
         self.Hide()

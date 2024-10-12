@@ -1,0 +1,18 @@
+[project]
+name = "geomech"
+version = "1.0.0.0"
+dependencies = [
+  "wxPython==4.2.1",
+  "pyinstaller-versionfile==2.1.1",
+  "pyinstaller==6.10.0",
+  "pony==0.7.19",
+  "pypubsub==4.0.3",
+  "markdown==3.7",
+  "bs4==4.12.3",
+  "attrdict2==0.0.2",
+  "numpy==2.1.2"
+]
+requires-python = ">= 3.10.2"
+
+[tool.black]
+line-length = 150

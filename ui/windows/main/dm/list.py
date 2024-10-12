@@ -24,6 +24,7 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
         self._image_list = wx.ImageList(16, 16)
         self._book_stack_icon = self._image_list.Add(get_icon("read"))
         self._list = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self._list.EnableCheckBoxes()
         self._list.AppendColumn("Название", width=250)
         self._list.AppendColumn("Дата начала", width=100)
         self._list.AppendColumn("Дата окончания", width=100)
@@ -73,15 +74,11 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
             return None
         ds = self._items[self._list.GetItemData(self._list.GetFirstSelected())]
         core = OrigSampleSet[ds.orig_sample_set.RID]
-        pubsub.pub.sendMessage(
-            "cmd.object.select", target=self, identity=Identity(core, core, None)
-        )
+        pubsub.pub.sendMessage("cmd.object.select", target=self, identity=Identity(core, core, None))
 
     @db_session
     def _load(self):
-        discharges = select(o for o in DischargeSeries).order_by(
-            lambda x: desc(x.StartMeasure)
-        )
+        discharges = select(o for o in DischargeSeries).order_by(lambda x: desc(x.StartMeasure))
         self._items = {}
         for o in discharges:
             self._items[o.RID] = o
@@ -150,3 +147,15 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
         while i != -1:
             self._list.Select(i, 0)
             i = self._list.GetNextSelected(i)
+
+    @db_session
+    def select_by_identity(self, identity):
+        if not isinstance(identity.rel_data_o, OrigSampleSet):
+            return
+        ds = select(o for o in DischargeSeries if o.orig_sample_set == identity.rel_data_o).first()
+        if ds == None:
+            return
+        for idx in range(self._list.GetItemCount()):
+            if self._list.GetItemData(idx) == ds.RID:
+                self._list.Select(idx)
+                return
