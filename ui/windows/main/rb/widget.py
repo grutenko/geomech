@@ -1,13 +1,18 @@
 import wx
 import wx.lib.newevent
 
+from pony.orm import *
+from database import RockBurst
 from ui.icon import get_art, get_icon
 from .list import RbList
 from ui.class_config_provider import ClassConfigProvider
 
 from .create import DialogCreateRockBurst
+from ui.windows.main.identity import Identity
+from ui.delete_object import delete_object
 
 __CONFIG_VERSION__ = 2
+
 
 RbSelectedEvent, EVT_RB_SELECTED = wx.lib.newevent.NewEvent()
 
@@ -40,14 +45,26 @@ class RbPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.toolbar, 0, wx.EXPAND)
         self._list = RbList(self)
+        self._list.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_item_selected)
         main_sizer.Add(self._list, 1, wx.EXPAND)
         self.SetSizer(main_sizer)
 
         self.Layout()
 
+    @db_session
+    def _on_item_selected(self, event):
+        item = self._list._list.GetFirstSelected()
+        if item == -1:
+            return
+        _id = self._list._list.GetItemData(item)
+        rock_burst = RockBurst[_id]
+        print(Identity(rock_burst, rock_burst, None))
+        wx.PostEvent(self, RbSelectedEvent(target=self, identity=Identity(rock_burst, rock_burst, None)))
+
     def _on_add(self, event):
         dlg = DialogCreateRockBurst(self)
-        dlg.ShowModal()
+        if dlg.ShowModal() == wx.ID_OK:
+            self._list._render()
 
     def get_pane_info(self) -> str | None:
         return self._config_provider["aui_pane_info"]

@@ -11,6 +11,7 @@ ID_TOGGLE_DISCHARGE = ID_TOGGLE_OBJECTS + 4
 ID_TOGGLE_PM = ID_TOGGLE_OBJECTS + 5
 ID_TOGGLE_ROCK_BURST = ID_TOGGLE_OBJECTS + 6
 ID_TOGGLE_CONTAINER = ID_TOGGLE_OBJECTS + 7
+ID_TOGGLE_DEVIATION = ID_TOGGLE_OBJECTS + 8
 
 
 class MgrPanelToolbar(wx.ToolBar):
@@ -44,6 +45,14 @@ class MgrPanelToolbar(wx.ToolBar):
             "Сопутствующие материалы",
             get_icon("versions", scale_to=16),
             shortHelp="Показать/Скрыть сопутствующие материалы",
+        )
+        self.AddStretchableSpace()
+
+        tool = self.AddCheckTool(
+            ID_TOGGLE_DEVIATION,
+            "Инструмент: Панель отклонений",
+            get_icon("deviation", scale_to=16),
+            shortHelp="Показать/Скрыть Панель отклонений",
         )
 
         self.Realize()

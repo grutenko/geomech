@@ -270,7 +270,16 @@ class Model(Protocol):
     def get_columns(self) -> List[Column]: ...
     def get_value_at(self, row, col) -> str: ...
     def get_rows_count(self) -> int: ...
-    def is_changed(self) -> bool: ...
+    def is_changed(self) -> bool:
+        return False
+    def set_value_at(self, col, row, value): ...
+    def insert_row(self, row): ...
+    def delete_row(self, row): ...
+    def get_row_state(self, row): ...
+    def validate(self): ...
+    def save(self): ...
+    def have_changes(self):
+        return False
 
 
 GridEditorStateChangedEvent, EVT_GRID_EDITOR_STATE_CHANGED = wx.lib.newevent.NewEvent()
@@ -360,12 +369,14 @@ ID_COPY_WITH_HEADER = ID_ADD_ROW + 7
 
 
 class GridEditor(wx.Panel):
-    def __init__(self, parent, model, menubar, toolbar, statusbar, header_height=-1):
+    def __init__(self, parent, model, menubar, toolbar, statusbar, header_height=-1, read_only=False):
         super().__init__(parent)
         self.menubar: wx.MenuBar = menubar
         self.toolbar: wx.ToolBar = toolbar
         self.statusbar: wx.StatusBar = statusbar
         self._model = model
+
+        self._read_only = read_only
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._splitter = wx.SplitterWindow(self, style=wx.SP_3DSASH | wx.SP_LIVE_UPDATE)
@@ -429,6 +440,7 @@ class GridEditor(wx.Panel):
             "can_undo": False,
             "can_redo": False,
             "can_save": False,
+            "can_delete_row": False
         }
 
         self._command_processor = wx.CommandProcessor()
@@ -639,6 +651,7 @@ class GridEditor(wx.Panel):
         for row_index in range(self._model.total_rows()):
             for col_index, column in enumerate(self._columns):
                 self._view.SetCellValue(row_index, col_index, self._model.get_value_at(col_index, row_index))
+                self._view.SetReadOnly(row_index, col_index, self._read_only)
 
         self._render_sizing(begin_batch=False)
 
@@ -654,6 +667,7 @@ class GridEditor(wx.Panel):
 
         if self._auto_size_columns:
             self._view.AutoSizeColumns()
+
         self._view.EndBatch()
 
     def _render_sizing(self, begin_batch=False):
@@ -747,7 +761,7 @@ class GridEditor(wx.Panel):
         except Exception as e:
             wx.MessageBox(str(e), "Ошибка записи в БД", style=wx.OK | wx.ICON_ERROR)
             return False
-        
+
         self._render()
         self._update_controls_state()
         return True
@@ -1010,17 +1024,18 @@ class GridEditor(wx.Panel):
         is_cursor_valid = cursor_row >= 0 and cursor_col >= 0
         is_cells_selected = is_cursor_valid or blocks_selected
 
+        read_only = self._read_only
         global_enable = not self._in_edit_mode
         rows = self._view.GetSelectedRows()
         is_rows_selected = len(rows) > 0
 
-        _e_add_row = global_enable
-        _e_remove_row = global_enable and is_rows_selected
+        _e_add_row = global_enable and not read_only
+        _e_remove_row = global_enable and is_rows_selected and not read_only
 
         _can_copy = global_enable
-        _can_cut = global_enable
-        _can_paste = global_enable
-        _can_save = self._model.have_changes()
+        _can_cut = global_enable and not read_only
+        _can_paste = global_enable and not read_only
+        _can_save = self._model.have_changes() and not read_only
         if (
             self._state["can_copy"] != _can_copy
             or self._state["can_cut"] != _can_cut
@@ -1176,7 +1191,7 @@ class GridEditor(wx.Panel):
         for col_index, row_index in self._hightlight_cells:
             if col_index < self._view.GetNumberCols() and row_index < self._view.GetNumberRows():
                 self._view.SetCellBackgroundColour(row_index, col_index, wx.Colour(255, 150, 150))
-                self._view.SetCellTextColour(row_index, col_index,wx.Colour(255, 255, 255))
+                self._view.SetCellTextColour(row_index, col_index, wx.Colour(255, 255, 255))
         self._view.EndBatch()
 
     def validate(self, save_edit_control=True):

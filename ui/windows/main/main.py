@@ -12,10 +12,11 @@ from ui.class_config_provider import ClassConfigProvider
 from .o import Objects, EVT_OBJECT_SELECTED
 from .dm.widget import DischargePanel, EVT_Dm_SELECTED
 from .pm.widget import PmPanel, EVT_PM_SELECTED
-from .rb.widget import RbPanel, EVT_RB_SELECTED
+from .rb.widget_new import RbPanel, EVT_RB_SELECTED
 from .editor import *
 from .editor.md_viewer import MdViewer
 from .editor.widget import EVT_ENB_STATE_CHANGED, EVT_ENB_EDITOR_CLOSED
+from .editor.import_stations import ImportStations
 from .fastview import FastView
 from .sd import SuppliedData
 from .menu import *
@@ -24,6 +25,7 @@ from .mgr_panel_toolbar import *
 from .identity import Identity
 from ui.windows.cs.main import ManageCoordSystemsWindow
 from ui.windows.pm.main import PmSettingsWindow
+from ui.windows.doc.main import ManageDocumentsWindow
 from .editor.import_bore_holes import ImportBoreHoles
 
 __CONFIG_VERSION__ = 2
@@ -225,6 +227,7 @@ class MainFrame(wx.Frame):
 
         self._pm_settings_window = PmSettingsWindow(self)
         self._cs_settings_window = ManageCoordSystemsWindow(self)
+        self._docs_window = ManageDocumentsWindow(self)
 
         self._root_object = select(o for o in MineObject if o.Level == 0).first()
 
@@ -261,6 +264,8 @@ class MainFrame(wx.Frame):
         menu.Bind(wx.EVT_MENU, self._on_toggle_pm, id=ID_PM_TOGGLE)
         menu.Bind(wx.EVT_MENU, self._on_toggle_rb, id=ID_RB_TOGGLE)
         menu.Bind(wx.EVT_MENU, self._on_toggle_import_bore_holes, id=ID_IMPORT_BORE_HOLES)
+        menu.Bind(wx.EVT_MENU, self._on_toggle_import_stations, id=ID_IMPORT_STATIONS)
+        menu.Bind(wx.EVT_MENU, self._on_open_docs_window, id=ID_SETTINGS_DOCS)
         tb = self.toolbar
         tb.Bind(wx.EVT_TOOL, self._on_editor_save, id=wx.ID_SAVE)
         tb.Bind(wx.EVT_TOOL, self._on_editor_copy, id=wx.ID_COPY)
@@ -292,9 +297,32 @@ class MainFrame(wx.Frame):
         pubsub.pub.subscribe(self._cmd_on_show_supplied_data, "cmd.supplied_data.show")
         pubsub.pub.subscribe(self._cmd_dm_select, "cmd.dm.select")
         pubsub.pub.subscribe(self._on_object_added, "object.added")
+        pubsub.pub.subscribe(self._cmd_on_close_editor, "cmd.editor.close")
+        pubsub.pub.subscribe(self._cmd_on_open_editor, "cmd.editor.open")
+
+    def _on_open_docs_window(self, event):
+        if self._docs_window.IsShown():
+            self._docs_window.Raise()
+        else:
+            self._docs_window.Show()
+
+    def _cmd_on_open_editor(self, target, editor):
+        self.editors.add_editor(editor)
+
+    def _cmd_on_close_editor(self, target, identity):
+        index, editor = self.editors.get_by_identity(identity)
+        if index != -1:
+            self.editors.close_editor(editor)
 
     def _on_object_added(self, objects):
         self.objects.reload_for_new_objects(objects)
+
+    def _on_toggle_import_stations(self, event):
+        index, page = self.editors.get_by_identity(Identity(self._root_object, self._root_object, "import_stations"))
+        if page != None:
+            self.editors.select_by_index(index)
+        else:
+            self.editors.add_editor(ImportStations(self.editors, self.menu_bar, self.toolbar, self.statusbar))
 
     def _on_toggle_import_bore_holes(self, event):
         index, page = self.editors.get_by_identity(Identity(self._root_object, self._root_object, "import_bore_holes"))
@@ -480,8 +508,12 @@ class MainFrame(wx.Frame):
             if not isinstance(pane, type(event.target)):
                 pane.remove_selection()
         _id: Identity = event.identity
-        self.fastview.start(_id)
-        self.supplied_data.start(_id)
+        if _id != None:
+            self.fastview.start(_id)
+            self.supplied_data.start(_id)
+        else:
+            self.fastview.stop()
+            self.supplied_data.end()
 
     def _on_toggle_objects(self, event: wx.CommandEvent):
         print(event.IsChecked())

@@ -9,12 +9,18 @@ from database import *
 from ui.icon import get_art, get_icon
 from ui.resourcelocation import resource_path
 from ui.validators import *
+from ui.datetimeutil import *
+from ui.delete_object import delete_object
+
 
 class FolderEditor(wx.Dialog):
-    def __init__(self, parent, o = None):
+    def __init__(self, parent, own_id=None, own_type=None, o=None):
         super().__init__(parent)
+        self.CenterOnScreen()
 
         if o == None:
+            self.own_id = own_id
+            self.own_type = own_type
             self.SetTitle("Добавить раздел")
         else:
             self.SetTitle("Изменить раздел: %s" % o.Name)
@@ -83,19 +89,55 @@ class FolderEditor(wx.Dialog):
         keyCode = event.GetKeyCode()
         if keyCode == wx.WXK_ESCAPE:
             self.EndModal(wx.ID_CANCEL)
+        else:
+            event.Skip()
 
     def _apply_fields(self):
-        ...
+        self.field_name.SetValue(self.o.Name)
+        self.field_comment.SetValue(self.o.Comment if self.o.Comment != None else "")
+        self.field_number.SetValue(self.o.Number if self.o.Number != None else "")
+        self.field_data_date.SetValue(str(decode_date(self.o.DataDate)) if self.o.DataDate != None else "")
 
+    @db_session
     def _on_save(self, event):
         if not self.Validate():
             return
 
+        fields = {
+            "Name": self.field_name.GetValue().strip(),
+            "Comment": self.field_comment.GetValue().strip(),
+        }
+
+        if len(self.field_number.GetValue().strip()) > 0:
+            fields["Number"] = self.field_number.GetValue().strip()
+        if len(self.field_data_date.GetValue().strip()) > 0:
+            fields["DataDate"] = encode_date(self.field_data_date.GetValue().strip())
+
+        if self.o == None:
+            fields["OwnID"] = self.own_id
+            fields["OwnType"] = self.own_type
+            o = SuppliedData(**fields)
+        else:
+            o = SuppliedData[self.o.RID]
+            o.set(**fields)
+        commit()
+        self.o = o
+        self.EndModal(wx.ID_OK)
+
+
 class FileEditor(wx.Dialog):
-    def __init__(self, parent, p = None, o = None):
+    def __init__(self, parent, p=None, o=None):
         super().__init__(parent)
         self.CenterOnParent()
-        self.SetTitle("Добавить файл")
+        self.o = None
+        self.p = None
+        if o == None:
+            self.p = p
+            self.SetTitle("Добавить файл")
+        else:
+            self.o = o
+            self.SetTitle("Изменить: %s" % o.Name)
+
         self.SetIcon(wx.Icon(get_icon("file-add")))
 
         top_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -129,6 +171,8 @@ class FileEditor(wx.Dialog):
         keyCode = event.GetKeyCode()
         if keyCode == wx.WXK_ESCAPE:
             self.EndModal(wx.ID_CANCEL)
+        else:
+            event.Skip()
 
 
 class SuppliedDataWidget(wx.Panel):
@@ -186,12 +230,28 @@ class SuppliedDataWidget(wx.Panel):
         self._update_controls_state()
 
     def _on_create_folder(self, event):
-        dlg = FolderEditor(self)
-        dlg.ShowModal()
+        dlg = FolderEditor(self, self.o.RID, self._type)
+        if dlg.ShowModal() == wx.ID_OK:
+            self._render()
 
     def _on_create_file(self, event):
-        dlg = FileEditor(self)
-        dlg.ShowModal()
+        item = self.list.GetSelection()
+        o = self.list.GetItemData(item)
+        dlg = FileEditor(self, p=o)
+        if dlg.ShowModal() == wx.ID_OK:
+            self._render()
+
+    def _on_delete(self, event):
+        item = self.list.GetSelection()
+        o = self.list.GetItemData(item)
+        if isinstance(o, SuppliedData):
+            rel = ["parts"]
+        elif isinstance(o, SuppliedDataPart):
+            rel = []
+        else:
+            return
+        if delete_object(o, rel):
+            self._render()
 
     def _on_item_contenxt_menu(self, event: wx.dataview.DataViewEvent):
         item = event.GetItem()
@@ -211,6 +271,7 @@ class SuppliedDataWidget(wx.Panel):
             item.SetBitmap(get_icon("file-add"))
             menu.Bind(wx.EVT_MENU, self._on_create_file, item)
             item = menu.Append(wx.ID_DELETE, "Удалить")
+            menu.Bind(wx.EVT_MENU, self._on_delete, item)
             item.SetBitmap(get_icon("delete"))
 
         self.PopupMenu(menu, event.GetPosition())

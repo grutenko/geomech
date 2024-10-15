@@ -1,7 +1,9 @@
 from typing import List, Dict
+import datetime
+import pubsub.pub
 import wx
 from dataclasses import dataclass, field
-
+import pubsub
 from ui.widgets.grid.widget import *
 from ui.widgets.grid.widget import Column
 from .date_cell_type import DateCellType
@@ -9,10 +11,11 @@ from .choice_cell_type import ChoiceCellType
 from ui.datetimeutil import encode_date
 
 
-from .widget import EditorNBStateChangedEvent
+from .widget import EditorNBStateChangedEvent, EditorNotebook
 from pony.orm import *
 from database import *
 from ui.windows.main.identity import Identity
+from .import_report import ImportReport
 
 
 @dataclass
@@ -169,6 +172,13 @@ class _Model(Model):
                     _msg = 'Неподходящее значение для ячейки типа "%s"' % col.cell_type.get_type_descr()
                     errors.append((col, row_index, _msg))
 
+        _mine_objects_ids = []
+        for o in select(o for o in MineObject):
+            _mine_objects_ids.append(o.RID)
+        _stations_ids = []
+        for o in select(o for o in Station):
+            _stations_ids.append(o.RID)
+
         for index, row in enumerate(self._rows):
             _type = row.fields["@parent_type"]
             _id = row.fields["@station_or_mine_object"]
@@ -180,12 +190,6 @@ class _Model(Model):
             ):
                 continue
 
-            _mine_objects_ids = []
-            for o in select(o for o in MineObject):
-                _mine_objects_ids.append(o.RID)
-            _stations_ids = []
-            for o in select(o for o in Station):
-                _stations_ids.append(o.RID)
             _id = self._columns["@station_or_mine_object"].cell_type.from_string(_id)
             if _type == "Горный объект":
                 if _id not in _mine_objects_ids:
@@ -405,6 +409,7 @@ class _Model(Model):
         commit()
         self._rows = []
 
+
 class GridPanel(GridEditor):
     def __init__(self, parent, menubar, toolbar, statusbar):
         super().__init__(parent, _Model(), menubar, toolbar, statusbar, header_height=40)
@@ -416,6 +421,8 @@ class ImportBoreHoles(wx.Panel):
     def __init__(self, parent, menu, toolbar, statusbar):
         super().__init__(parent)
         self.toolbar = toolbar
+        self.menu = menu
+        self.statusbar = statusbar
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._local_toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL | wx.TB_HORZ_TEXT)
@@ -481,6 +488,7 @@ class ImportBoreHoles(wx.Panel):
     def can_redo(self) -> bool:
         return self.grid.can_redo()
 
+    @db_session
     def save(self):
         if not self.grid.validate():
             wx.MessageBox(
@@ -497,7 +505,36 @@ class ImportBoreHoles(wx.Panel):
         if ret != wx.YES:
             return
         if self.grid.save():
-            ...
+            m = EditorNotebook.get_instance().get_native()
+            time = datetime.datetime.now()
+            title = "Отчет об импорте: %s:%s:%s" % (str(time.hour).zfill(2), str(time.minute).zfill(2), str(time.second).zfill(2))
+            columns = {
+                "RID": Column("RID", NumberCellType(), "ID", "ID скважины"),
+                "Number": Column("Number", StringCellType(), "№", "Номер скважины", init_width=150),
+                "Name": Column("Name", StringCellType(), "Название", "Название скважины", init_width=150),
+                "Core_RID": Column("Core_RID", NumberCellType(), "ID керна", "ID керна"),
+                "Core_Number": Column("Core_Number", StringCellType(), "№ керна", "Номер керна", init_width=150),
+                "Core_Name": Column("Core_Name", StringCellType(), "Название керна", "Название керна", init_width=150),
+            }
+            table = []
+            for b in self.grid._model.bore_holes:
+                _row = []
+                _row.append(str(b.RID))
+                _row.append(b.Number)
+                _row.append(b.Name)
+                core = select(o for o in OrigSampleSet if o.bore_hole == b).first()
+                if core != None:
+                    _row.append(str(core.RID))
+                    _row.append(core.Number)
+                    _row.append(core.Name)
+                else:
+                    _row.append('')
+                    _row.append('')
+                    _row.append('')
+                table.append(_row)
+            report = ImportReport(m, title, columns, table, self.menu, self.toolbar, self.statusbar)
+            pubsub.pub.sendMessage("cmd.editor.open", target=self, editor=report)
+            pubsub.pub.sendMessage("cmd.editor.close", target=self, identity=self._identity)
 
     def copy(self):
         self.grid.copy()

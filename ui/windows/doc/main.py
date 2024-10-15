@@ -36,6 +36,11 @@ class ManageDocumentsWindow(wx.Frame):
 
         self._tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self._on_node_selection_changed)
 
+        self.Bind(wx.EVT_CLOSE, self._on_close)
+
+    def _on_close(self, event):
+        self.Hide()
+
     def _on_node_selection_changed(self, event):
         self._menu_bar.Enable(wx.ID_EDIT, event.node != None)
         self._menu_bar.Enable(wx.ID_DELETE, event.node != None)

@@ -14,7 +14,10 @@ ID_DM_TOGGLE = ID_FIND_NEXT + 8
 ID_PM_TOGGLE = ID_FIND_NEXT + 9
 ID_RB_TOGGLE = ID_FIND_NEXT + 10
 ID_IMPORT_BORE_HOLES = ID_FIND_NEXT + 11
-
+ID_IMPORT_STATIONS = ID_FIND_NEXT + 12
+ID_TOGGLE_DEVIATIONS = ID_FIND_NEXT + 13
+ID_IMPORT_ROCK_BURSTS = ID_FIND_NEXT + 14
+ID_SETTINGS_DOCS = ID_FIND_NEXT + 15
 
 class MainMenu(wx.MenuBar):
     def __init__(self):
@@ -77,12 +80,20 @@ class MainMenu(wx.MenuBar):
         menu = wx.Menu()
         item = menu.Append(ID_IMPORT_BORE_HOLES, "Импортировать скважины")
         item.SetBitmap(get_icon("import-xls"))
+        item = menu.Append(ID_IMPORT_STATIONS, "Импортировать измерительные станции")
+        item.SetBitmap(get_icon("import-xls"))
+        item = menu.Append(ID_IMPORT_ROCK_BURSTS, "Импортировать горные удары")
+        item.SetBitmap(get_icon("import-xls"))
         self.Append(menu, "Импорт")
+
+        menu = wx.Menu()
+        item = menu.AppendCheckItem(ID_TOGGLE_DEVIATIONS, "Отклонения")
+        self.Append(menu, "Инструменты")
 
         menu = wx.Menu()
         item = menu.Append(ID_SETTINGS_PM, "Физ. Мех. свойства")
         item = menu.Append(ID_SETTINGS_CS, "Системы координат")
-        item = menu.Append(wx.ID_ANY, "Документы")
+        item = menu.Append(ID_SETTINGS_DOCS, "Документы")
         item = menu.Append(wx.ID_ANY, "Петротипы")
         self.Append(menu, "Параметры")
 
