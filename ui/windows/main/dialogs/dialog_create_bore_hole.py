@@ -278,13 +278,12 @@ class DialogCreateBoreHole(wx.Dialog):
         if len(date) > 0:
             fields["DestroyDate"] = ui.datetimeutil.encode_date(date)
 
-        try:
-            if self._type == "CREATE":
-                self.o = BoreHole(**fields)
-            else:
-                self.o = BoreHole[self._target.RID]
-                self.o.set(**fields)
-        except Exception as e:
-            wx.MessageBox(str(e))
+        if self._type == "CREATE":
+            o = BoreHole(**fields)
         else:
-            self.EndModal(wx.ID_OK)
+            o = BoreHole[self._target.RID]
+            o.set(**fields)
+
+        commit()
+        self.o = o
+        self.EndModal(wx.ID_OK)

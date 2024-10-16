@@ -133,13 +133,11 @@ class DialogCreateCore(wx.Dialog):
         if date.IsValid():
             fields["EndSetDate"] = ui.datetimeutil.encode_date(date)
 
-        try:
-            if self._type == "CREATE":
-                self.o = OrigSampleSet(**fields)
-            else:
-                self.o = OrigSampleSet[self._target.RID]
-                self.o.set(**fields)
-        except Exception as e:
-            wx.MessageBox(str(e))
+        if self._type == "CREATE":
+            self.o = OrigSampleSet(**fields)
         else:
-            self.EndModal(wx.ID_OK)
+            self.o = OrigSampleSet[self._target.RID]
+            self.o.set(**fields)
+
+        commit()
+        self.EndModal(wx.ID_OK)

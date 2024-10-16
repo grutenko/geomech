@@ -9,6 +9,7 @@ from ui.icon import get_art, get_icon
 from ui.icon import get_art
 from ui.datetimeutil import decode_date
 from ui.windows.main.identity import Identity
+from ui.delete_object import delete_object
 
 from .create import DialogCreateDischargeSeries
 
@@ -49,8 +50,10 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
             menu = wx.Menu()
             item = menu.Append(wx.ID_EDIT, "Изменить")
             item.SetBitmap(get_icon("edit"))
+            menu.Bind(wx.EVT_MENU, self._on_edit, item)
             item = menu.Append(wx.ID_DELETE, "Удалить")
             item.SetBitmap(get_icon("delete"))
+            menu.Bind(wx.EVT_MENU, self._on_delete, item)
             menu.AppendSeparator()
             sub = wx.Menu()
             item = sub.Append(wx.ID_ANY, 'Показать в "Объектах"')
@@ -67,6 +70,20 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
             menu.Bind(wx.EVT_MENU, self._on_add, item)
             item.SetBitmap(get_icon("wand"))
         self.PopupMenu(menu, event.GetPosition())
+
+    def _on_delete(self, event):
+        if self._list.GetFirstSelected() == -1:
+            return None
+        ds = self._items[self._list.GetItemData(self._list.GetFirstSelected())]
+        if delete_object(ds, ['discharge_measurements']):
+            self._load()
+
+    def _on_edit(self, event):
+        if self._list.GetFirstSelected() == -1:
+            return None
+        ds = self._items[self._list.GetItemData(self._list.GetFirstSelected())]
+        dlg = DialogCreateDischargeSeries(self, ds, _type="UPDATE")
+        dlg.ShowModal()
 
     @db_session
     def _on_select_core(self, event):

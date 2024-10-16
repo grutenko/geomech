@@ -67,7 +67,7 @@ class DialogCreateRockBurst(wx.Dialog):
 
         if _type == "CREATE":
             autofill_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Поля для автозаполнения")
-            label = wx.StaticText(self, label="Числовой № удара")
+            label = wx.StaticText(self, label="Наименование")
             autofill_sizer.Add(label, 0)
             self.field_orig_no = wx.TextCtrl(self, size=wx.Size(250, -1))
             self.field_orig_no.Bind(wx.EVT_KEY_UP, self._on_orig_no_updated)
@@ -76,7 +76,7 @@ class DialogCreateRockBurst(wx.Dialog):
 
         label = wx.StaticText(
             self,
-            label="Регистрационный номер " + ("(автом. из Числового №)*" if _type == "CREATE" else "*"),
+            label="Регистрационный номер " + ("(автом. из Наименование)*" if _type == "CREATE" else "*"),
         )
         main_sizer.Add(label, 0, wx.EXPAND | wx.TOP, border=10)
         self.field_number = wx.TextCtrl(self, size=wx.Size(250, -1))
@@ -85,7 +85,7 @@ class DialogCreateRockBurst(wx.Dialog):
 
         label = wx.StaticText(
             self,
-            label="Название " + ("(автом. из Числового №)*" if _type == "CREATE" else "*"),
+            label="Название " + ("(автом. из Наименование)*" if _type == "CREATE" else "*"),
         )
         main_sizer.Add(label, 0)
         self.field_name = wx.TextCtrl(self, size=wx.Size(250, -1))

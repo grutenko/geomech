@@ -272,6 +272,7 @@ class Model(Protocol):
     def get_rows_count(self) -> int: ...
     def is_changed(self) -> bool:
         return False
+
     def set_value_at(self, col, row, value): ...
     def insert_row(self, row): ...
     def delete_row(self, row): ...
@@ -440,7 +441,7 @@ class GridEditor(wx.Panel):
             "can_undo": False,
             "can_redo": False,
             "can_save": False,
-            "can_delete_row": False
+            "can_delete_row": False,
         }
 
         self._command_processor = wx.CommandProcessor()
@@ -472,6 +473,7 @@ class GridEditor(wx.Panel):
         )
         self._view.Bind(wx.grid.EVT_GRID_EDITOR_SHOWN, self._on_editor_shown)
         self._view.Bind(wx.grid.EVT_GRID_EDITOR_HIDDEN, self._on_editor_hidden)
+        self._view.Bind(wx.EVT_MOUSEWHEEL, self._on_scroll)
 
     def auto_size_columns(self, autosize=True):
         self._auto_size_columns = autosize
@@ -490,8 +492,30 @@ class GridEditor(wx.Panel):
         self._in_edit_mode = False
         self._update_controls_state()
 
-    def _on_scroll(self, event):
-        event.Veto()
+    def _on_scroll(self, event: wx.MouseEvent):
+        if not event.ControlDown():
+            self._view.ScrollLines(1 if event.GetWheelRotation() < 0 else -1)
+        else:
+            col_number = self._view.GetNumberCols()
+            if event.GetWheelRotation() < 0:
+                width, height = self._view.GetSizeTuple()
+                width, height = self._view.CalcUnscrolledPosition(width, height)
+                r = range(col_number)
+            else:
+                width, height = self._view.GetSizeTuple()
+                width, height = self._view.CalcUnscrolledPosition(0, height)
+                r = range(col_number - 1, -1, -1)
+            last_column_visible = -1
+            for col in r:
+                if (event.GetWheelRotation() < 0 and self._view.GetColLeft(col) >= width) or (
+                    event.GetWheelRotation() > 0 and self._view.GetColLeft(col) <= width
+                ):
+                    last_column_visible = col
+                    break
+
+            if last_column_visible > -1:
+                print(self._view.GetGridCursorRow(), last_column_visible)
+                self._view.MakeCellVisible(self._view.GetGridCursorRow(), last_column_visible)
 
     def _on_label_context_menu(self, event):
         if event.GetRow() == -1:

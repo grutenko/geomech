@@ -191,13 +191,11 @@ class DialogCreateMineObject(wx.Dialog):
         fields["Y_Max"] = self.field_y_max.GetValue()
         fields["Z_Max"] = self.field_z_max.GetValue()
 
-        try:
-            if self._type == "CREATE":
-                self._create_object(fields)
-            else:
-                self.o = MineObject[self._target.RID]
-                self.o.set(**fields)
-        except Exception as e:
-            wx.MessageBox(str(e))
+        if self._type == "CREATE":
+            self._create_object(fields)
         else:
-            self.EndModal(wx.ID_OK)
+            self.o = MineObject[self._target.RID]
+            self.o.set(**fields)
+
+        commit()
+        self.EndModal(wx.ID_OK)

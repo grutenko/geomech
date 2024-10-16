@@ -2,117 +2,189 @@ import wx
 import wx.adv
 
 from pony.orm import *
-from database import OrigSampleSet
+from database import OrigSampleSet, FoundationDocument, DischargeSeries
 
 from ui.icon import get_icon
+from ui.validators import *
+from ui.datetimeutil import decode_date, encode_date
 
 WizPageChangingEvent, EVT_WIZ_PAGE_CHAGING = wx.lib.newevent.NewEvent()
 
 
 class DialogCreateDischargeSeries(wx.Dialog):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.SetSize(350, 400)
-        self.SetIcon(wx.Icon(get_icon("magic-wand")))
-        self.SetTitle("Мастер добавления набора замеров")
-        self.CenterOnParent()
-        self._history = []
-        self._pages = {"first": wx.Panel(self), "second": wx.Panel(self), "third": wx.Panel(self)}
-        self._current_page_name = "first"
-        self._calc_next_page_name()
+    @db_session
+    def __init__(self, parent, o=None, _type="CREATE"):
+        super().__init__(parent, title="Добавить набор замеров", size=wx.Size(400, 600))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
+        self.CenterOnScreen()
+
+        self._type = _type
+        if _type == "CREATE":
+            ...
+        else:
+            self.SetTitle("Изменить: %s" % o.Name)
+            self._target = o
+        self.parent = None
 
         top_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        top_sizer.Add(main_sizer, 1, wx.EXPAND | wx.ALL, border=10)
 
-        self._main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self._deputy = wx.Panel(self)
-        self._main_sizer.Add(self._deputy, 1, wx.EXPAND)
-        line = wx.StaticLine(self)
-        self._main_sizer.Add(line, 0, wx.EXPAND)
+        label = wx.StaticText(self, label="Керн")
+        main_sizer.Add(label, 0, wx.EXPAND)
+        self.field_core = wx.Choice(self, size=wx.Size(250, -1))
+        main_sizer.Add(self.field_core, 0, wx.EXPAND | wx.BOTTOM, border=10)
+        self.field_core.Bind(wx.EVT_CHOICE, self._on_core_changed)
+        if self._type != "CREATE":
+            self.field_core.Disable()
 
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self._btn_back = wx.Button(self, label="Назад")
-        self._btn_back.Bind(wx.EVT_BUTTON, self._on_back)
-        btn_sizer.Add(self._btn_back, 0, wx.EXPAND)
-        self._btn_next = wx.Button(self, label="Далее")
-        self._btn_next.SetDefault()
-        self._btn_next.Bind(wx.EVT_BUTTON, self._on_next)
-        btn_sizer.Add(self._btn_next, 0, wx.EXPAND)
-        self._btn_cancel = wx.Button(self, wx.ID_CANCEL, label="Отмена")
-        btn_sizer.Add(self._btn_cancel, 0, wx.EXPAND)
-        self._main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, border=10)
+        self._cores = []
+        if _type == "CREATE":
+            cores = select(o for o in OrigSampleSet if len(o.discharge_series) == 0).order_by(lambda x: desc(x.RID))
+            for o in cores:
+                self._cores.append(o)
+                self.field_core.Append(o.Name)
+            if len(cores) > 0:
+                self.field_core.SetSelection(0)
+        else:
+            core = OrigSampleSet[self._target.orig_sample_set.RID]
+            self._cores.append(core)
+            self.field_core.Append(core.Name)
+            self.field_core.SetSelection(0)
 
-        top_sizer.Add(self._main_sizer, 1, wx.EXPAND | wx.TOP, border=10)
         self.SetSizer(top_sizer)
+
+        label = wx.StaticText(self, label="Документ")
+        main_sizer.Add(label, 0, wx.EXPAND)
+        self.field_fd = wx.Choice(self, size=wx.Size(250, -1))
+        self.field_fd.Append("[Не выбрано]")
+        self.field_fd.SetSelection(0)
+        main_sizer.Add(self.field_fd, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        label = wx.StaticText(self, label="Дата начала измерений*")
+        main_sizer.Add(label, 0)
+        self.field_start_date = wx.TextCtrl(self)
+        self.field_start_date.SetValidator(DateValidator())
+        self.field_start_date.Bind(wx.EVT_KEY_UP, self._on_measure_date_updated)
+
+        main_sizer.Add(self.field_start_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        label = wx.StaticText(self, label="Дата завершения")
+        main_sizer.Add(label, 0)
+        self.field_end_date = wx.TextCtrl(self)
+        self.field_end_date.SetValidator(DateValidator(allow_empty=True))
+        main_sizer.Add(self.field_end_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        collpane = wx.CollapsiblePane(self, wx.ID_ANY, "Комментарий")
+        main_sizer.Add(collpane, 0, wx.GROW)
+
+        comment_pane = collpane.GetPane()
+        comment_sizer = wx.BoxSizer(wx.VERTICAL)
+        comment_pane.SetSizer(comment_sizer)
+
+        label = wx.StaticText(comment_pane, label="Комментарий")
+        comment_sizer.Add(label, 0)
+        self.field_comment = wx.TextCtrl(comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE)
+        self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
+        comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        label = wx.StaticText(
+            self,
+            label="Название " + ("(автом.)*" if _type == "CREATE" else "*"),
+        )
+        main_sizer.Add(label, 0)
+        self.field_name = wx.TextCtrl(self, size=wx.Size(250, -1))
+        self.field_name.SetValidator(TextValidator(lenMin=1, lenMax=256))
+        main_sizer.Add(self.field_name, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        line = wx.StaticLine(self)
+        main_sizer.Add(line, 0, wx.EXPAND | wx.TOP, border=10)
+
+        btn_sizer = wx.StdDialogButtonSizer()
+        if _type == "CREATE":
+            label = "Создать"
+        else:
+            label = "Изменить"
+        self.btn_save = wx.Button(self, label=label)
+        self.btn_save.Bind(wx.EVT_BUTTON, self._on_save)
+        self.btn_save.SetDefault()
+        btn_sizer.Add(self.btn_save, 0)
+        main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.TOP, border=10)
+
         self.Layout()
+        self.Fit()
 
-        self._next_enabled = True
+        if _type == "UPDATE":
+            self._set_fields()
 
-        self._update_controls_state()
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyUP)
 
-    def _finalize(self): ...
+    @db_session
+    def _set_auto_fields(self):
+        o = self._cores[self.field_core.GetSelection()]
+        date = self.field_start_date.GetValue()
+        self.field_name.SetValue(date + " " + o.Name)
 
-    def _on_next(self, event):
-        if self.is_last_page():
-            self._finalize()
+    def _on_measure_date_updated(self, event):
+        self._set_auto_fields()
+
+    def OnKeyUP(self, event):
+        keyCode = event.GetKeyCode()
+        if keyCode == wx.WXK_ESCAPE:
+            self.EndModal(wx.ID_CANCEL)
         else:
-            self.go_next()
+            event.Skip()
 
-    def _on_back(self, event):
-        self.go_back()
-
-    def change_next_page(self, page_name):
-        self._next_page_name = page_name
-        self._update_controls_state()
-
-    def _update_controls_state(self):
-        self._btn_back.Enable(self.can_back())
-        if self.is_last_page():
-            label = "Завершить"
-        else:
-            label = "Далее"
-        self._btn_next.SetLabelText(label)
-        self._btn_next.Enable(self._next_enabled)
-
-    def enable_next(self, enable=True):
-        self._next_enabled = enable
-        self._update_controls_state()
-
-    def is_last_page(self):
-        return self._next_page_name == None
-
-    def can_back(self) -> bool:
-        return len(self._history) > 0
-
-    def _apply_current_page(self):
-        page = self._pages[self._current_page_name]
-        self._main_sizer.GetItem(0).GetWindow().Hide()
-        self._main_sizer.Detach(0)
-        self._main_sizer.Insert(0, page, 1, wx.EXPAND)
-        page.Show()
-
-    def _calc_next_page_name(self):
-        names = list(self._pages.keys())
-        if len(names) > names.index(self._current_page_name) + 1:
-            self._next_page_name = names.__getitem__(names.index(self._current_page_name) + 1)
-        else:
-            self._next_page_name = None
-
-    def go_next(self):
-        if not self._next_enabled:
+    @db_session
+    def _on_save(self, event):
+        if not self.Validate():
             return
 
-        self._history.append(self._current_page_name)
-        self._current_page_name = self._next_page_name
-        self._calc_next_page_name()
-        self._apply_current_page()
-        self._update_controls_state()
+        core = self._cores[self.field_core.GetSelection()]
+        core = OrigSampleSet[core.RID]
+        mine_object = core.mine_object
 
-    def go_back(self):
-        if not self.can_back():
-            return
+        fields = {
+            "mine_object": mine_object,
+            "orig_sample_set": core,
+            "Name": self.field_name.GetValue(),
+            "Comment": self.field_comment.GetValue(),
+            "StartMeasure": encode_date(self.field_start_date.GetValue()),
+        }
 
-        page_name = self._history.pop()
-        self._current_page_name = page_name
-        self._calc_next_page_name()
-        self._apply_current_page()
-        self._update_controls_state()
+        if self.field_end_date.GetValue():
+            fields["EndMeasure"] = encode_date(self.field_end_date.GetValue())
+
+        if self.field_fd.GetSelection() > 0:
+            fd = self._foundation_documents[self.field_fd.GetSelection() - 1]
+            fd = FoundationDocument[fd.RID]
+            fields["foundation_document"] = fd
+
+        self.o = DischargeSeries(**fields)
+        commit()
+        self.EndModal(wx.ID_OK)
+
+    def _on_core_changed(self, event):
+        self._set_auto_fields()
+
+    @db_session
+    def _set_fields(self):
+        o = self._target
+        self.field_name.SetValue(o.Name)
+        self.field_comment.SetValue(o.Comment)
+
+        for index, core in enumerate(self._cores):
+            if o.orig_sample_set.RID == core.RID:
+                self.field_core.SetSelection(index)
+
+        if o.foundation_document != None:
+            for index, fd in enumerate(self._foundation_documents):
+                if o.foundation_document.RID == fd.RID:
+                    self.field_fd.SetSelection(index)
+
+        date = decode_date(o.StartMeasure)
+        self.field_start_date.SetValue("%s.%s.%s" % (str(date.day).zfill(2), str(date.month).zfill(2), str(date.year).zfill(4)))
+
+        if o.EndMeasure != None:
+            date = decode_date(o.EndMeasure)
+            self.field_end_date.SetValue("%s.%s.%s" % (str(date.day).zfill(2), str(date.month).zfill(2), str(date.year).zfill(4)))

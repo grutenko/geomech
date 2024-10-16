@@ -8,3 +8,4 @@ markdown==3.7
 bs4==4.12.3
 attrdict2==0.0.2
 numpy==2.1.2
+transliterate==1.10.2

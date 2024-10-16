@@ -1,6 +1,9 @@
 import wx
 import wx.dataview
 import os
+import mimetypes
+import threading
+import time
 
 from pony.orm import *
 import wx.dataview
@@ -11,6 +14,7 @@ from ui.resourcelocation import resource_path
 from ui.validators import *
 from ui.datetimeutil import *
 from ui.delete_object import delete_object
+from transliterate import translit, get_available_language_codes
 
 
 class FolderEditor(wx.Dialog):
@@ -38,6 +42,7 @@ class FolderEditor(wx.Dialog):
         self.field_name = wx.TextCtrl(self, size=wx.Size(250, -1))
         self.field_name.SetValidator(TextValidator(lenMin=1, lenMax=128))
         main_sizer.Add(self.field_name, 0, wx.EXPAND | wx.BOTTOM, border=10)
+        self.field_name.Bind(wx.EVT_KEY_UP, self._on_name_changed)
 
         label = wx.StaticText(self, label="Номер")
         main_sizer.Add(label, 0, wx.EXPAND)
@@ -85,6 +90,10 @@ class FolderEditor(wx.Dialog):
 
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyUP)
 
+    def _on_name_changed(self, event):
+        event.Skip()
+        self.field_number.SetValue(translit(self.field_name.GetValue(), "ru", reversed=True))
+
     def OnKeyUP(self, event):
         keyCode = event.GetKeyCode()
         if keyCode == wx.WXK_ESCAPE:
@@ -124,11 +133,42 @@ class FolderEditor(wx.Dialog):
         self.o = o
         self.EndModal(wx.ID_OK)
 
+class CreateFileWorker(threading.Thread):
+    def __init__(self, gauge, fields, on_resolve, on_reject):
+        super().__init__()
+        self.gauge = gauge
+        self.fields = fields
+        self.on_resolve = on_resolve
+        self.on_reject = on_reject
+
+    @db_session
+    def run(self):
+        try:
+            _fields = {
+                "Name": self.fields["name"],
+                "Comment": self.fields['comment'],
+                "FileName": self.fields["file_name"],
+                "DType": self.fields["mime_type"]
+            }
+            _fields["parent"] = SuppliedData[self.fields["parent"].RID]
+            if "data_date" in self.fields:
+                _fields["DataDate"] = self.fields['data_date']
+
+            with open(self.fields["path"], "rb") as f:
+                _fields['DataContent'] = f.read()
+
+            o = SuppliedDataPart(**_fields)
+            commit()
+        except Exception as e:
+            self.on_reject(e)
+        else:
+            self.on_resolve(o)
+
 
 class FileEditor(wx.Dialog):
     def __init__(self, parent, p=None, o=None):
         super().__init__(parent)
-        self.CenterOnParent()
+        self.CenterOnScreen()
         self.o = None
         self.p = None
         if o == None:
@@ -144,10 +184,55 @@ class FileEditor(wx.Dialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         top_sizer.Add(main_sizer, 1, wx.EXPAND | wx.ALL, border=10)
 
+        label = wx.StaticText(self, label="Файл *")
+        main_sizer.Add(label, 0, wx.EXPAND)
+        self.field_file = wx.FilePickerCtrl(self)
+        self.field_file.Bind(wx.EVT_FILEPICKER_CHANGED, self._on_file_changed)
+        main_sizer.Add(self.field_file, 0, wx.EXPAND)
+
+        self.label_file_error = wx.StaticText(self, label="Неверный путь к файлу")
+        self.label_file_error.SetForegroundColour(wx.Colour(255, 0,0))
+        self.label_file_error.Hide()
+        main_sizer.Add(self.label_file_error, 0, wx.EXPAND)
+
+        label = wx.StaticText(self, label="Название *")
+        main_sizer.Add(label, 0, wx.EXPAND | wx.TOP, border=10)
+        self.field_name = wx.TextCtrl(self, size=wx.Size(250, -1))
+        self.field_name.SetValidator(TextValidator(lenMin=1, lenMax=128))
+        main_sizer.Add(self.field_name, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        label = wx.StaticText(self, label="Датировка материала")
+        main_sizer.Add(label, 0, wx.EXPAND)
+        self.field_data_date = wx.TextCtrl(self, size=wx.Size(250, -1))
+        self.field_data_date.SetValidator(DateValidator())
+        main_sizer.Add(self.field_data_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        collpane = wx.CollapsiblePane(self, wx.ID_ANY, "Комментарий")
+        main_sizer.Add(collpane, 0, wx.GROW)
+
+        comment_pane = collpane.GetPane()
+        comment_sizer = wx.BoxSizer(wx.VERTICAL)
+        comment_pane.SetSizer(comment_sizer)
+
+        label = wx.StaticText(comment_pane, label="Комментарий")
+        comment_sizer.Add(label, 0)
+        self.field_comment = wx.TextCtrl(comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE)
+        self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
+        comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyUP)
 
-        btn_sizer = wx.StdDialogButtonSizer()
-        if o != None:
+        line = wx.StaticLine(self)
+        top_sizer.Add(line, 0, wx.EXPAND | wx.TOP, border=10)
+
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.progress_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._on_tick_gauge)
+        self.progress = wx.Gauge(self)
+        btn_sizer.Add(self.progress, 1, wx.CENTER | wx.RIGHT, border=10)
+
+        if o == None:
             label = "Создать"
         else:
             label = "Изменить"
@@ -155,17 +240,90 @@ class FileEditor(wx.Dialog):
         self.btn_save.Bind(wx.EVT_BUTTON, self._on_save)
         self.btn_save.SetDefault()
         btn_sizer.Add(self.btn_save, 0)
-        main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.TOP, border=10)
+        top_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, border=10)
 
         self.SetSizer(top_sizer)
 
         self.Layout()
+        self.Fit()
 
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyUP)
+
+        self._save_worker = None
+
+    def _on_tick_gauge(self, event):
+        self.progress.Pulse()
+
+    def _on_file_changed(self, event):
+        path = self.field_file.GetPath()
+        if len(path) == 0:
+            return
+        
+        if os.path.exists(path):
+            self.field_name.SetValue(os.path.basename(path))
+            ctime = os.path.getctime(path)
+            ctime = datetime.datetime.fromtimestamp(ctime).strftime('%d.%m.%Y')
+            self.field_data_date.SetValue(ctime)
+            self.label_file_error.Hide()
+        else:
+            self.label_file_error.Show()
+        
+        self.Layout()
+        self.Fit()
+
+    def _start_save(self):
+        path = self.field_file.GetPath()
+        _fields = {
+            "parent": self.p,
+            "path": path,
+            "name": self.field_name.GetValue(),
+            "comment": self.field_comment.GetValue(),
+            "file_name": os.path.basename(path),
+            "data_date": encode_date(self.field_data_date.GetValue())
+        }
+        mime_type, _ = mimetypes.guess_type(path)
+        if mime_type != None:
+            _fields['mime_type'] = mime_type
+        else:
+            _fields["mime_type"] = "application/octet-stream"
+        self._save_worker = CreateFileWorker(self.progress, _fields, self._on_resolve, self._on_reject)
+        self._save_worker.start()
+
+        self.progress_timer.Start(10)
+        self.field_file.Disable()
+        self.field_name.Disable()
+        self.field_comment.Disable()
+        self.field_data_date.Disable()
+        self.btn_save.Disable()
+
+    def _end_save(self):
+        self.field_file.Enable()
+        self.field_name.Enable()
+        self.field_comment.Enable()
+        self.field_data_date.Enable()
+        self.btn_save.Enable()
+        self.progress_timer.Stop()
+        self.progress.SetValue(0)
+
+    def _on_resolve(self, o):
+        wx.CallAfter(self._end_save)
+        self.o = o
+        wx.CallAfter(self.EndModal, wx.ID_OK)
+
+    def _on_reject(self, reason):
+        wx.CallAfter(self._end_save)
+        wx.MessageBox("Ошибка: %s" % str(reason), "Ошибка сохранения", wx.OK | wx.ICON_ERROR)
 
     def _on_save(self, event):
         if not self.Validate():
             return
+        
+        path = self.field_file.GetPath()
+        if len(path) == 0 or not os.path.exists(path):
+            wx.MessageBox("Файл не выбран", "Ошибка заполнения", style=wx.OK | wx.ICON_ERROR)
+            return
+        
+        self._start_save()
 
     def OnKeyUP(self, event):
         keyCode = event.GetKeyCode()
@@ -207,7 +365,7 @@ class SuppliedDataWidget(wx.Panel):
 
         self._image_list = wx.ImageList(16, 16)
         self._icons = {}
-        self.list = wx.dataview.TreeListCtrl(self, style=wx.dataview.TL_DEFAULT_STYLE | wx.BORDER_NONE | wx.dataview.TL_3STATE)
+        self.list = wx.dataview.TreeListCtrl(self, style=wx.dataview.TL_DEFAULT_STYLE | wx.BORDER_NONE)
         self.list.AssignImageList(self._image_list)
         self._icon_folder = self._image_list.Add(get_icon("folder"))
         self._icon_folder_open = self._image_list.Add(get_icon("folder-open"))
@@ -306,6 +464,7 @@ class SuppliedDataWidget(wx.Panel):
                 file = self.list.AppendItem(folder, child.Name, _icon, _icon, child)
                 self.list.SetItemText(file, 1, child.FileName.split(".")[-1])
                 self.list.SetItemText(file, 2, "---")
+            self.list.Expand(folder)
 
     def _update_controls_state(self):
         self.toolbar.EnableTool(wx.ID_ADD, self.o != None)

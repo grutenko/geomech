@@ -1,6 +1,7 @@
 import wx
 from typing import Dict
 
+import datetime
 from pony.orm import *
 from database import MineObject, Station
 from ui.windows.main.identity import Identity
@@ -14,9 +15,13 @@ from ui.widgets.grid.widget import (
     EVT_GRID_EDITOR_STATE_CHANGED,
     EVT_GRID_MODEL_STATE_CHANGED,
 )
+import pubsub
+from .widget import EditorNotebook
 from .date_cell_type import DateCellType
+from .import_report import ImportReport
 from ui.icon import get_icon
 from ui.windows.main.editor.widget import EditorNBStateChangedEvent
+from ui.datetimeutil import encode_date
 from dataclasses import dataclass
 
 
@@ -25,6 +30,7 @@ class _Row:
     fields: Dict[str, str]
     p: any = None
     full_number: str = None
+    full_name: str = None
 
 
 class _Model(Model):
@@ -73,6 +79,23 @@ class _Model(Model):
                 optional=True,
             ),
         }
+
+    @db_session
+    def _make_number(self, row_index):
+        p = self._rows[row_index].p
+        if p == None:
+            return
+
+        p = MineObject[p.RID]
+        number = ""
+        name = " на"
+        while p.Level > 0:
+            number += "@" + (p.Name if len(p.Name) < 4 else p.Name[:4])
+            name += " " + p.Name
+            p = p.parent
+
+        self._rows[row_index].full_number = number
+        self._rows[row_index].full_name = name
 
     @db_session
     def validate(self):
@@ -166,9 +189,22 @@ class _Model(Model):
     def get_value_at(self, col, row) -> str:
         return self._rows[row].fields[list(self._columns.values())[col].id]
 
+    @db_session
     def set_value_at(self, col, row_index, value):
         col_id = list(self._columns.values())[col].id
-        self._rows[row_index].fields[col_id] = value.strip()
+        value = value.strip()
+        self._rows[row_index].fields[col_id] = value
+
+        col_keys = list(self._columns.keys())
+        if col_keys[col] == "@mine_object":
+            col = self._columns["@mine_object"]
+            if col.cell_type.test_repr(value):
+                p = select(o for o in MineObject if o.RID == col.cell_type.from_string(value)).first()
+                if p != None:
+                    self._rows[row_index].p = p
+                    self._make_number(row_index)
+                else:
+                    self._rows[row_index].p = p
 
     def delete_row(self, row):
         del self._rows[row]
@@ -182,6 +218,33 @@ class _Model(Model):
     def get_row_state(self, row):
         return self._rows[row]
 
+    @db_session
+    def save(self):
+        self._stations = []
+        cc = self._columns
+        for row in self._rows:
+            p = MineObject[row.p.RID]
+            _fields = {
+                "mine_object": p,
+                "Number": row.fields["@number"] + row.full_number,
+                "Name": row.fields["@number"] + row.full_name,
+                "Comment": row.fields["Comment"],
+                "X": cc["X"].cell_type.from_string(row.fields["X"]),
+                "Y": cc["Y"].cell_type.from_string(row.fields["Y"]),
+                "Z": cc["Z"].cell_type.from_string(row.fields["Z"]),
+                "StartDate": encode_date(cc["StartDate"].cell_type.from_string(row.fields["StartDate"])),
+                "HoleCount": 0
+            }
+
+            if len(row.fields["EndDate"]) > 0:
+                _fields["EndDate"] = encode_date(cc["EndDate"].cell_type.from_string(row.fields["EndDate"]))
+
+            self._stations.append(Station(**_fields))
+
+        commit()
+        self._rows = []
+        return True
+
 
 class GridPanel(GridEditor):
     def __init__(self, parent, menubar, toolbar, statusbar):
@@ -193,7 +256,9 @@ class ImportStations(wx.Panel):
     @db_session
     def __init__(self, parent, menu, toolbar, statusbar):
         super().__init__(parent)
+        self.menu = menu
         self.toolbar = toolbar
+        self.statusbar = statusbar
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._local_toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL | wx.TB_HORZ_TEXT)
@@ -275,7 +340,24 @@ class ImportStations(wx.Panel):
         if ret != wx.YES:
             return
         if self.grid.save():
-            ...
+            m = EditorNotebook.get_instance().get_native()
+            time = datetime.datetime.now()
+            title = "Отчет об импорте: %s:%s:%s" % (str(time.hour).zfill(2), str(time.minute).zfill(2), str(time.second).zfill(2))
+            columns = {
+                "RID": Column("RID", NumberCellType(), "ID", "ID скважины"),
+                "Number": Column("Number", StringCellType(), "№", "Номер станции", init_width=150),
+                "Name": Column("Name", StringCellType(), "Название", "Название станции", init_width=150),
+            }
+            table = []
+            for s in self.grid._model._stations:
+                _row = []
+                _row.append(str(s.RID))
+                _row.append(s.Number)
+                _row.append(s.Name)
+                table.append(_row)
+            report = ImportReport(m, title, columns, table, self.menu, self.toolbar, self.statusbar)
+            pubsub.pub.sendMessage("cmd.editor.open", target=self, editor=report)
+            pubsub.pub.sendMessage("cmd.editor.close", target=self, identity=self._identity)
 
     def copy(self):
         self.grid.copy()

@@ -252,6 +252,7 @@ class SuppliedDataPart(db.Entity):
     DType = Required(str, column="DType")
     FileName = Required(str, column="FileName")
     DataContent = Required(bytes, column="DataContent", lazy=True)
+    DataDate = Optional(int, column="DataDate", size=64)
 
 
 class RockBurst(db.Entity):
