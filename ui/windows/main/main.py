@@ -221,9 +221,6 @@ class MainFrame(wx.Frame):
 
         self._bind_all()
         self._update_controls_state()
-        self._start_tab = MdViewer(self.editors, "[Чтение] Начало работы", "start")
-        self._start_tab.set_file("start/index.md")
-        self.editors.add_editor(self._start_tab)
 
         self._pm_settings_window = PmSettingsWindow(self)
         self._cs_settings_window = ManageCoordSystemsWindow(self)

@@ -5,8 +5,8 @@ from pony.orm import *
 from database import *
 import pubsub
 
-from ui.windows.main.editor.widget import EditorNotebook
-from ui.windows.main.editor.dm import DMEditor
+from ..editor.widget import EditorNotebook
+from ..editor.dm import DMEditor
 from ui.icon import get_art, get_icon
 from ui.windows.main.identity import Identity
 

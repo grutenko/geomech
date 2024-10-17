@@ -204,3 +204,4 @@ class DialogCreateStation(wx.Dialog):
             self.o = Station[self._target.RID]
             self.o.set(**fields)
         commit()
+        self.EndModal(wx.ID_OK)

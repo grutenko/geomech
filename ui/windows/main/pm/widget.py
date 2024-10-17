@@ -4,7 +4,9 @@ import wx.lib.newevent
 from ui.class_config_provider import ClassConfigProvider
 from ui.icon import get_art, get_icon
 from .list import PmList
+from .detail import PmSeriesDetail
 from .create import DialogCreatePmSeries
+from ..identity import Identity
 
 __CONFIG_VERSION__ = 2
 
@@ -38,22 +40,74 @@ class PmPanel(wx.Panel):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.toolbar, 0, wx.EXPAND)
+        
+        self.statusbar = wx.StatusBar(self, style=0)
+        main_sizer.Add(self.statusbar, 0, wx.EXPAND)
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
         main_sizer.Add(top_sizer, 0, wx.EXPAND | wx.BOTTOM, border=2)
         self.SetSizer(main_sizer)
+        self.main_sizer = main_sizer
 
-        self._details = None
+        self._details = PmSeriesDetail(self)
         self._list = PmList(self)
+        self._list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_item_activated)
+        self._list.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_selection_changed)
+        self._list.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._on_selection_changed)
         main_sizer.Add(self._list, 1, wx.EXPAND)
 
         self.Layout()
 
+    def _update_controls_state(self):
+        self.toolbar.EnableTool(wx.ID_BACKWARD, self._current_rid != None)
+        self.toolbar.EnableTool(wx.ID_ADD, self._current_rid == None)
+        self.toolbar.EnableTool(wx.ID_FIND, self._current_rid == None)
+        self.toolbar.EnableTool(
+            wx.ID_EDIT,
+            self._current_rid == None and self._list._list.GetSelectedItemCount() > 0,
+        )
+        self.toolbar.EnableTool(
+            wx.ID_DELETE,
+            self._current_rid == None and self._list._list.GetSelectedItemCount() > 0,
+        )
+
+    def _on_selection_changed(self, event):
+        o = self._list.get_current_o()
+        if o != None:
+            wx.PostEvent(self, PmSelectedEvent(target=self, identity=Identity(o, o, None)))
+        self._update_controls_state()
+
+    def _on_item_activated(self, event: wx.ListEvent):
+        self._go_to_item(event.GetData())
+
+    def _go_to_item(self, rid):
+        if self._current_rid == None:
+            self.main_sizer.Detach(3)
+            self.main_sizer.Add(self._details, 1, wx.EXPAND)
+            self._list.end()
+        self._details.start(rid)
+        self.statusbar.SetStatusText(self._details.get_item_name())
+        self._current_rid = rid
+        self.Layout()
+        self._update_controls_state()
+
+    def _go_to_list(self):
+        if self._current_rid != None:
+            self.main_sizer.Detach(3)
+            self._details.end()
+            self.main_sizer.Add(self._list, 1, wx.EXPAND)
+            self._list.start()
+        self.statusbar.SetStatusText("")
+        self._current_rid = None
+        self.Layout()
+        self._update_controls_state()
+
     def _on_add(self, event):
         dlg = DialogCreatePmSeries(self)
-        dlg.ShowModal()
+        if dlg.ShowModal() == wx.ID_OK:
+            self._list._load()
 
     def _on_back(self, event):
-        ...
+        self._go_to_list()
 
     def get_pane_info(self) -> str | None:
         return self._config_provider["aui_pane_info"]

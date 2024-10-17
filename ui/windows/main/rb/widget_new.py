@@ -1,15 +1,17 @@
+import pubsub.pub
 import wx
 import wx.dataview
 from pony.orm import *
+import pubsub
 
-from database import RockBurst
+from database import RockBurst, MineObject
 from ui.icon import get_icon
 from ui.class_config_provider import ClassConfigProvider
 from ui.datetimeutil import decode_datetime
 from ui.delete_object import delete_object
 from ui.windows.main.identity import Identity
 
-from .create import DialogCreateRockBurst
+from .rock_burst import DialogCreateRockBurst
 
 
 __CONFIG_VERSION__ = 2
@@ -17,24 +19,23 @@ __CONFIG_VERSION__ = 2
 
 RbSelectedEvent, EVT_RB_SELECTED = wx.lib.newevent.NewEvent()
 
+
 class RbPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
-        self._config_provider = ClassConfigProvider(
-            __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
-        )
+        self._config_provider = ClassConfigProvider(__name__ + "." + self.__class__.__name__, __CONFIG_VERSION__)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL | wx.TB_FLAT)
         item = self.toolbar.AddTool(wx.ID_ADD, "Добавить", get_icon("magic-wand"))
         self.toolbar.Bind(wx.EVT_TOOL, self._on_add, id=wx.ID_ADD)
-        item = self.toolbar.AddTool(wx.ID_EDIT, "Изменить", get_icon('edit'))
+        item = self.toolbar.AddTool(wx.ID_EDIT, "Изменить", get_icon("edit"))
         item.Enable(False)
-        item = self.toolbar.AddTool(wx.ID_DELETE, "Удалить", get_icon('delete'))
+        item = self.toolbar.AddTool(wx.ID_DELETE, "Удалить", get_icon("delete"))
         item.Enable(False)
         self.toolbar.AddStretchableSpace()
-        item = self.toolbar.AddCheckTool(wx.ID_FIND, "", get_icon('find'))
+        item = self.toolbar.AddCheckTool(wx.ID_FIND, "", get_icon("find"))
         self.toolbar.Realize()
         main_sizer.Add(self.toolbar, 0, wx.EXPAND)
 
@@ -81,12 +82,31 @@ class RbPanel(wx.Panel):
             item = menu.Append(wx.ID_ADD, "Добавить горный удар")
             item.SetBitmap(get_icon("file-add"))
             menu.Bind(wx.EVT_MENU, self._on_add, item)
+            sub = wx.Menu()
+            item = sub.Append(wx.ID_ANY, 'Показать в "Объектах"')
+            sub.Bind(wx.EVT_MENU, self._on_select_mine_object, item)
+            item.SetBitmap(get_icon("share"))
+            menu.AppendSubMenu(sub, "[Горный объект]")
+            menu.AppendSeparator()
+            item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
+            item.SetBitmap(get_icon("versions"))
+            menu.Bind(wx.EVT_MENU, self._on_open_supplied_data, item)
         else:
             item = menu.Append(wx.ID_ADD, "Добавить горный удар")
             item.SetBitmap(get_icon("file-add"))
             menu.Bind(wx.EVT_MENU, self._on_add, item)
 
         self.PopupMenu(menu, event.GetPosition())
+
+    @db_session
+    def _on_select_mine_object(self, event):
+        index = self.list.GetSelectedRow()
+        if index != wx.NOT_FOUND:
+            mine_object = MineObject[self.items[index].mine_object.RID]
+            pubsub.pub.sendMessage("cmd.object.select", target=self, identity=Identity(mine_object, mine_object, None))
+
+    def _on_open_supplied_data(self, event):
+        pubsub.pub.sendMessage("cmd.supplied_data.show", target=self)
 
     def _on_add(self, event):
         dlg = DialogCreateRockBurst(self)

@@ -2,7 +2,8 @@ import wx
 import wx.adv
 
 from pony.orm import *
-from database import OrigSampleSet
+from database import OrigSampleSet, FoundationDocument, PMTestSeries
+from ui.validators import *
 
 from ui.icon import get_icon
 
@@ -10,116 +11,126 @@ WizPageChangingEvent, EVT_WIZ_PAGE_CHAGING = wx.lib.newevent.NewEvent()
 
 
 class DialogCreatePmSeries(wx.Dialog):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.SetSize(350, 400)
-        self.SetIcon(wx.Icon(get_icon("wand")))
-        self.SetTitle("Мастер добавления набора испытаний")
-        self.CenterOnParent()
-        self._history = []
-        self._pages = {
-            "first": wx.Panel(self),
-            "second": wx.Panel(self),
-            "third": wx.Panel(self)
-        }
-        self._current_page_name = "first"
-        self._calc_next_page_name()
+    @db_session
+    def __init__(self, parent, o=None, _type="CREATE"):
+        super().__init__(parent, title="Добавить набор испытаний", size=wx.Size(400, 600))
+        self.SetIcon(wx.Icon(get_icon("logo@16")))
+        self.CenterOnScreen()
+
+        self._type = _type
+        if _type == "CREATE":
+            ...
+        else:
+            self.SetTitle("Изменить: %s" % o.Name)
+            self._target = o
+        self.parent = None
 
         top_sizer = wx.BoxSizer(wx.VERTICAL)
-
-        self._main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self._deputy = wx.Panel(self)
-        self._main_sizer.Add(self._deputy, 1, wx.EXPAND)
-        line = wx.StaticLine(self)
-        self._main_sizer.Add(line, 0, wx.EXPAND)
-
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self._btn_back = wx.Button(self, label="Назад")
-        self._btn_back.Bind(wx.EVT_BUTTON, self._on_back)
-        btn_sizer.Add(self._btn_back, 0, wx.EXPAND)
-        self._btn_next = wx.Button(self, label="Далее")
-        self._btn_next.SetDefault()
-        self._btn_next.Bind(wx.EVT_BUTTON, self._on_next)
-        btn_sizer.Add(self._btn_next, 0, wx.EXPAND)
-        self._btn_cancel = wx.Button(self, wx.ID_CANCEL, label="Отмена")
-        btn_sizer.Add(self._btn_cancel, 0, wx.EXPAND)
-        self._main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, border=10)
-
-        top_sizer.Add(self._main_sizer, 1, wx.EXPAND | wx.TOP, border=10)
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        top_sizer.Add(main_sizer, 1, wx.EXPAND | wx.ALL, border=10)
         self.SetSizer(top_sizer)
+
+        label = wx.StaticText(
+            self,
+            label="Название",
+        )
+        main_sizer.Add(label, 0)
+        self.field_name = wx.TextCtrl(self, size=wx.Size(250, -1))
+        self.field_name.SetValidator(TextValidator(lenMin=1, lenMax=256))
+        main_sizer.Add(self.field_name, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        label = wx.StaticText(
+            self,
+            label="Регистрационный номер",
+        )
+        main_sizer.Add(label, 0, wx.EXPAND | wx.TOP, border=10)
+        self.field_number = wx.TextCtrl(self, size=wx.Size(250, -1))
+        self.field_number.SetValidator(TextValidator(lenMin=1, lenMax=32))
+        main_sizer.Add(self.field_number, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        collpane = wx.CollapsiblePane(self, wx.ID_ANY, "Комментарий")
+        main_sizer.Add(collpane, 0, wx.GROW)
+
+        comment_pane = collpane.GetPane()
+        comment_sizer = wx.BoxSizer(wx.VERTICAL)
+        comment_pane.SetSizer(comment_sizer)
+
+        label = wx.StaticText(comment_pane, label="Комментарий")
+        comment_sizer.Add(label, 0)
+        self.field_comment = wx.TextCtrl(comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE)
+        self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
+        comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        label = wx.StaticText(self, label="Документ")
+        main_sizer.Add(label, 0, wx.EXPAND)
+        self.field_fd = wx.Choice(self, size=wx.Size(250, -1))
+        self.field_fd.Append("[Не выбрано]")
+        self.field_fd.SetSelection(0)
+        main_sizer.Add(self.field_fd, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        self._documents = []
+        data = select(o for o in FoundationDocument).order_by(lambda x: desc(x.RID))
+        for o in data:
+            self.field_fd.Append(o.Name)
+            self._documents.append(o)
+
+        label = wx.StaticText(
+            self,
+            label="Место проведения",
+        )
+        main_sizer.Add(label, 0)
+        self.field_location = wx.TextCtrl(self, size=wx.Size(250, -1))
+        self.field_location.SetValidator(TextValidator(lenMin=1, lenMax=256))
+        main_sizer.Add(self.field_location, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+
+        line = wx.StaticLine(self)
+        main_sizer.Add(line, 0, wx.EXPAND | wx.TOP, border=10)
+
+        btn_sizer = wx.StdDialogButtonSizer()
+        if _type == "CREATE":
+            label = "Создать"
+        else:
+            label = "Изменить"
+        self.btn_save = wx.Button(self, label=label)
+        self.btn_save.Bind(wx.EVT_BUTTON, self._on_save)
+        self.btn_save.SetDefault()
+        btn_sizer.Add(self.btn_save, 0)
+        main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.TOP, border=10)
+
         self.Layout()
+        self.Fit()
 
-        self._next_enabled = True
+        if _type == "UPDATE":
+            self._set_fields()
 
-        self._update_controls_state()
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyUP)
 
-    def _finalize(self):
-        ...
-
-    def _on_next(self, event):
-        if self.is_last_page():
-            self._finalize()
+    def OnKeyUP(self, event):
+        keyCode = event.GetKeyCode()
+        if keyCode == wx.WXK_ESCAPE:
+            self.EndModal(wx.ID_CANCEL)
         else:
-            self.go_next()
+            event.Skip()
 
-    def _on_back(self, event):
-        self.go_back()
+    @db_session
+    def _on_save(self, event):
+        fields = {
+            "Name": self.field_name.GetValue().strip(),
+            "Number": self.field_number.GetValue().strip(),
+            "Comment": self.field_comment.GetValue().strip(),
+            "Location": self.field_location.GetValue().strip(),
+        }
 
-    def change_next_page(self, page_name):
-        self._next_page_name = page_name
-        self._update_controls_state()
+        if self.field_fd.GetSelection() > 0:
+            fd = FoundationDocument[self._documents[self.field_fd.GetSelection() - 1]]
+            fields["foundation_document"] = fd
 
-    def _update_controls_state(self):
-        self._btn_back.Enable(self.can_back())
-        if self.is_last_page():
-            label = "Завершить"
+        if self._type == "CREATE":
+            o = PMTestSeries(**fields)
         else:
-            label = "Далее"
-        self._btn_next.SetLabelText(label)
-        self._btn_next.Enable(self._next_enabled)
+            ...
 
-    def enable_next(self, enable=True):
-        self._next_enabled = enable
-        self._update_controls_state()
-
-    def is_last_page(self):
-        return self._next_page_name == None
-
-    def can_back(self) -> bool:
-        return len(self._history) > 0
-
-    def _apply_current_page(self):
-        page = self._pages[self._current_page_name]
-        self._main_sizer.GetItem(0).GetWindow().Hide()
-        self._main_sizer.Detach(0)
-        self._main_sizer.Insert(0, page, 1, wx.EXPAND)
-        page.Show()
-
-    def _calc_next_page_name(self):
-        names = list(self._pages.keys())
-        if len(names) > names.index(self._current_page_name) + 1:
-            self._next_page_name = names.__getitem__(
-                names.index(self._current_page_name) + 1
-            )
-        else:
-            self._next_page_name = None
-
-    def go_next(self):
-        if not self._next_enabled:
-            return
-        
-        self._history.append(self._current_page_name)
-        self._current_page_name = self._next_page_name
-        self._calc_next_page_name()
-        self._apply_current_page()
-        self._update_controls_state()
-
-    def go_back(self):
-        if not self.can_back():
-            return
-        
-        page_name = self._history.pop()
-        self._current_page_name = page_name
-        self._calc_next_page_name()
-        self._apply_current_page()
-        self._update_controls_state()
+        commit()
+        self.o = o
+        self.EndModal(wx.ID_OK)

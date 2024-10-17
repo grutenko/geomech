@@ -71,6 +71,7 @@ class BoreHoleFastview(wx.Panel):
             date = decode_date(o.DestroyDate)
             fields["DestroyDate"] = wx.DateTime(date.day, date.month - 1, date.year)
         self.propgrid.SetPropertyValues(fields)
+        self.Update()
         self.Show()
 
     def end(self):

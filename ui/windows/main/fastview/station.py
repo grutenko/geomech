@@ -53,6 +53,7 @@ class StationFastview(wx.Panel):
             date = decode_date(o.EndDate)
             fields['EndDate'] = wx.DateTime(date.day, date.month - 1, date.year)
         self.propgrid.SetPropertyValues(fields)
+        self.Update()
         self.Show()
     def end(self):
         self.Hide()

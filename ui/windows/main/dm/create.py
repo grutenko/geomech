@@ -61,6 +61,12 @@ class DialogCreateDischargeSeries(wx.Dialog):
         self.field_fd.SetSelection(0)
         main_sizer.Add(self.field_fd, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
+        self._documents = []
+        data = select(o for o in FoundationDocument).order_by(lambda x: desc(x.RID))
+        for o in data:
+            self.field_fd.Append(o.Name)
+            self._documents.append(o)
+
         label = wx.StaticText(self, label="Дата начала измерений*")
         main_sizer.Add(label, 0)
         self.field_start_date = wx.TextCtrl(self)
@@ -156,7 +162,7 @@ class DialogCreateDischargeSeries(wx.Dialog):
             fields["EndMeasure"] = encode_date(self.field_end_date.GetValue())
 
         if self.field_fd.GetSelection() > 0:
-            fd = self._foundation_documents[self.field_fd.GetSelection() - 1]
+            fd = self._documents[self.field_fd.GetSelection() - 1]
             fd = FoundationDocument[fd.RID]
             fields["foundation_document"] = fd
 
@@ -178,8 +184,8 @@ class DialogCreateDischargeSeries(wx.Dialog):
                 self.field_core.SetSelection(index)
 
         if o.foundation_document != None:
-            for index, fd in enumerate(self._foundation_documents):
-                if o.foundation_document.RID == fd.RID:
+            for index, fd in enumerate(self._documents):
+                if o.document.RID == fd.RID:
                     self.field_fd.SetSelection(index)
 
         date = decode_date(o.StartMeasure)

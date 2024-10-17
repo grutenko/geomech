@@ -44,6 +44,7 @@ class RockBurstFastview(wx.Panel):
             "BurstDate": wx.DateTime(burst_date.day, burst_date.month - 1, burst_date.year),
         }
         self.propgrid.SetPropertyValues(fields)
+        self.Update()
         self.Show()
 
     def end(self):

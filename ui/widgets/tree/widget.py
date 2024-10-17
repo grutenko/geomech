@@ -135,7 +135,11 @@ class Tree(wx.Panel):
 
         _item = self._find_native_item(node)
         if _item != None:
-            self._tree.SelectItem(_item)
+            self._synthetic_expand = True
+            try:
+                self._tree.SelectItem(_item)
+            finally:
+                self._synthetic_expand = False
 
     def soft_reload_node(self, node: TreeNode):
         item = self._find_native_item(node)

@@ -40,7 +40,7 @@ class CoreFastview(wx.Panel):
             date = decode_date(o.EndSetDate)
             fields["EndDate"] = wx.DateTime(date.day, date.month - 1, date.year)
         self.propgrid.SetPropertyValues(fields)
-
+        self.Update()
         self.Show()
 
     def end(self):

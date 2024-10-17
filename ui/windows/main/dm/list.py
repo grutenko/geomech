@@ -25,7 +25,6 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
         self._image_list = wx.ImageList(16, 16)
         self._book_stack_icon = self._image_list.Add(get_icon("read"))
         self._list = wx.ListCtrl(self, style=wx.LC_REPORT)
-        self._list.EnableCheckBoxes()
         self._list.AppendColumn("Название", width=250)
         self._list.AppendColumn("Дата начала", width=100)
         self._list.AppendColumn("Дата окончания", width=100)
@@ -71,12 +70,21 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
             item.SetBitmap(get_icon("wand"))
         self.PopupMenu(menu, event.GetPosition())
 
+    @db_session
     def _on_delete(self, event):
         if self._list.GetFirstSelected() == -1:
             return None
         ds = self._items[self._list.GetItemData(self._list.GetFirstSelected())]
-        if delete_object(ds, ['discharge_measurements']):
-            self._load()
+        core = OrigSampleSet[ds.orig_sample_set.RID]
+        if len(core.discharge_measurements) == 0:
+            if delete_object(ds):
+                self._load()
+        else:
+            wx.MessageBox(
+                "Запрещено удалять объекты к которым есть связаные данные.",
+                "Удаление запрещено",
+                wx.OK | wx.CENTRE | wx.ICON_ERROR,
+            )
 
     def _on_edit(self, event):
         if self._list.GetFirstSelected() == -1:
@@ -95,7 +103,8 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
 
     @db_session
     def _load(self):
-        discharges = select(o for o in DischargeSeries).order_by(lambda x: desc(x.StartMeasure))
+        self._list.DeleteAllItems()
+        discharges = select(o for o in DischargeSeries).order_by(lambda x: desc(x.RID))
         self._items = {}
         for o in discharges:
             self._items[o.RID] = o
@@ -148,7 +157,8 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
 
     def _on_add(self, event):
         dlg = DialogCreateDischargeSeries(self)
-        dlg.ShowModal()
+        if dlg.ShowModal() == wx.ID_OK:
+            self._load()
 
     def get_items(self):
         return self._items

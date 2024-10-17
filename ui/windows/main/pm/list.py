@@ -4,6 +4,7 @@ from pony.orm import *
 from database import *
 from ui.icon import get_art, get_icon
 from ui.datetimeutil import decode_date
+from ui.delete_object import delete_object
 
 from .create import DialogCreatePmSeries
 
@@ -20,13 +21,17 @@ class PmList(wx.Panel):
         self._list.AppendColumn("Название", width=250)
         self._list.AppendColumn("Место", width=150)
         self._list.AppendColumn("Договор", width=150)
-        self._list.AppendColumn("Месторождение", width=150)
         self._list.AssignImageList(self._image_list, wx.IMAGE_LIST_SMALL)
         main_sizer.Add(self._list, 1, wx.EXPAND)
         self.SetSizer(main_sizer)
         self.Layout()
         self._load()
         self._bind_all()
+
+    def get_current_o(self):
+        if self._list.GetFirstSelected() == -1:
+            return None
+        return self._items[self._list.GetFirstSelected()]
 
     def _bind_all(self):
         self._list.Bind(wx.EVT_RIGHT_DOWN, self._on_right_click)
@@ -40,6 +45,7 @@ class PmList(wx.Panel):
             item.SetBitmap(get_icon('edit'))
             item = menu.Append(wx.ID_DELETE, "Удалить")
             item.SetBitmap(get_icon('delete'))
+            menu.Bind(wx.EVT_MENU, self._on_delete, item)
             menu.AppendSeparator()
             item = menu.Append(wx.ID_ADD, "Добавить набор")
             menu.Bind(wx.EVT_MENU, self._on_add, item)
@@ -53,18 +59,30 @@ class PmList(wx.Panel):
 
     @db_session
     def _load(self):
+        self._list.DeleteAllItems()
         discharges = select(o for o in PMTestSeries).order_by(
             lambda x: desc(x.RID)
         )
-        self._items = discharges
+        self._items = []
         for index, o in enumerate(discharges):
             item = self._list.InsertItem(index, o.Name, self._book_stack_icon)
             self._list.SetItem(item, 1, o.Location if o.Location != None else o.Location)
             self._list.SetItemData(item, o.RID)
+            self._items.append(o)
+
+    def _on_delete(self, event):
+        index = self._list.GetFirstSelected()
+        if index == -1:
+            return
+        
+        o = self._items[index]
+        if delete_object(o, ['pm_sample_sets']):
+            self._load()
 
     def _on_add(self, event):
         dlg = DialogCreatePmSeries(self)
-        dlg.ShowModal()
+        if dlg.ShowModal() == wx.ID_OK:
+            self._load()
 
     def get_items(self):
         return self._items

@@ -5,15 +5,10 @@ import wx.lib.agw.flatnotebook
 from database import *
 from ui.class_config_provider import ClassConfigProvider
 from ui.windows.main.identity import Identity
-from ui.windows.main.dialogs.dialog_create_bore_hole import DialogCreateBoreHole
-from ui.windows.main.dialogs.dialog_create_mine_object import (
-    DialogCreateMineObject,
-)
-from ui.windows.main.dialogs.dialog_create_orig_sample_set import (
-    DialogCreateCore,
-)
-from ui.windows.main.dialogs.dialog_create_station import DialogCreateStation
-from ui.icon import get_art
+from .bore_hole import DialogCreateBoreHole
+from .mine_object import DialogCreateMineObject
+from .core import DialogCreateCore
+from .station import DialogCreateStation
 
 from .tree import TreeWidget, EVT_WIDGET_TREE_SEL_CHANGED, EVT_TREE_OPEN_SELF_EDITOR
 
@@ -89,7 +84,7 @@ class Objects(wx.Panel):
         self.tree.change_mode(_mode)
         self._current_mode = _mode
         self._update_controls_state()
-        
+
     def _bind_all(self):
         self.tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self._on_sel_changed)
         self.tree.Bind(EVT_TREE_OPEN_SELF_EDITOR, self._on_open_self_editor)

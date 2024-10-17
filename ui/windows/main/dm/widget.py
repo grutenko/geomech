@@ -90,7 +90,8 @@ class DischargePanel(wx.Panel):
 
     def _on_add_btn(self, event):
         dlg = DialogCreateDischargeSeries(self)
-        dlg.ShowModal()
+        if dlg.ShowModal() == wx.ID_OK:
+            self._list._load()
 
     def _update_controls_state(self):
         self.toolbar.EnableTool(wx.ID_BACKWARD, self._current_rid != None)

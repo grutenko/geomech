@@ -80,21 +80,20 @@ class CreateDocumentDialog(wx.Dialog):
             "Name": self.field_name.GetValue(),
             "Type": self.field_type.GetValue(),
             "Comment": self.field_comment.GetValue(),
-            "Number": self.field_number.GetValue(),
         }
 
-        if self._type == "CREATE":
-            try:
-                self.o = FoundationDocument(**fields)
-            except Exception as e:
-                wx.MessageBox(str(e))
-            else:
-                self.EndModal(wx.ID_OK)
+        number = self.field_number.GetValue().strip()
+        if len(number) > 0:
+            fields["Number"] = number
         else:
-            try:
-                self.o = FoundationDocument[self._target.RID]
-                self.o.set(**fields)
-            except Exception as e:
-                wx.MessageBox(str(e))
-            else:
-                self.EndModal(wx.ID_OK)
+            fields["Number"] = fields["Name"]
+
+        if self._type == "CREATE":
+            o = FoundationDocument(**fields)
+        else:
+            o = FoundationDocument[self._target.RID]
+            o.set(**fields)
+
+        commit()
+        self.o = o
+        self.EndModal(wx.ID_OK)

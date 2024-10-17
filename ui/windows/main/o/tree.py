@@ -8,10 +8,10 @@ from ui.widgets.tree import *
 from ui.icon import get_art, get_icon
 from ui.delete_object import delete_object
 from ui.windows.main.identity import Identity
-from ..dialogs.dialog_create_bore_hole import DialogCreateBoreHole
-from ..dialogs.dialog_create_mine_object import DialogCreateMineObject
-from ..dialogs.dialog_create_orig_sample_set import DialogCreateCore
-from ..dialogs.dialog_create_station import DialogCreateStation
+from .bore_hole import DialogCreateBoreHole
+from .mine_object import DialogCreateMineObject
+from .core import DialogCreateCore
+from .station import DialogCreateStation
 
 
 class _MineObject_Node(TreeNode):

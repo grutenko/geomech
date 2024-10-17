@@ -14,6 +14,8 @@ class PmSampleSetFastview(wx.Panel):
         self.Hide()
 
     def start(self, o, bounds = None):
+        self.Update()
         self.Show()
+        
     def end(self):
         self.Hide()
