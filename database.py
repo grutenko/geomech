@@ -181,7 +181,7 @@ class DischargeSeries(db.Entity):
     orig_sample_set = Required(OrigSampleSet, column="OSSID")
     foundation_document = Optional(FoundationDocument, column="FDID")
 
-    RID = PrimaryKey(int, column="RID")
+    RID = PrimaryKey(int, auto=True, column="RID")
     Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
     StartMeasure = Required(int, column="StartMeasure", size=64)
