@@ -1,18 +1,17 @@
+import pubsub
 import pubsub.pub
 import wx
 import wx.dataview
 from pony.orm import *
-import pubsub
 
-from database import RockBurst, MineObject
-from ui.icon import get_icon
+from database import MineObject, RockBurst
 from ui.class_config_provider import ClassConfigProvider
 from ui.datetimeutil import decode_datetime
 from ui.delete_object import delete_object
+from ui.icon import get_icon
 from ui.windows.main.identity import Identity
 
 from .rock_burst import DialogCreateRockBurst
-
 
 __CONFIG_VERSION__ = 2
 
@@ -162,5 +161,5 @@ class RbPanel(wx.Panel):
         self._config_provider["aui_pane_info"] = info
         self._config_provider.flush()
 
-    def remove_selection(self):
+    def remove_selection(self, silence=False):
         self.list.UnselectAll()

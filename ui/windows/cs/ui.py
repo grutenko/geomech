@@ -18,8 +18,7 @@ class Ui_CsTransl(wx.Frame):
         wx.Frame.__init__(
             self,
             parent,
-            style=wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX
-            | wx.FRAME_FLOAT_ON_PARENT,
+            style=wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX | wx.FRAME_FLOAT_ON_PARENT,
         )
         self.SetTitle("Пересчет координат")
         self.SetBackgroundColour(wx.NullColour)
@@ -35,9 +34,7 @@ class Ui_CsTransl(wx.Frame):
         self.choce_from = wx.Choice(self, wx.ID_ANY, choices=[])
         sizer_3.Add(self.choce_from, 1, wx.EXPAND, 10)
 
-        self.sizer_from = wx.StaticBoxSizer(
-            wx.StaticBox(self, wx.ID_ANY, "Исходные координаты"), wx.HORIZONTAL
-        )
+        self.sizer_from = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Исходные координаты"), wx.HORIZONTAL)
         sizer_2.Add(self.sizer_from, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
 
         grid_sizer_1 = wx.FlexGridSizer(2, 2, 5, 5)
@@ -83,9 +80,7 @@ class Ui_CsTransl(wx.Frame):
         self.choice_to = wx.Choice(self, wx.ID_ANY, choices=[])
         sizer_5.Add(self.choice_to, 1, wx.EXPAND | wx.FIXED_MINSIZE, 0)
 
-        sizer_to = wx.StaticBoxSizer(
-            wx.StaticBox(self, wx.ID_ANY, "Результат"), wx.HORIZONTAL
-        )
+        sizer_to = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, "Результат"), wx.HORIZONTAL)
         sizer_2.Add(sizer_to, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 10)
 
         grid_sizer_2 = wx.FlexGridSizer(2, 2, 5, 5)
@@ -94,9 +89,7 @@ class Ui_CsTransl(wx.Frame):
         label_5 = wx.StaticText(self, wx.ID_ANY, "X:")
         grid_sizer_2.Add(label_5, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT, 0)
 
-        self.field_X_to = wx.SpinCtrlDouble(
-            self, wx.ID_ANY, initial=0.0, min=-100000000.0, max=10000000000.0
-        )
+        self.field_X_to = wx.SpinCtrlDouble(self, wx.ID_ANY, initial=0.0, min=-100000000.0, max=10000000000.0)
         self.field_X_to.Enable(False)
         self.field_X_to.SetDigits(2)
         grid_sizer_2.Add(self.field_X_to, 0, wx.EXPAND, 0)
@@ -104,9 +97,7 @@ class Ui_CsTransl(wx.Frame):
         label_6 = wx.StaticText(self, wx.ID_ANY, "Y:")
         grid_sizer_2.Add(label_6, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT, 0)
 
-        self.field_Y_to = wx.SpinCtrlDouble(
-            self, wx.ID_ANY, initial=0.0, min=-100000000.0, max=10000000000.0
-        )
+        self.field_Y_to = wx.SpinCtrlDouble(self, wx.ID_ANY, initial=0.0, min=-100000000.0, max=10000000000.0)
         self.field_Y_to.Enable(False)
         self.field_Y_to.SetDigits(2)
         grid_sizer_2.Add(self.field_Y_to, 0, wx.EXPAND, 0)

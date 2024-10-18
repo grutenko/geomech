@@ -1,9 +1,11 @@
-import wx
 import json
-import attrdict2
 import os.path
-from options import __PROGRAM_HOME__
 from typing import Dict, Optional
+
+import attrdict2
+import wx
+
+from options import __PROGRAM_HOME__
 
 _config_filename = os.path.join(__PROGRAM_HOME__, "config.json")
 _config: Dict[str, attrdict2.AttrDict] = {}

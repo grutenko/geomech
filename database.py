@@ -1,5 +1,6 @@
-from pony.orm import *
 from datetime import date
+
+from pony.orm import *
 
 db = Database()
 
@@ -50,7 +51,7 @@ class MineObject(db.Entity):
             "HORIZON": "Горизонт",
             "EXCAVATION": "Выработка",
         }
-        return '[' + _m[self.Type] + '] ' + self.Name
+        return "[" + _m[self.Type] + "] " + self.Name
 
 
 class CoordSystem(db.Entity):
@@ -103,7 +104,7 @@ class Station(db.Entity):
     EndDate = Optional(int, column="EndDate", size=64)
 
     def get_tree_name(self):
-        return '[Станция] ' + self.Name
+        return "[Станция] " + self.Name
 
 
 class BoreHole(db.Entity):
@@ -129,7 +130,7 @@ class BoreHole(db.Entity):
     DestroyDate = Optional(int, column="DestroyDate", size=64)
 
     def get_tree_name(self):
-        return '[Скважина] ' + self.Name
+        return "[Скважина] " + self.Name
 
 
 class OrigSampleSet(db.Entity):
@@ -154,12 +155,9 @@ class OrigSampleSet(db.Entity):
     EndSetDate = Optional(int, column="EndSetDate", size=64)
 
     def get_tree_name(self):
-        _m = {
-            "CORE": "Керн",
-            "STUF": "Штуф",
-            "DISPERCE": "Дисперсный материал"
-        }
-        return '[' + _m[self.SampleType] + '] ' + self.Name
+        _m = {"CORE": "Керн", "STUF": "Штуф", "DISPERCE": "Дисперсный материал"}
+        return "[" + _m[self.SampleType] + "] " + self.Name
+
 
 class FoundationDocument(db.Entity):
     _table_ = "FoundationDocuments"
@@ -188,7 +186,7 @@ class DischargeSeries(db.Entity):
     EndMeasure = Optional(int, column="EndMeasure", size=64)
 
     def get_tree_name(self):
-        return '[Набор замеров] ' + self.Name
+        return "[Набор замеров] " + self.Name
 
 
 class DischargeMeasurement(db.Entity):
@@ -270,7 +268,7 @@ class RockBurst(db.Entity):
     BurstDate = Required(int, column="BurstDate", size=64)
 
     def get_tree_name(self):
-        return '[Горный удар] ' + self.Name
+        return "[Горный удар] " + self.Name
 
 
 class CoreBoxStorage(db.Entity):
@@ -318,14 +316,14 @@ class PMTestSeries(db.Entity):
     Location = Optional(str, column="Location")
 
     def get_tree_name(self):
-        return '[Набор испытаний] ' + self.Name
+        return "[Набор испытаний] " + self.Name
 
 
 class PMSampleSet(db.Entity):
     _table_ = "PMSampleSets"
 
     mine_object = Required(MineObject, column="MOID")
-    test_series = Required(PMTestSeries, column="TSID")
+    pm_test_series = Required(PMTestSeries, column="TSID")
     petrotype_struct = Required(PetrotypeStruct, column="PTSID")
     pm_samples = Set("PMSample")
 
@@ -340,7 +338,7 @@ class PMSampleSet(db.Entity):
     SampleCount = Optional(int, column="SampleCount")
 
     def get_tree_name(self):
-        return '[Набор образцов] ' + self.Name
+        return "[Набор образцов] " + self.Name
 
 
 class PMSample(db.Entity):
@@ -427,6 +425,7 @@ class PmSamplePropertyValue(db.Entity):
 
     RID = PrimaryKey(int, auto=True, column="RID")
     Value = Required(float, column="Value")
+
 
 class PmPerformedTasks(db.Entity):
     _table_ = "PMPerformedTasks"

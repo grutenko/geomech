@@ -1,12 +1,11 @@
 import wx
-
 from pony.orm import *
-from database import MineObject, CoordSystem
 
-from ui.validators import *
-from ui.windows.cs.transl import CsTransl
+from database import CoordSystem, MineObject
 from ui.ctrl.coord_system_ctrl import CoordSystemCtrl
 from ui.icon import get_icon
+from ui.validators import *
+from ui.windows.cs.transl import CsTransl
 
 
 class DialogCreateMineObject(wx.Dialog):

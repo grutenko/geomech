@@ -1,12 +1,12 @@
-import wx
 import re
 
+import wx
 from pony.orm import *
 
 from database import CoordSystem
+from ui.icon import get_icon
 from ui.validators import *
 from ui.windows.cs.matrix import CreateTransfMatrixWindow
-from ui.icon import get_icon
 
 
 class _Mat3_Validator(wx.Validator): ...

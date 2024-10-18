@@ -1,20 +1,21 @@
-from typing import List, Dict
 import datetime
+from dataclasses import dataclass, field
+from typing import Dict, List
+
+import pubsub
 import pubsub.pub
 import wx
-from dataclasses import dataclass, field
-import pubsub
+from pony.orm import *
+
+from database import *
+from ui.datetimeutil import encode_date
 from ui.widgets.grid.widget import *
 from ui.widgets.grid.widget import Column
-from .date_cell_type import DateCellType
-from .choice_cell_type import ChoiceCellType
-from ui.datetimeutil import encode_date
-
-
-from .widget import EditorNBStateChangedEvent, EditorNotebook
-from pony.orm import *
-from database import *
 from ui.windows.main.identity import Identity
+
+from ..notebook.widget import EditorNBStateChangedEvent, EditorNotebook
+from .choice_cell_type import ChoiceCellType
+from .date_cell_type import DateCellType
 from .import_report import ImportReport
 
 
@@ -528,10 +529,12 @@ class ImportBoreHoles(wx.Panel):
                     _row.append(core.Number)
                     _row.append(core.Name)
                 else:
-                    _row.append('')
-                    _row.append('')
-                    _row.append('')
+                    _row.append("")
+                    _row.append("")
+                    _row.append("")
                 table.append(_row)
+                pubsub.pub.sendMessage("object.added", o=b)
+
             report = ImportReport(m, title, columns, table, self.menu, self.toolbar, self.statusbar)
             pubsub.pub.sendMessage("cmd.editor.open", target=self, editor=report)
             pubsub.pub.sendMessage("cmd.editor.close", target=self, identity=self._identity)
@@ -583,3 +586,5 @@ class ImportBoreHoles(wx.Panel):
 
     def is_read_only(self):
         return False
+
+    def on_after_close(self): ...

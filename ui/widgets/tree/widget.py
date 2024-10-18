@@ -1,7 +1,8 @@
-import wx
 import dataclasses
-import typing
 import time
+import typing
+
+import wx
 
 from .item import TreeNode
 

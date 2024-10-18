@@ -1,4 +1,5 @@
 import wx
+
 from ui.resourcelocation import resource_path
 
 

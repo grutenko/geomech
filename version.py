@@ -1,1 +1,1 @@
-__GEOMECH_VERSION__ = '1.0.0.0'
+__GEOMECH_VERSION__ = "1.0.0.0"

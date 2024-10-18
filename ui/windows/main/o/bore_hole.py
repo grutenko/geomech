@@ -1,15 +1,13 @@
-import wx
-
-from wx.adv import DatePickerCtrl, DP_ALLOWNONE, DP_DEFAULT, DP_SHOWCENTURY
-
 import datetime
 
-from pony.orm import *
+import wx
 import wx.adv
-from database import Station, MineObject, BoreHole
-import ui.datetimeutil
-from ui.icon import get_icon
+from pony.orm import *
+from wx.adv import DP_ALLOWNONE, DP_DEFAULT, DP_SHOWCENTURY, DatePickerCtrl
 
+import ui.datetimeutil
+from database import BoreHole, MineObject, Station
+from ui.icon import get_icon
 from ui.validators import *
 from ui.windows.cs.transl import CsTransl
 

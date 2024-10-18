@@ -1,27 +1,20 @@
 from typing import List
+
 import wx
 
 from ui.widgets.grid.widget import *
 from ui.widgets.grid.widget import Column
-from .date_cell_type import DateCellType
+
 from .choice_cell_type import ChoiceCellType
+from .date_cell_type import DateCellType
 
 
 class _Model(Model):
     def __init__(self):
         self._rows = []
         self._columns = [
-            Column(
-                "@number", StringCellType(), "* Номер", "(Обязат.) Номер скважины", init_width=100
-            ),
-            Column(
-                "Comment",
-                StringCellType(),
-                "Комментарий",
-                "Комментарий",
-                init_width=200,
-                optional=True
-            ),
+            Column("@number", StringCellType(), "* Номер", "(Обязат.) Номер скважины", init_width=100),
+            Column("Comment", StringCellType(), "Комментарий", "Комментарий", init_width=200, optional=True),
             Column(
                 "@parent_type",
                 ChoiceCellType(["Горный объект", "Станция"]),
@@ -67,52 +60,17 @@ class _Model(Model):
                 "(Обязат.) Дата закладки",
                 init_width=100,
             ),
-            Column(
-                "EndDate",
-                DateCellType(),
-                "Дата завершения\nбурения",
-                "Дата завершения бурения",
-                init_width=100,
-                optional=True
-            ),
-            Column(
-                "DestroyDate",
-                DateCellType(),
-                "Дата\nликвидации",
-                "Дата ликвидации",
-                init_width=100,
-                optional=True
-            ),
+            Column("EndDate", DateCellType(), "Дата завершения\nбурения", "Дата завершения бурения", init_width=100, optional=True),
+            Column("DestroyDate", DateCellType(), "Дата\nликвидации", "Дата ликвидации", init_width=100, optional=True),
             Column(
                 "Core_Need",
                 ChoiceCellType(["Да", "Нет"]),
                 "* Добавить\nкерн?",
                 "(Обязат.) Добавить керн?",
             ),
-            Column(
-                "Core_Comment",
-                StringCellType(),
-                "Керн: Комментарий",
-                "Керн: Комментарий",
-                init_width=200,
-                optional=True
-            ),
-            Column(
-                "Core_StartSetDate",
-                DateCellType(),
-                "Керн: Дата\nначала отбора",
-                "Керн: Дата начала отбора",
-                init_width=100,
-                optional=True
-            ),
-            Column(
-                "Core_EndSetDate",
-                DateCellType(),
-                "Керн: Дата\nокончания отбора",
-                "Керн: Дата окончания отбора",
-                init_width=120,
-                optional=True
-            ),
+            Column("Core_Comment", StringCellType(), "Керн: Комментарий", "Керн: Комментарий", init_width=200, optional=True),
+            Column("Core_StartSetDate", DateCellType(), "Керн: Дата\nначала отбора", "Керн: Дата начала отбора", init_width=100, optional=True),
+            Column("Core_EndSetDate", DateCellType(), "Керн: Дата\nокончания отбора", "Керн: Дата окончания отбора", init_width=120, optional=True),
         ]
 
     def validate(self):
@@ -126,7 +84,7 @@ class _Model(Model):
                         _msg = "Значение не должно быть пустым."
                         errors.append((col.name_long, row_index, _msg))
                 elif not col.cell_type.test_repr(row[col.id]):
-                    _msg = "Неподходящее значение для ячейки типа \"%s\"" % col.cell_type.get_type_descr()
+                    _msg = 'Неподходящее значение для ячейки типа "%s"' % col.cell_type.get_type_descr()
                     errors.append((col.name_long, row_index, _msg))
         return errors
 
@@ -182,15 +140,17 @@ class _Model(Model):
 
 class GridPanel(GridEditor):
     def __init__(self, parent, menubar, toolbar, statusbar):
-        super().__init__(
-            parent, _Model(), menubar, toolbar, statusbar, header_height=40
-        )
+        super().__init__(parent, _Model(), menubar, toolbar, statusbar, header_height=40)
         self.show_errors_view()
 
-from .widget import EditorNBStateChangedEvent
+
 from pony.orm import *
+
 from database import MineObject
 from ui.windows.main.identity import Identity
+
+from ..notebook.widget import EditorNBStateChangedEvent
+
 
 class ImportRockBursts(wx.Panel):
     @db_session
@@ -232,7 +192,7 @@ class ImportRockBursts(wx.Panel):
         return "Импортировать горные удары"
 
     def get_icon(self):
-        return 'import-xls', get_icon('import-xls', scale_to=16)
+        return "import-xls", get_icon("import-xls", scale_to=16)
 
     def can_save(self) -> bool:
         return False

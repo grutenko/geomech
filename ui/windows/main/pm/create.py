@@ -1,11 +1,10 @@
 import wx
 import wx.adv
-
 from pony.orm import *
-from database import OrigSampleSet, FoundationDocument, PMTestSeries
-from ui.validators import *
 
+from database import FoundationDocument, OrigSampleSet, PMTestSeries
 from ui.icon import get_icon
+from ui.validators import *
 
 WizPageChangingEvent, EVT_WIZ_PAGE_CHAGING = wx.lib.newevent.NewEvent()
 
@@ -83,7 +82,6 @@ class DialogCreatePmSeries(wx.Dialog):
         self.field_location.SetValidator(TextValidator(lenMin=1, lenMax=256))
         main_sizer.Add(self.field_location, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
-
         line = wx.StaticLine(self)
         main_sizer.Add(line, 0, wx.EXPAND | wx.TOP, border=10)
 
@@ -123,7 +121,7 @@ class DialogCreatePmSeries(wx.Dialog):
         }
 
         if self.field_fd.GetSelection() > 0:
-            fd = FoundationDocument[self._documents[self.field_fd.GetSelection() - 1]]
+            fd = FoundationDocument[self._documents[self.field_fd.GetSelection() - 1].RID]
             fields["foundation_document"] = fd
 
         if self._type == "CREATE":

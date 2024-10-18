@@ -14,11 +14,7 @@ class Identity:
     rel_data_target: Eq = None
 
     def __post_init__(self):
-        if (
-            not isinstance(self.o, Eq)
-            or not isinstance(self.rel_data_o, Eq)
-            or not isinstance(self.rel_data_target, Eq)
-        ):
+        if not isinstance(self.o, Eq) or not isinstance(self.rel_data_o, Eq) or not isinstance(self.rel_data_target, Eq):
             raise ValueError("Identity must be equable objects.")
 
     def __eq__(self, o):

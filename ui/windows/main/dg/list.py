@@ -1,15 +1,14 @@
+import pubsub
 import pubsub.pub
 import wx
 import wx.lib.mixins.listctrl as listmix
-
-import pubsub
 from pony.orm import *
+
 from database import *
-from ui.icon import get_art, get_icon
-from ui.icon import get_art
 from ui.datetimeutil import decode_date
-from ui.windows.main.identity import Identity
 from ui.delete_object import delete_object
+from ui.icon import get_art, get_icon
+from ui.windows.main.identity import Identity
 
 from .create import DialogCreateDischargeSeries
 
@@ -38,9 +37,17 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
         self.Layout()
         self._load()
         self._bind_all()
+        self._silence_select = False
 
     def _bind_all(self):
         self._list.Bind(wx.EVT_RIGHT_DOWN, self._on_right_click)
+        self._list.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_item_selected)
+        self._list.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._on_item_selected)
+
+    def _on_item_selected(self, event):
+        print(self._silence_select)
+        if not self._silence_select:
+            event.Skip()
 
     def _on_right_click(self, event: wx.MouseEvent):
         index, flags = self._list.HitTest(event.GetPosition())
@@ -169,11 +176,15 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
     def end(self):
         self.Hide()
 
-    def remove_selection(self):
+    def remove_selection(self, silence=False):
         i = self._list.GetFirstSelected()
-        while i != -1:
-            self._list.Select(i, 0)
-            i = self._list.GetNextSelected(i)
+        self._silence_select = silence
+        try:
+            while i != -1:
+                self._list.Select(i, 0)
+                i = self._list.GetNextSelected(i)
+        finally:
+            self._silence_select = False
 
     @db_session
     def select_by_identity(self, identity):

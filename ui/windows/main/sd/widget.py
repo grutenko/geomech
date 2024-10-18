@@ -1,18 +1,17 @@
 import wx
 
-from ui.icon import get_icon
-from ui.class_config_provider import ClassConfigProvider
-from ui.widgets.supplied_data.widget import SuppliedDataWidget
 from database import *
+from ui.class_config_provider import ClassConfigProvider
+from ui.icon import get_icon
+from ui.widgets.supplied_data.widget import SuppliedDataWidget
 
 __CONFIG_VERSION__ = 3
+
 
 class SuppliedData(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
-        self._config_provider = ClassConfigProvider(
-            __name__ + "." + self.__class__.__name__, __CONFIG_VERSION__
-        )
+        self._config_provider = ClassConfigProvider(__name__ + "." + self.__class__.__name__, __CONFIG_VERSION__)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(main_sizer)
@@ -21,12 +20,11 @@ class SuppliedData(wx.Panel):
         self._current = None
         self.Layout()
 
-
     def get_pane_info(self) -> str | None:
-        return self._config_provider['aui_pane_info']
-    
+        return self._config_provider["aui_pane_info"]
+
     def save_pane_info(self, info: str):
-        self._config_provider['aui_pane_info'] = info
+        self._config_provider["aui_pane_info"] = info
         self._config_provider.flush()
 
     def start(self, _id):
@@ -43,6 +41,8 @@ class SuppliedData(wx.Panel):
             _type = "ORIG_SAMPLE_SET"
         elif isinstance(_id.rel_data_o, RockBurst):
             _type = "ROCK_BURST"
+        elif isinstance(_id.rel_data_o, PMTestSeries):
+            _type = "PM_TEST_SERIES"
         else:
             self.sd.end()
             return

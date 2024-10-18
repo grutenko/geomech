@@ -2,6 +2,7 @@ import wx
 
 from ui.widgets.grid.widget import *
 
+
 class _Model(Model):
     def __init__(self, columns, table):
         self._columns = columns
@@ -9,12 +10,13 @@ class _Model(Model):
 
     def get_columns(self):
         return list(self._columns.values())
-    
+
     def total_rows(self):
         return len(self._table)
-    
+
     def get_value_at(self, col, row) -> str:
         return self._table[row][col]
+
 
 class ImportReport(wx.Panel):
     def __init__(self, parent, title, columns, table, menubar, toolbar, statusbar):
@@ -34,16 +36,16 @@ class ImportReport(wx.Panel):
 
     def get_icon(self):
         return "check", get_icon("check", scale_to=16)
-    
+
     def get_title(self):
         return self._title
-    
+
     def is_read_only(self):
         return True
-    
+
     def is_changed(self):
         return False
-    
+
     def on_select(self):
         self.grid.apply_controls()
 
@@ -67,7 +69,7 @@ class ImportReport(wx.Panel):
 
     def can_redo(self) -> bool:
         return self.grid.can_redo()
-    
+
     def copy(self):
         self.grid.copy()
 

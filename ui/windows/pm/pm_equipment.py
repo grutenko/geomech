@@ -1,12 +1,11 @@
 import wx
 import wx.lib.mixins.listctrl as listmix
-
 from pony.orm import *
 
 from database import PmTestEquipment
-from ui.icon import get_art
 from ui.datetimeutil import decode_date
 from ui.delete_object import delete_object
+from ui.icon import get_art
 
 from .pm_equipment_editor import PmEquipmentEditor
 

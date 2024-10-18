@@ -1,9 +1,11 @@
 import wx
 import wx.lib.mixins.listctrl as listmix
 from pony.orm import *
+
 from database import FoundationDocument
-from ui.icon import get_icon
 from ui.delete_object import delete_object
+from ui.icon import get_icon
+
 from .create import CreateDocumentDialog
 
 
@@ -20,7 +22,7 @@ class ManageDocumentsWindow(wx.Frame, listmix.ColumnSorterMixin):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(main_sizer)
-        
+
         self._items = []
         self.itemDataMap = {}
 
@@ -58,7 +60,7 @@ class ManageDocumentsWindow(wx.Frame, listmix.ColumnSorterMixin):
 
     def GetListCtrl(self):
         return self._list
-    
+
     @db_session
     def _load(self):
         self._list.DeleteAllItems()
@@ -79,7 +81,6 @@ class ManageDocumentsWindow(wx.Frame, listmix.ColumnSorterMixin):
             self._list.SetItemData(item, o.RID)
             self._items.append(o)
             self.itemDataMap[o.RID] = _row
-
 
     def _on_right_click(self, event):
         menu = wx.Menu()
@@ -119,7 +120,7 @@ class ManageDocumentsWindow(wx.Frame, listmix.ColumnSorterMixin):
         index = self._list.GetFirstSelected()
         if index == -1:
             return
-        
+
         dlg = CreateDocumentDialog(self, self._items[index], _type="UPDATE")
         if dlg.ShowModal() == wx.ID_OK:
             self._load()
@@ -128,10 +129,10 @@ class ManageDocumentsWindow(wx.Frame, listmix.ColumnSorterMixin):
         index = self._list.GetFirstSelected()
         if index == -1:
             return
-        
+
         o = self._items[index]
 
-        if delete_object(o, ['discharge_series', "pm_test_series"]):
+        if delete_object(o, ["discharge_series", "pm_test_series"]):
             self._load()
 
     def _update_controls_state(self):

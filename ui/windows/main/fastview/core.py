@@ -1,6 +1,8 @@
 import wx
-from .fastview_propgrid import FastviewPropgrid
+
 from ui.datetimeutil import decode_date
+
+from .fastview_propgrid import FastviewPropgrid
 
 
 class CoreFastview(wx.Panel):
@@ -18,6 +20,7 @@ class CoreFastview(wx.Panel):
         prop = self.propgrid.Append(wx.propgrid.StringProperty("Название", "Name"))
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.LongStringProperty("Комментарий", "Comment"))
+        self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.DateProperty("Дата отбора", "StartDate"))
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.DateProperty("Дата завершения отбора", "EndDate"))

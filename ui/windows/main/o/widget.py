@@ -1,16 +1,16 @@
 import wx
-import wx.lib.newevent
 import wx.lib.agw.flatnotebook
+import wx.lib.newevent
 
 from database import *
 from ui.class_config_provider import ClassConfigProvider
 from ui.windows.main.identity import Identity
-from .bore_hole import DialogCreateBoreHole
-from .mine_object import DialogCreateMineObject
-from .core import DialogCreateCore
-from .station import DialogCreateStation
 
-from .tree import TreeWidget, EVT_WIDGET_TREE_SEL_CHANGED, EVT_TREE_OPEN_SELF_EDITOR
+from .bore_hole import DialogCreateBoreHole
+from .core import DialogCreateCore
+from .mine_object import DialogCreateMineObject
+from .station import DialogCreateStation
+from .tree import EVT_TREE_OPEN_SELF_EDITOR, EVT_WIDGET_TREE_SEL_CHANGED, TreeWidget
 
 __CONFIG_VERSION__ = 2
 
@@ -124,7 +124,7 @@ class Objects(wx.Panel):
             self._config_provider["notebook_page"] = self._notebook.GetSelection()
             self._config_provider.flush()
 
-    def remove_selection(self):
+    def remove_selection(self, silence=False):
         self.tree._tree.UnselectAll()
 
     def select_by_identity(self, identity):

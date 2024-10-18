@@ -1,14 +1,14 @@
+import pubsub
 import pubsub.pub
 import wx
-
 from pony.orm import *
-from database import *
-import pubsub
 
-from ..editor.widget import EditorNotebook
-from ..editor.dm import DMEditor
-from ui.icon import get_art, get_icon
-from ui.windows.main.identity import Identity
+from database import *
+from ui.icon import get_icon
+
+from ..identity import Identity
+from ..notebook.widget import EditorNotebook
+from .grid_measures import DMEditor
 
 
 class DischargeDetails(wx.Panel):
@@ -99,7 +99,5 @@ class DischargeDetails(wx.Panel):
         return ""
 
     def end(self):
-        self.o = None
-        self.discharge_o = None
-        self.rid = None
+
         self.Hide()

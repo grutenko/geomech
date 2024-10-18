@@ -1,7 +1,9 @@
 import wx
-from ui.widgets.md.wxmarkdown import *
-from .widget import BasicEditor
+
 from ui.resourcelocation import resource_path
+from ui.widgets.md.wxmarkdown import *
+
+from .notebook.widget import BasicEditor
 
 
 class MdViewer(BasicEditor):

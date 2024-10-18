@@ -1,27 +1,18 @@
+from dataclasses import dataclass, field
+
 import wx
 
-
-from ui.widgets.grid import *
-from ui.widgets.grid.widget import Column
-from ui.windows.main.identity import Identity
 from ui.class_config_provider import ClassConfigProvider
 from ui.icon import get_art
-from .widget import *
-from dataclasses import dataclass, field
+from ui.widgets.grid import *
+from ui.widgets.grid.widget import Column
+
+from ..identity import Identity
+from ..notebook.widget import *
 
 
 class BaseEditor(wx.Panel):
-    def __init__(
-        self,
-        parent,
-        title,
-        identity,
-        model,
-        menubar,
-        toolbar,
-        statusbar,
-        header_height = -1
-    ):
+    def __init__(self, parent, title, identity, model, menubar, toolbar, statusbar, header_height=-1):
         super().__init__(parent.get_native())
         self.o = identity.o
         self._identity = identity
@@ -112,6 +103,8 @@ class BaseEditor(wx.Panel):
                     return False
         self.editor.end()
         return True
+
+    def on_after_close(self): ...
 
     def is_read_only(self):
         return False

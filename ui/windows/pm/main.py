@@ -1,10 +1,12 @@
 from typing import List
+
 import wx
 
-from ui.widgets.tree.widget import Tree, TreeNode, EVT_WIDGET_TREE_ACTIVATED
-from ui.icon import get_icon, get_art
-from .pm_methods import PmMethodsPanel
+from ui.icon import get_art, get_icon
+from ui.widgets.tree.widget import EVT_WIDGET_TREE_ACTIVATED, Tree, TreeNode
+
 from .pm_equipment import PmEquipment
+from .pm_methods import PmMethodsPanel
 
 
 class Item_Node(TreeNode):

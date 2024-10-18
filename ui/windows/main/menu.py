@@ -18,6 +18,9 @@ ID_IMPORT_STATIONS = ID_FIND_NEXT + 12
 ID_TOGGLE_DEVIATIONS = ID_FIND_NEXT + 13
 ID_IMPORT_ROCK_BURSTS = ID_FIND_NEXT + 14
 ID_SETTINGS_DOCS = ID_FIND_NEXT + 15
+ID_CS_TRANS_UTLITY = ID_FIND_NEXT + 16
+ID_CS_FIND_MATRIX = ID_FIND_NEXT + 17
+
 
 class MainMenu(wx.MenuBar):
     def __init__(self):
@@ -82,24 +85,17 @@ class MainMenu(wx.MenuBar):
         item.SetBitmap(get_icon("import-xls"))
         item = menu.Append(ID_IMPORT_STATIONS, "Импортировать измерительные станции")
         item.SetBitmap(get_icon("import-xls"))
-        item = menu.Append(ID_IMPORT_ROCK_BURSTS, "Импортировать горные удары")
-        item.SetBitmap(get_icon("import-xls"))
         self.Append(menu, "Импорт")
-
-        menu = wx.Menu()
-        item = menu.AppendCheckItem(ID_TOGGLE_DEVIATIONS, "Отклонения")
-        self.Append(menu, "Инструменты")
 
         menu = wx.Menu()
         item = menu.Append(ID_SETTINGS_PM, "Физ. Мех. свойства")
         item = menu.Append(ID_SETTINGS_CS, "Системы координат")
         item = menu.Append(ID_SETTINGS_DOCS, "Документы")
-        item = menu.Append(wx.ID_ANY, "Петротипы")
         self.Append(menu, "Параметры")
 
         menu = wx.Menu()
-        item = menu.Append(wx.ID_ANY, "Утилита перевода координат")
-        item = menu.Append(wx.ID_ANY, "Утилита нахождения матрицы перевода")
+        item = menu.Append(ID_CS_TRANS_UTLITY, "Утилита перевода координат")
+        item = menu.Append(ID_CS_FIND_MATRIX, "Утилита нахождения матрицы перевода")
         self.Append(menu, "Утилиты")
 
         menu = wx.Menu()

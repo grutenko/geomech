@@ -1,15 +1,14 @@
 import wx
 import wx.lib.newevent
-
 from pony.orm import *
 
-from ui.icon import get_art, get_icon
 from ui.class_config_provider import ClassConfigProvider
+from ui.icon import get_art, get_icon
 from ui.windows.main.identity import Identity
-from .list import DischargeList
-from .detail import DischargeDetails
-from .create import DialogCreateDischargeSeries
 
+from .create import DialogCreateDischargeSeries
+from .detail import DischargeDetails
+from .list import DischargeList
 
 __CONFIG_VERSION__ = 2
 
@@ -137,8 +136,8 @@ class DischargePanel(wx.Panel):
     def _on_select_box_changed(self, event: wx.CommandEvent):
         self._go_to_item(self._select_box.GetClientData(event.GetInt()))
 
-    def remove_selection(self):
-        self._list.remove_selection()
+    def remove_selection(self, silence=False):
+        self._list.remove_selection(silence)
 
     def select_by_identity(self, identity):
         self._list.select_by_identity(identity)

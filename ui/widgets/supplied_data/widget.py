@@ -1,20 +1,19 @@
-import wx
-import wx.dataview
-import os
 import mimetypes
+import os
 import threading
 import time
 
-from pony.orm import *
+import wx
 import wx.dataview
-from database import *
+from pony.orm import *
+from transliterate import get_available_language_codes, translit
 
+from database import *
+from ui.datetimeutil import *
+from ui.delete_object import delete_object
 from ui.icon import get_art, get_icon
 from ui.resourcelocation import resource_path
 from ui.validators import *
-from ui.datetimeutil import *
-from ui.delete_object import delete_object
-from transliterate import translit, get_available_language_codes
 
 
 class FolderEditor(wx.Dialog):
@@ -133,6 +132,7 @@ class FolderEditor(wx.Dialog):
         self.o = o
         self.EndModal(wx.ID_OK)
 
+
 class CreateFileWorker(threading.Thread):
     def __init__(self, gauge, fields, on_resolve, on_reject):
         super().__init__()
@@ -146,16 +146,16 @@ class CreateFileWorker(threading.Thread):
         try:
             _fields = {
                 "Name": self.fields["name"],
-                "Comment": self.fields['comment'],
+                "Comment": self.fields["comment"],
                 "FileName": self.fields["file_name"],
-                "DType": self.fields["mime_type"]
+                "DType": self.fields["mime_type"],
             }
             _fields["parent"] = SuppliedData[self.fields["parent"].RID]
             if "data_date" in self.fields:
-                _fields["DataDate"] = self.fields['data_date']
+                _fields["DataDate"] = self.fields["data_date"]
 
             with open(self.fields["path"], "rb") as f:
-                _fields['DataContent'] = f.read()
+                _fields["DataContent"] = f.read()
 
             o = SuppliedDataPart(**_fields)
             commit()
@@ -191,7 +191,7 @@ class FileEditor(wx.Dialog):
         main_sizer.Add(self.field_file, 0, wx.EXPAND)
 
         self.label_file_error = wx.StaticText(self, label="Неверный путь к файлу")
-        self.label_file_error.SetForegroundColour(wx.Colour(255, 0,0))
+        self.label_file_error.SetForegroundColour(wx.Colour(255, 0, 0))
         self.label_file_error.Hide()
         main_sizer.Add(self.label_file_error, 0, wx.EXPAND)
 
@@ -258,16 +258,16 @@ class FileEditor(wx.Dialog):
         path = self.field_file.GetPath()
         if len(path) == 0:
             return
-        
+
         if os.path.exists(path):
             self.field_name.SetValue(os.path.basename(path))
             ctime = os.path.getctime(path)
-            ctime = datetime.datetime.fromtimestamp(ctime).strftime('%d.%m.%Y')
+            ctime = datetime.datetime.fromtimestamp(ctime).strftime("%d.%m.%Y")
             self.field_data_date.SetValue(ctime)
             self.label_file_error.Hide()
         else:
             self.label_file_error.Show()
-        
+
         self.Layout()
         self.Fit()
 
@@ -279,11 +279,11 @@ class FileEditor(wx.Dialog):
             "name": self.field_name.GetValue(),
             "comment": self.field_comment.GetValue(),
             "file_name": os.path.basename(path),
-            "data_date": encode_date(self.field_data_date.GetValue())
+            "data_date": encode_date(self.field_data_date.GetValue()),
         }
         mime_type, _ = mimetypes.guess_type(path)
         if mime_type != None:
-            _fields['mime_type'] = mime_type
+            _fields["mime_type"] = mime_type
         else:
             _fields["mime_type"] = "application/octet-stream"
         self._save_worker = CreateFileWorker(self.progress, _fields, self._on_resolve, self._on_reject)
@@ -317,12 +317,12 @@ class FileEditor(wx.Dialog):
     def _on_save(self, event):
         if not self.Validate():
             return
-        
+
         path = self.field_file.GetPath()
         if len(path) == 0 or not os.path.exists(path):
             wx.MessageBox("Файл не выбран", "Ошибка заполнения", style=wx.OK | wx.ICON_ERROR)
             return
-        
+
         self._start_save()
 
     def OnKeyUP(self, event):

@@ -1,16 +1,17 @@
+import pubsub
 import pubsub.pub
 import wx
 from pony.orm import *
 
-import pubsub
 from database import *
-from ui.widgets.tree import *
-from ui.icon import get_art, get_icon
 from ui.delete_object import delete_object
+from ui.icon import get_art, get_icon
+from ui.widgets.tree import *
 from ui.windows.main.identity import Identity
+
 from .bore_hole import DialogCreateBoreHole
-from .mine_object import DialogCreateMineObject
 from .core import DialogCreateCore
+from .mine_object import DialogCreateMineObject
 from .station import DialogCreateStation
 
 
@@ -348,6 +349,7 @@ class TreeWidget(Tree):
             # Элемент дерева - объект родителя перезагружается из базы данных
             self.soft_reload_childrens(self._current_node)
             self.select_node(self._create_node(dlg.o))
+            pubsub.pub.sendMessage("object.added", o=dlg.o)
 
     def _on_create_mine_object(self, event):
         self._create_object(self._current_object, MineObject)
@@ -376,6 +378,7 @@ class TreeWidget(Tree):
             relations = ["discharge_series", "discharge_measurements"]
 
         if delete_object(node.o, relations):
+            pubsub.pub.sendMessage("object.deleted", o=node.o)
             self.soft_reload_childrens(node.get_parent())
 
     def _on_delete_mine_object(self, event):

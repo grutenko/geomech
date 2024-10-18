@@ -1,19 +1,17 @@
-import wx
-
 import numpy as np
-
+import wx
 from pony.orm import *
+
 from database import CoordSystem
-from .ui import Ui_CsTransl
 from ui.icon import get_icon
+
+from .ui import Ui_CsTransl
 
 
 @db_session
 def _getCoordSystems(rootSystem=None):
     if rootSystem:
-        childs = (
-            select(cs for cs in CoordSystem if cs.parent == rootSystem)
-        )
+        childs = select(cs for cs in CoordSystem if cs.parent == rootSystem)
     else:
         childs = select(cs for cs in CoordSystem if cs.Level == 0)
     coordSystems = []
@@ -33,13 +31,9 @@ class CsTransl(Ui_CsTransl):
         self._coordSystems = _getCoordSystems()
 
         for index, coordSystem in enumerate(self._coordSystems):
-            self.choce_from.Append(
-                (" . " * coordSystem.Level) + coordSystem.Name, coordSystem
-            )
+            self.choce_from.Append((" . " * coordSystem.Level) + coordSystem.Name, coordSystem)
         for index, coordSystem in enumerate(self._coordSystems):
-            self.choice_to.Append(
-                (" . " * coordSystem.Level) + coordSystem.Name, coordSystem
-            )
+            self.choice_to.Append((" . " * coordSystem.Level) + coordSystem.Name, coordSystem)
         if len(self._coordSystems) > 0:
             self.field_X_from.Enable()
             self.field_Y_from.Enable()
@@ -92,9 +86,7 @@ class CsTransl(Ui_CsTransl):
                 ]
             )
             mat = np.linalg.inv(mat)
-            coords = np.array(
-                [self.field_X_from.GetValue(), self.field_Y_from.GetValue(), 1]
-            )
+            coords = np.array([self.field_X_from.GetValue(), self.field_Y_from.GetValue(), 1])
             a = np.dot(mat, coords)[:-1]
             self.field_X_to.SetValue(a[0])
             self.field_Y_to.SetValue(a[1])
@@ -112,9 +104,7 @@ class CsTransl(Ui_CsTransl):
                     ]
                 )
                 a = self._coord_transf(
-                    np.array(
-                        [self.field_X_from.GetValue(), self.field_Y_from.GetValue()]
-                    ),
+                    np.array([self.field_X_from.GetValue(), self.field_Y_from.GetValue()]),
                     mat,
                 )
                 mat = np.array(

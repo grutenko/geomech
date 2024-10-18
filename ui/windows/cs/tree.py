@@ -1,12 +1,13 @@
 from typing import List, Tuple
+
 import wx
 from pony.orm import *
 
 from database import CoordSystem
+from ui.delete_object import delete_object
+from ui.icon import get_icon
 from ui.widgets.tree import *
 from ui.widgets.tree.item import TreeNode
-from ui.icon import get_icon
-from ui.delete_object import delete_object
 
 from .create import CreateCoordSystemDialog
 

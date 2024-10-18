@@ -1,16 +1,13 @@
-import pubsub.pub
-import wx
-from wx.lib.agw.flatnotebook import *
-from typing import Protocol, runtime_checkable, Optional, Tuple
+from typing import Optional, Protocol, Tuple, runtime_checkable
+
 import pubsub
-
-from database import *
-
-from ui.class_config_provider import ClassConfigProvider
-
+import pubsub.pub
 import wx
 import wx.lib.newevent
 from wx.lib.agw.flatnotebook import *
+
+from database import *
+from ui.class_config_provider import ClassConfigProvider
 from ui.windows.main.identity import Identity
 
 __CONFIG_VERSION__ = 1
@@ -214,7 +211,10 @@ class EditorNotebook(wx.Panel):
     def close_editor(self, editor: EditorProto):
         index = self._native_.GetPageIndex(editor)
         if index != -1:
-            self._native_.DeletePage(index)
+            try:
+                editor.on_after_close()
+            finally:
+                self._native_.DeletePage(index)
 
     def add_editor(self, editor: EditorProto):
         self._native_.AddPage(editor, "Вкладка")

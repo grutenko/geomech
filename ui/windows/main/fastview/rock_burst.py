@@ -1,6 +1,9 @@
 import wx
-from .fastview_propgrid import FastviewPropgrid
+
 from ui.datetimeutil import decode_date
+
+from .fastview_propgrid import FastviewPropgrid
+
 
 class RockBurstFastview(wx.Panel):
     def __init__(self, parent):
@@ -17,6 +20,7 @@ class RockBurstFastview(wx.Panel):
         prop = self.propgrid.Append(wx.propgrid.StringProperty("Название", "Name"))
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.LongStringProperty("Комментарий", "Comment"))
+        self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.DateProperty("Дата события", "BurstDate"))
         self.propgrid.SetPropertyReadOnly(prop)
         category = self.propgrid.Append(wx.propgrid.PropertyCategory("Координаты", "Coords"))
@@ -31,7 +35,7 @@ class RockBurstFastview(wx.Panel):
         self.Layout()
         self.Hide()
 
-    def start(self, o, bounds = None):
+    def start(self, o, bounds=None):
         burst_date = decode_date(o.BurstDate)
         fields = {
             "RID": o.RID,

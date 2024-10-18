@@ -1,10 +1,12 @@
-import wx
-import config
-from pony.orm import *
 import os
 
-from .validators import TextValidator
+import wx
+from pony.orm import *
+
+import config
 from ui.icon import get_icon
+
+from .validators import TextValidator
 
 
 class StartDialog(wx.Dialog):

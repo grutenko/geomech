@@ -14,5 +14,8 @@ dependencies = [
 ]
 requires-python = ">= 3.10.2"
 
+[tool.isort]
+profile = "black"
+
 [tool.black]
 line-length = 150

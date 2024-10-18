@@ -1,6 +1,5 @@
 import wx
 
-
 from ui.icon import get_art, get_icon
 
 ID_TOGGLE_OBJECTS = wx.ID_HIGHEST + 150

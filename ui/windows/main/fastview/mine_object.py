@@ -1,9 +1,10 @@
 import wx
 import wx.propgrid
-from .fastview_propgrid import FastviewPropgrid
-
 from pony.orm import *
+
 from database import CoordSystem
+
+from .fastview_propgrid import FastviewPropgrid
 
 
 class MineObjectFastview(FastviewPropgrid):
@@ -15,6 +16,7 @@ class MineObjectFastview(FastviewPropgrid):
         prop = self.Append(wx.propgrid.StringProperty("Название", "Name"))
         self.SetPropertyReadOnly(prop)
         prop = self.Append(wx.propgrid.LongStringProperty("Комментарий", "Comment"))
+        self.SetPropertyReadOnly(prop)
         prop = self.Append(wx.propgrid.StringProperty("Система координат", "coord_system"))
         self.SetPropertyReadOnly(prop)
         category = self.Append(wx.propgrid.PropertyCategory("Ограничения координат", "Coords"))

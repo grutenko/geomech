@@ -1,5 +1,6 @@
-import wx
 from typing import Protocol, runtime_checkable
+
+import wx
 
 
 @runtime_checkable

@@ -1,7 +1,8 @@
 import wx
 
 from ui.icon import get_icon
-from .tree import CoordSystemTree, EVT_WIDGET_TREE_SEL_CHANGED
+
+from .tree import EVT_WIDGET_TREE_SEL_CHANGED, CoordSystemTree
 
 
 class ManageCoordSystemsWindow(wx.Frame):

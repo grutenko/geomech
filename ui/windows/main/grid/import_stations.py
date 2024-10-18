@@ -1,28 +1,29 @@
-import wx
+import datetime
+from dataclasses import dataclass
 from typing import Dict
 
-import datetime
+import pubsub
+import wx
 from pony.orm import *
+
 from database import MineObject, Station
-from ui.windows.main.identity import Identity
+from ui.datetimeutil import encode_date
+from ui.icon import get_icon
 from ui.widgets.grid.widget import (
-    GridEditor,
-    Model,
-    Column,
-    StringCellType,
-    FloatCellType,
-    NumberCellType,
     EVT_GRID_EDITOR_STATE_CHANGED,
     EVT_GRID_MODEL_STATE_CHANGED,
+    Column,
+    FloatCellType,
+    GridEditor,
+    Model,
+    NumberCellType,
+    StringCellType,
 )
-import pubsub
-from .widget import EditorNotebook
+from ui.windows.main.identity import Identity
+
+from ..notebook.widget import EditorNBStateChangedEvent, EditorNotebook
 from .date_cell_type import DateCellType
 from .import_report import ImportReport
-from ui.icon import get_icon
-from ui.windows.main.editor.widget import EditorNBStateChangedEvent
-from ui.datetimeutil import encode_date
-from dataclasses import dataclass
 
 
 @dataclass
@@ -233,7 +234,7 @@ class _Model(Model):
                 "Y": cc["Y"].cell_type.from_string(row.fields["Y"]),
                 "Z": cc["Z"].cell_type.from_string(row.fields["Z"]),
                 "StartDate": encode_date(cc["StartDate"].cell_type.from_string(row.fields["StartDate"])),
-                "HoleCount": 0
+                "HoleCount": 0,
             }
 
             if len(row.fields["EndDate"]) > 0:

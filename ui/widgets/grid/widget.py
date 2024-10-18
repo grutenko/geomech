@@ -1,13 +1,15 @@
+import csv
+import io
+import traceback
+from dataclasses import dataclass
+from typing import List, Protocol
+
 import wx
 import wx.grid
-import wx.lib.newevent
 import wx.lib.agw.flatnotebook
+import wx.lib.newevent
 
-from typing import Protocol, List
-from dataclasses import dataclass
 from ui.icon import get_art
-import io
-import csv
 
 
 class CellType(Protocol):
@@ -61,16 +63,18 @@ class CellType(Protocol):
 
 
 from wx.grid import (
+    GridCellAutoWrapStringEditor,
     GridCellEditor,
     GridCellRenderer,
     GridCellStringRenderer,
-    GridCellAutoWrapStringEditor,
+    GridCellTextEditor,
 )
 
 
 class StringCellType(CellType):
-    def __init__(self) -> None:
+    def __init__(self, multiline=False) -> None:
         super().__init__()
+        self.multiline = multiline
 
     def get_type_name(self):
         return "string"
@@ -95,7 +99,7 @@ class StringCellType(CellType):
         return GridCellStringRenderer()
 
     def get_grid_editor(self) -> GridCellEditor:
-        return GridCellAutoWrapStringEditor()
+        return GridCellTextEditor()
 
     def open_editor(self, parent, value: str) -> str:
         dlg = wx.TextEntryDialog(parent, "Значение ячеек", "Веедите новое значения для выбраных ячеек", value)
@@ -267,11 +271,20 @@ class ErrorsView(wx.Panel):
 
 
 class Model(Protocol):
-    def get_columns(self) -> List[Column]: ...
-    def get_value_at(self, row, col) -> str: ...
-    def get_rows_count(self) -> int: ...
+    def get_columns(self) -> List[Column]:
+        return []
+
+    def get_value_at(self, row, col) -> str:
+        return ""
+
+    def get_rows_count(self) -> int:
+        return 0
+
     def is_changed(self) -> bool:
         return False
+
+    def total_rows(self):
+        return 0
 
     def set_value_at(self, col, row, value): ...
     def insert_row(self, row): ...
@@ -1004,6 +1017,7 @@ class GridEditor(wx.Panel):
     def remove_controls(self):
         if not self._controls_initialized:
             return
+        print(self.statusbar)
         menu: wx.Menu = self.menubar.GetMenu(1)
         menu.Remove(self._sep_0).Destroy()
         menu.Remove(self._item_0).Destroy()
@@ -1214,8 +1228,7 @@ class GridEditor(wx.Panel):
         self._view.BeginBatch()
         for col_index, row_index in self._hightlight_cells:
             if col_index < self._view.GetNumberCols() and row_index < self._view.GetNumberRows():
-                self._view.SetCellBackgroundColour(row_index, col_index, wx.Colour(255, 150, 150))
-                self._view.SetCellTextColour(row_index, col_index, wx.Colour(255, 255, 255))
+                self._view.SetCellBackgroundColour(row_index, col_index, wx.Colour(255, 210, 210))
         self._view.EndBatch()
 
     def validate(self, save_edit_control=True):

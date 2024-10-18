@@ -1,6 +1,7 @@
-import wx
 import datetime
+
 import dateutil.parser
+import wx
 
 
 def encode_date(date):
@@ -28,6 +29,7 @@ def encode_date(date):
         )
     )
 
+
 def encode_datetime(date: wx.DateTime, hour, minute, seconds):
     return int(
         "%s%s%s%s%s%s"
@@ -38,7 +40,8 @@ def encode_datetime(date: wx.DateTime, hour, minute, seconds):
             str(hour).zfill(2),
             str(minute).zfill(2),
             str(seconds).zfill(2),
-        ))
+        )
+    )
 
 
 def decode_date(n):

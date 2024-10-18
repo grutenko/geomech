@@ -1,10 +1,9 @@
 import wx
-
 from pony.orm import *
 
 from database import FoundationDocument
-from ui.validators import *
 from ui.icon import get_icon
+from ui.validators import *
 
 
 class CreateDocumentDialog(wx.Dialog):

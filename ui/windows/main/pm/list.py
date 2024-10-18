@@ -1,12 +1,12 @@
 import wx
-
 from pony.orm import *
+
 from database import *
-from ui.icon import get_art, get_icon
-from ui.datetimeutil import decode_date
 from ui.delete_object import delete_object
+from ui.icon import get_icon
 
 from .create import DialogCreatePmSeries
+
 
 class PmList(wx.Panel):
     def __init__(self, parent):
@@ -27,6 +27,7 @@ class PmList(wx.Panel):
         self.Layout()
         self._load()
         self._bind_all()
+        self._silence_select = False
 
     def get_current_o(self):
         if self._list.GetFirstSelected() == -1:
@@ -35,6 +36,12 @@ class PmList(wx.Panel):
 
     def _bind_all(self):
         self._list.Bind(wx.EVT_RIGHT_DOWN, self._on_right_click)
+        self._list.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_item_selected)
+        self._list.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._on_item_selected)
+
+    def _on_item_selected(self, event):
+        if not self._silence_select:
+            event.Skip()
 
     def _on_right_click(self, event: wx.MouseEvent):
         index, flags = self._list.HitTest(event.GetPosition())
@@ -42,9 +49,9 @@ class PmList(wx.Panel):
             self._list.Select(index)
             menu = wx.Menu()
             item = menu.Append(wx.ID_EDIT, "Изменить")
-            item.SetBitmap(get_icon('edit'))
+            item.SetBitmap(get_icon("edit"))
             item = menu.Append(wx.ID_DELETE, "Удалить")
-            item.SetBitmap(get_icon('delete'))
+            item.SetBitmap(get_icon("delete"))
             menu.Bind(wx.EVT_MENU, self._on_delete, item)
             menu.AppendSeparator()
             item = menu.Append(wx.ID_ADD, "Добавить набор")
@@ -60,9 +67,7 @@ class PmList(wx.Panel):
     @db_session
     def _load(self):
         self._list.DeleteAllItems()
-        discharges = select(o for o in PMTestSeries).order_by(
-            lambda x: desc(x.RID)
-        )
+        discharges = select(o for o in PMTestSeries).order_by(lambda x: desc(x.RID))
         self._items = []
         for index, o in enumerate(discharges):
             item = self._list.InsertItem(index, o.Name, self._book_stack_icon)
@@ -74,9 +79,9 @@ class PmList(wx.Panel):
         index = self._list.GetFirstSelected()
         if index == -1:
             return
-        
+
         o = self._items[index]
-        if delete_object(o, ['pm_sample_sets']):
+        if delete_object(o, ["pm_sample_sets"]):
             self._load()
 
     def _on_add(self, event):
@@ -93,8 +98,12 @@ class PmList(wx.Panel):
     def end(self):
         self.Hide()
 
-    def remove_selection(self):
+    def remove_selection(self, silence=False):
         i = self._list.GetFirstSelected()
-        while i != -1:
-            self._list.Select(i, 0)
-            i = self._list.GetNextSelected(i)
+        self._silence_select = silence
+        try:
+            while i != -1:
+                self._list.Select(i, 0)
+                i = self._list.GetNextSelected(i)
+        finally:
+            self._silence_select = False

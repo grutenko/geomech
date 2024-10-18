@@ -1,27 +1,28 @@
 import wx
 from pony.orm import *
 
-from ui.datetimeutil import decode_date
+from database import *
 
 from .fastview_propgrid import FastviewPropgrid
 
 
-class DischargeSeriesFastview(wx.Panel):
+class PmTestSeriesFastview(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(main_sizer)
+
         self.propgrid = FastviewPropgrid(self)
         self.propgrid.SetSplitterPosition(150)
         prop = self.propgrid.Append(wx.propgrid.IntProperty("ID", "RID"))
+        self.propgrid.SetPropertyReadOnly(prop)
+        prop = self.propgrid.Append(wx.propgrid.StringProperty("Номер", "Number"))
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.StringProperty("Название", "Name"))
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.LongStringProperty("Комментарий", "Comment"))
         self.propgrid.SetPropertyReadOnly(prop)
-        prop = self.propgrid.Append(wx.propgrid.DateProperty("Дата начала", "StartMeasure"))
-        self.propgrid.SetPropertyReadOnly(prop)
-        prop = self.propgrid.Append(wx.propgrid.DateProperty("Дата окончания", "EndMeasure"))
+        prop = self.propgrid.Append(wx.propgrid.StringProperty("Место проведения испытаний", "Location"))
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.StringProperty("Документ", "foundation_document"))
         self.propgrid.SetPropertyReadOnly(prop)
@@ -32,17 +33,16 @@ class DischargeSeriesFastview(wx.Panel):
 
     @db_session
     def start(self, o, bounds=None):
-        start_date = decode_date(o.StartMeasure)
         fields = {
             "RID": o.RID,
+            "Number": o.Number,
             "Name": o.Name,
             "Comment": o.Comment,
-            "StartMeasure": wx.DateTime(start_date.day, start_date.month - 1, start_date.year),
-            "foundation_document": (o.foundation_document.Name if o.foundation_document != None else "-- Без документа --"),
+            "Location": o.Location,
         }
-        if o.EndMeasure != None:
-            date = decode_date(o.EndMeasure)
-            fields["EndMeasure"] = wx.DateTime(date.day, date.month - 1, date.year)
+
+        fd = FoundationDocument[o.foundation_document.RID].Name if o.foundation_document != None else "-- Без документа --"
+        fields["foundation_document"] = fd
         self.propgrid.SetPropertyValues(fields)
         self.Update()
         self.Show()

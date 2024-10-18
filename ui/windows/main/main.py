@@ -1,32 +1,35 @@
+import pubsub
 import pubsub.pub
 import wx
-import wx.aui
 import wx.adv
+import wx.aui
 import wx.lib.agw.aui
 
-import pubsub
-from version import __GEOMECH_VERSION__
 from database import *
-from ui.icon import get_icon
 from ui.class_config_provider import ClassConfigProvider
-from .o import Objects, EVT_OBJECT_SELECTED
-from .dm.widget import DischargePanel, EVT_Dm_SELECTED
-from .pm.widget import PmPanel, EVT_PM_SELECTED
-from .rb.widget_new import RbPanel, EVT_RB_SELECTED
-from .editor import *
-from .editor.md_viewer import MdViewer
-from .editor.widget import EVT_ENB_STATE_CHANGED, EVT_ENB_EDITOR_CLOSED
-from .editor.import_stations import ImportStations
-from .fastview import FastView
-from .sd import SuppliedData
-from .menu import *
-from .toolbar import *
-from .mgr_panel_toolbar import *
-from .identity import Identity
+from ui.icon import get_icon
 from ui.windows.cs.main import ManageCoordSystemsWindow
-from ui.windows.pm.main import PmSettingsWindow
+from ui.windows.cs.matrix import CreateTransfMatrixWindow
+from ui.windows.cs.transl import CsTransl
 from ui.windows.doc.main import ManageDocumentsWindow
-from .editor.import_bore_holes import ImportBoreHoles
+from ui.windows.pm.main import PmSettingsWindow
+from version import __GEOMECH_VERSION__
+
+from .dg.widget import DischargePanel, EVT_Dm_SELECTED
+from .fastview import FastView
+from .grid.import_bore_holes import ImportBoreHoles
+from .grid.import_stations import ImportStations
+from .identity import Identity
+from .md_viewer import MdViewer
+from .menu import *
+from .mgr_panel_toolbar import *
+from .notebook.widget import *
+from .notebook.widget import EVT_ENB_EDITOR_CLOSED, EVT_ENB_STATE_CHANGED
+from .o import EVT_OBJECT_SELECTED, Objects
+from .pm.widget import EVT_PM_SELECTED, PmPanel
+from .rb.widget_new import EVT_RB_SELECTED, RbPanel
+from .sd import SuppliedData
+from .toolbar import *
 
 __CONFIG_VERSION__ = 2
 
@@ -74,10 +77,11 @@ class MainFrame(wx.Frame):
         )
 
         self.statusbar = wx.StatusBar(self)
-        self.statusbar.SetFieldsCount(4)
         self.SetStatusBar(self.statusbar)
+        self.statusbar.SetFieldsCount(6)
 
         i = wx.aui.AuiPaneInfo()
+        i.Right()
         i.CloseButton(True)
         i.Gripper()
         i.GripperTop()
@@ -88,7 +92,6 @@ class MainFrame(wx.Frame):
         i.MinSize(300, 200)
         i.MaxSize(600, 900)
         i.Icon(get_icon("hierarchy"))
-        i.Hide()
         self.objects = Objects(mgr_panel, self.menu_bar, self.toolbar, self.statusbar)
         info = self.objects.get_pane_info()
         if info != None:
@@ -98,7 +101,7 @@ class MainFrame(wx.Frame):
         self.mgr.AddPane(self.objects, i)
 
         i = wx.aui.AuiPaneInfo()
-        i.Top()
+        i.Left()
         i.Gripper()
         i.GripperTop()
         i.CloseButton(True)
@@ -121,7 +124,7 @@ class MainFrame(wx.Frame):
         self.mgr.AddPane(self.dm, i)
 
         i = wx.aui.AuiPaneInfo()
-        i.Top()
+        i.Left()
         i.Gripper()
         i.GripperTop()
         i.CloseButton(True)
@@ -134,7 +137,7 @@ class MainFrame(wx.Frame):
 
         i.Icon(get_icon("book-stack"))
         i.Hide()
-        self.pm = PmPanel(mgr_panel)
+        self.pm = PmPanel(mgr_panel, self.menu_bar, self.toolbar, self.statusbar)
         info = self.pm.get_pane_info()
         if info != None:
             self.mgr.LoadPaneInfo(info, i)
@@ -143,7 +146,7 @@ class MainFrame(wx.Frame):
         self.mgr.AddPane(self.pm, i)
 
         i = wx.aui.AuiPaneInfo()
-        i.Top()
+        i.Left()
         i.MaximizeButton()
         i.Gripper()
         i.GripperTop()
@@ -154,9 +157,9 @@ class MainFrame(wx.Frame):
         i.Caption("Горные удары")
         i.MinSize(300, 200)
         i.MaxSize(600, 900)
+        i.Hide()
 
         i.Icon(get_icon("book-stack"))
-        i.Hide()
         self.rb = RbPanel(mgr_panel)
         info = self.rb.get_pane_info()
         if info != None:
@@ -187,7 +190,6 @@ class MainFrame(wx.Frame):
         i.MinSize(300, 200)
         i.BestSize(300, 600)
         self.fastview = FastView(mgr_panel)
-        i.Hide()
         info = self.fastview.get_pane_info()
         if info != None:
             self.mgr.LoadPaneInfo(info, i)
@@ -196,7 +198,7 @@ class MainFrame(wx.Frame):
         self.mgr.AddPane(self.fastview, i)
 
         i = wx.aui.AuiPaneInfo()
-        i.Bottom()
+        i.Right()
         i.CloseButton(True)
         i.Gripper()
         i.GripperTop()
@@ -206,7 +208,6 @@ class MainFrame(wx.Frame):
         i.Caption("Сопутствующие материалы")
         i.MinSize(300, 200)
         i.BestSize(600, 200)
-        i.Hide()
         i.Icon(get_icon("versions"))
         self.supplied_data = SuppliedData(mgr_panel)
         info = self.supplied_data.get_pane_info()
@@ -225,6 +226,8 @@ class MainFrame(wx.Frame):
         self._pm_settings_window = PmSettingsWindow(self)
         self._cs_settings_window = ManageCoordSystemsWindow(self)
         self._docs_window = ManageDocumentsWindow(self)
+        self._cs_transf_window = CsTransl(self)
+        self._cs_find_matrix = CreateTransfMatrixWindow(self)
 
         self._root_object = select(o for o in MineObject if o.Level == 0).first()
 
@@ -263,6 +266,7 @@ class MainFrame(wx.Frame):
         menu.Bind(wx.EVT_MENU, self._on_toggle_import_bore_holes, id=ID_IMPORT_BORE_HOLES)
         menu.Bind(wx.EVT_MENU, self._on_toggle_import_stations, id=ID_IMPORT_STATIONS)
         menu.Bind(wx.EVT_MENU, self._on_open_docs_window, id=ID_SETTINGS_DOCS)
+        menu.Bind(wx.EVT_MENU, self._on_open_cs_trans, id=ID_CS_TRANS_UTLITY)
         tb = self.toolbar
         tb.Bind(wx.EVT_TOOL, self._on_editor_save, id=wx.ID_SAVE)
         tb.Bind(wx.EVT_TOOL, self._on_editor_copy, id=wx.ID_COPY)
@@ -293,9 +297,20 @@ class MainFrame(wx.Frame):
         pubsub.pub.subscribe(self._cmd_on_select_object, "cmd.object.select")
         pubsub.pub.subscribe(self._cmd_on_show_supplied_data, "cmd.supplied_data.show")
         pubsub.pub.subscribe(self._cmd_dm_select, "cmd.dm.select")
-        pubsub.pub.subscribe(self._on_object_added, "object.added")
         pubsub.pub.subscribe(self._cmd_on_close_editor, "cmd.editor.close")
         pubsub.pub.subscribe(self._cmd_on_open_editor, "cmd.editor.open")
+
+    def _on_open_cs_trans(self, event):
+        if self._cs_transf_window.IsShown():
+            self._cs_transf_window.Raise()
+        else:
+            self._cs_transf_window.Show()
+
+    def _on_open_find_matrix(self, event):
+        if self._cs_find_matrix.IsShown():
+            self._cs_find_matrix.Raise()
+        else:
+            self._cs_find_matrix.Show()
 
     def _on_open_docs_window(self, event):
         if self._docs_window.IsShown():
@@ -310,9 +325,6 @@ class MainFrame(wx.Frame):
         index, editor = self.editors.get_by_identity(identity)
         if index != -1:
             self.editors.close_editor(editor)
-
-    def _on_object_added(self, objects):
-        self.objects.reload_for_new_objects(objects)
 
     def _on_toggle_import_stations(self, event):
         index, page = self.editors.get_by_identity(Identity(self._root_object, self._root_object, "import_stations"))
@@ -500,12 +512,12 @@ class MainFrame(wx.Frame):
         self.Close()
 
     def _on_object_selected(self, event):
-        _p = [self.objects, self.pm, self.dm, self.rb]
-        for pane in _p:
-            if not isinstance(pane, type(event.target)):
-                pane.remove_selection()
         _id: Identity = event.identity
         if _id != None:
+            _p = [self.objects, self.pm, self.dm, self.rb]
+            for pane in _p:
+                if not isinstance(pane, type(event.target)):
+                    pane.remove_selection(silence=True)
             self.fastview.start(_id)
             self.supplied_data.start(_id)
         else:

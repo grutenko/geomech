@@ -1,25 +1,26 @@
-from typing import List, Iterable, Dict
+from dataclasses import dataclass, field
+from typing import Dict, Iterable, List
+
 import wx
 import wx.grid
+from pony.orm import *
 
+from database import DischargeMeasurement, OrigSampleSet
+from ui.class_config_provider import ClassConfigProvider
 from ui.widgets.grid import *
 from ui.widgets.grid.widget import Column
-from ui.windows.main.identity import Identity
-from ui.class_config_provider import ClassConfigProvider
-from ui.icon import get_art
-from .widget import *
-from dataclasses import dataclass, field
 
-from .base_editor import BaseEditor
+from ..grid.base import BaseEditor
 
 __CONFIG_VERSION__ = 1
 
 import re
+
 from wx.grid import (
-    GridCellStringRenderer,
     GridCellAutoWrapStringEditor,
-    GridCellRenderer,
     GridCellEditor,
+    GridCellRenderer,
+    GridCellStringRenderer,
 )
 
 
@@ -454,7 +455,7 @@ class DMEditor(BaseEditor):
             menubar,
             toolbar,
             statusbar,
-            header_height=50
+            header_height=50,
         )
         self.editor.Bind(EVT_GRID_COLUMN_RESIZED, self._on_editor_column_resized)
 

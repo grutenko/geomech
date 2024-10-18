@@ -1,14 +1,12 @@
 import wx
 import wx.adv
-
-from pony.orm import *
-from database import OrigSampleSet, MineObject, RockBurst
-from ui.validators import *
-
-from ui.icon import get_icon
-from ui.datetimeutil import encode_datetime
 from dateutil.parser import parse
-from ui.datetimeutil import decode_datetime
+from pony.orm import *
+
+from database import MineObject, OrigSampleSet, RockBurst
+from ui.datetimeutil import decode_datetime, encode_datetime
+from ui.icon import get_icon
+from ui.validators import *
 
 WizPageChangingEvent, EVT_WIZ_PAGE_CHAGING = wx.lib.newevent.NewEvent()
 
