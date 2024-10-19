@@ -563,6 +563,8 @@ class GridEditor(wx.Panel):
         if row != -1 and col != -1:
             event.Skip()
             return
+        self._view.SaveEditControlValue()
+        self._view.HideCellEditControl()
         self._view.ClearSelection()
         self._on_selecting(event)
         self._update_controls_state()
