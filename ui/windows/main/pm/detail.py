@@ -1,3 +1,4 @@
+import pubsub
 import wx
 from pony.orm import *
 
@@ -14,6 +15,7 @@ from ..identity import Identity
 from ..notebook.widget import EditorNotebook
 from .grid_sample_sets import PmSampleSetsEditor
 from .grid_samples import PmSampleEditor
+from .method_add_dialog import MethodAddDialog
 
 
 class Simple_Node(TreeNode):
@@ -118,6 +120,16 @@ class PmSeriesDetail(wx.Panel):
         self.Layout()
         self.Hide()
 
+        pubsub.pub.subscribe(self._on_editor_saved, "editor.saved")
+
+    def _on_editor_saved(self, target, editor):
+        if self.o != None:
+            _id = editor.get_identity()
+            _pm_sample_set_id = Identity(self.o, self.o, PMSampleSet)
+            _pm_sample_id = Identity(self.o, self.o, PMSample)
+            if editor != None and _id != None and (_id.__eq__(_pm_sample_set_id) or _id.__eq__(_pm_sample_id)):
+                self._render()
+
     def _on_item_menu(self, event):
         menu = wx.Menu()
         node = event.node
@@ -135,7 +147,15 @@ class PmSeriesDetail(wx.Panel):
             else:
                 item = menu.Append(wx.ID_OPEN, "Перейти к открытому редактору")
             menu.Bind(wx.EVT_MENU, self._on_open_samples, item)
+        if isinstance(node, _PmValuesByMethodSection):
+            item = menu.Append(wx.ID_ADD, "Добавить метод испытаний")
+            item.SetBitmap(get_icon("file-add"))
+            menu.Bind(wx.EVT_MENU, self._on_add_values_by_method, item)
         self.PopupMenu(menu, event.point)
+
+    def _on_add_values_by_method(self, event):
+        dlg = MethodAddDialog(self, self.o)
+        dlg.ShowModal()
 
     def _on_item_activated(self, event):
         if isinstance(event.node, _PmSamplesSets_Node):

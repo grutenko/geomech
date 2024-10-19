@@ -52,13 +52,58 @@ class PmSamplesModel(Model):
         self._columns["@bore_hole"] = Column("@bore_hole", ChoiceCellType(fields), "Скважина №", "Скважина №")
 
         self._columns["SetDate"] = Column("SetDate", DateCellType(), "Дата отбора *", "Дата отбора *")
-        self._columns["StartPosition"] = Column("StartPosition", FloatCellType(), "Начальная\nпозиция *", "Начальная позиция *")
-        self._columns["EndPosition"] = Column("EndPosition", FloatCellType(), "Конечная\nпозиция", "Конечная позиция", optional=True)
+        self._columns["StartPosition"] = Column("StartPosition", FloatCellType(), "Начальная\nпозиция, м*", "Начальная позиция, м*")
+        self._columns["EndPosition"] = Column("EndPosition", FloatCellType(), "Конечная\nпозиция, м", "Конечная позиция, м", optional=True)
         self._columns["BoxNumber"] = Column("BoxNumber", StringCellType(), "Ящик №", "Ящик №", optional=True)
-        self._columns["Length1"] = Column("Length1", FloatCellType(), "Диаметр /\nсторона 1", "Диаметр / сторона 1", optional=True)
-        self._columns["Length1"] = Column("Length1", FloatCellType(), "Сторона 2", "Сторона 2", optional=True)
-        self._columns["Height"] = Column("Height", FloatCellType(), "Высота", "Высота", optional=True)
-
+        self._columns["Length1"] = Column("Length1", FloatCellType(), "Диаметр /\nсторона 1, см", "Диаметр / сторона 1, см", optional=True)
+        self._columns["Length2"] = Column("Length2", FloatCellType(), "Сторона 2, см", "Сторона 2, см", optional=True)
+        self._columns["Height"] = Column("Height", FloatCellType(), "Высота, см", "Высота, см", optional=True)
+        self._columns["MassAirDry"] = Column(
+            "MassAirDry", FloatCellType(), "Масса в воздушно\nсухом состоянии, г", "Масса в воздушно-сухом состоянии", optional=True
+        )
+        self._columns["MassNatMoist"] = Column(
+            "MassNatMoist",
+            FloatCellType(),
+            "Масса в естественно\nвлажном состоянии, г",
+            "Измерение: масса в естественно-влажном состоянии",
+            optional=True,
+        )
+        self._columns["MassWater"] = Column("MassWater", FloatCellType(), "Масса в воде, г", "Измерение: масса в воде", optional=True)
+        self._columns["MassWaterSatur"] = Column(
+            "MassWaterSatur", FloatCellType(), "Масса в водонасыщенном\nсостоянии, г", "Измерение: масса в водонасыщенном состоянии", optional=True
+        )
+        self._columns["MassWaterSatWater"] = Column(
+            "MassWaterSatWater",
+            FloatCellType(),
+            "Масса в водонасыщенном\nсостоянии\nв воде, г",
+            "Измерение: масса в водонасыщенном состоянии в воде, г",
+            optional=True,
+        )
+        self._columns["MassDry"] = Column(
+            "MassDry", FloatCellType(), "Масса в сухом\nсостоянии, г", "Измерение: Масса в сухом состоянии, г", optional=True
+        )
+        self._columns["UniAxCompDistort"] = Column(
+            "UniAxCompDistort",
+            FloatCellType(),
+            "Разрушающая нагрузка\nпри одноосном\nсжатии, кН",
+            "Измерение: разрушающая нагрузка при одноосном сжатии, кН",
+            optional=True,
+        )
+        self._columns["UniAxTensDistort"] = Column(
+            "UniAxTensDistort",
+            FloatCellType(),
+            "Разрушающая нагрузка\nпри одноосном\nрастяжении, кН",
+            "Измерение: разрушающая нагрузка при одноосном растяжении, кН",
+            optional=True,
+        )
+        self._columns["ElasticityModulus"] = Column(
+            "ElasticityModulus", FloatCellType(), "Модуль упругости", "Измерение: Модуль упругости", optional=True
+        )
+        self._columns["DeclineModulus"] = Column("ElasticityModulus", FloatCellType(), "Модуль спада", "Измерение: Модуль спада", optional=True)
+        self._columns["PuassonCoeff"] = Column("PuassonCoeff", FloatCellType(), "Пуассон", "Измерение: Коэффициент Пуассона", optional=True)
+        self._columns["DiffStrength"] = Column(
+            "DiffStrength", FloatCellType(), "Дифф. прочность", "Измерение: дифференциальная прочность", optional=True
+        )
         self._rows = []
         self._deleted_objects = []
 
@@ -107,6 +152,18 @@ class PmSamplesModel(Model):
             "Length1": "",
             "Length2": "",
             "Height": "",
+            "MassAirDry": "",
+            "MassNatMoist": "",
+            "MassWater": "",
+            "MassWaterSatur": "",
+            "MassWaterSatWater": "",
+            "MassDry": "",
+            "UniAxCompDistort": "",
+            "UniAxTensDistort": "",
+            "ElasticityModulus": "",
+            "DeclineModulus": "",
+            "PuassonCoeff": "",
+            "DiffStrength": "",
         }
         self._rows.insert(row, _Row(None, False, _fields))
 
@@ -176,7 +233,7 @@ class PmSampleEditor(BaseEditor):
             menubar,
             toolbar,
             statusbar,
-            header_height=30,
+            header_height=50,
         )
         self.editor.show_errors_view()
         self.editor.Bind(EVT_GRID_COLUMN_RESIZED, self._on_editor_column_resized)

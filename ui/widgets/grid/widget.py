@@ -7,9 +7,13 @@ from typing import List, Protocol
 import wx
 import wx.grid
 import wx.lib.agw.flatnotebook
+import wx.lib.mixins.gridlabelrenderer
 import wx.lib.newevent
 
 from ui.icon import get_art
+
+from .col_label_renderer import ColLabelRenderer
+from .row_label_renderer import RowLabelRenderer
 
 
 class CellType(Protocol):
@@ -382,6 +386,12 @@ ID_COPY_HEADERS = ID_ADD_ROW + 6
 ID_COPY_WITH_HEADER = ID_ADD_ROW + 7
 
 
+class CustomGrid(wx.grid.Grid, wx.lib.mixins.gridlabelrenderer.GridWithLabelRenderersMixin):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        wx.lib.mixins.gridlabelrenderer.GridWithLabelRenderersMixin.__init__(self)
+
+
 class GridEditor(wx.Panel):
     def __init__(self, parent, model, menubar, toolbar, statusbar, header_height=-1, read_only=False):
         super().__init__(parent)
@@ -398,7 +408,7 @@ class GridEditor(wx.Panel):
         self._hor_splitter = wx.SplitterWindow(self._splitter, style=wx.SP_3DSASH | wx.SP_LIVE_UPDATE)
         main_sizer.Add(self._splitter, 1, wx.EXPAND)
 
-        self._view = wx.grid.Grid(
+        self._view = CustomGrid(
             self._hor_splitter,
             style=wx.WANTS_CHARS | wx.BORDER_NONE | wx.WS_EX_PROCESS_UI_UPDATES,
         )
@@ -477,6 +487,8 @@ class GridEditor(wx.Panel):
         self._view.Bind(wx.grid.EVT_GRID_CMD_COL_SIZE, self._on_cell_dragged)
         self._view.Bind(wx.grid.EVT_GRID_CELL_CHANGING, self._on_cell_changing)
         self._view.Bind(wx.grid.EVT_GRID_CELL_RIGHT_CLICK, self._on_cell_context_menu)
+        self._view.Bind(wx.grid.EVT_GRID_RANGE_SELECTING, self._on_selecting)
+        self._view.GetGridWindow().Bind(wx.EVT_LEFT_DOWN, self._on_left_click)
         self._view.GetGridWindow().Bind(wx.EVT_RIGHT_DOWN, self._on_right_click)
         self._view.Bind(wx.grid.EVT_GRID_LABEL_RIGHT_CLICK, self._on_label_context_menu)
         self._errors_view._main_notebook.Bind(
@@ -527,7 +539,6 @@ class GridEditor(wx.Panel):
                     break
 
             if last_column_visible > -1:
-                print(self._view.GetGridCursorRow(), last_column_visible)
                 self._view.MakeCellVisible(self._view.GetGridCursorRow(), last_column_visible)
 
     def _on_label_context_menu(self, event):
@@ -545,6 +556,16 @@ class GridEditor(wx.Panel):
         self._splitter.Unsplit(self._errors_view)
         self._update_controls_state()
         event.Veto()
+
+    def _on_left_click(self, event):
+        x, y = self._view.CalcUnscrolledPosition(event.GetX(), event.GetY())
+        row, col = self._view.XYToCell(x, y)
+        if row != -1 and col != -1:
+            event.Skip()
+            return
+        self._view.ClearSelection()
+        self._on_selecting(event)
+        self._update_controls_state()
 
     def _on_right_click(self, event):
         x, y = self._view.CalcUnscrolledPosition(event.GetX(), event.GetY())
@@ -684,11 +705,14 @@ class GridEditor(wx.Panel):
             editor = column.cell_type.get_grid_editor()
             attr.SetEditor(editor)
             self._view.SetColAttr(col_index, attr)
+            self._view.SetColLabelRenderer(col_index, ColLabelRenderer())
 
         for row_index in range(self._model.total_rows()):
             for col_index, column in enumerate(self._columns):
                 self._view.SetCellValue(row_index, col_index, self._model.get_value_at(col_index, row_index))
                 self._view.SetReadOnly(row_index, col_index, self._read_only)
+
+            self._view.SetRowLabelRenderer(row_index, RowLabelRenderer())
 
         self._render_sizing(begin_batch=False)
 
@@ -737,6 +761,12 @@ class GridEditor(wx.Panel):
         self.statusbar.SetStatusText("Тип ячейки: " + column.cell_type.get_type_descr(), 2)
         self._update_controls_state()
         event.Skip()
+        wx.CallAfter(self._view.GetGridColLabelWindow().Refresh)
+        wx.CallAfter(self._view.GetGridRowLabelWindow().Refresh)
+
+    def _on_selecting(self, event):
+        wx.CallAfter(self._view.GetGridColLabelWindow().Refresh)
+        wx.CallAfter(self._view.GetGridRowLabelWindow().Refresh)
 
     def _on_change_selection(self, event):
         self._update_controls_state()

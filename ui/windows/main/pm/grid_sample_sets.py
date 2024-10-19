@@ -36,33 +36,55 @@ class PmSampleSetModel(Model):
     @db_session
     def __init__(self, o, config):
         self.o = o
+        self._config_provider = config
         self._columns = {
-            "Name": Column("Name", StringCellType(), "Название *", "(Обязат.) Название пробы", init_width=150),
-            "Comment": Column("Comment", StringCellType(multiline=True), "Комментарий", "Комментарий", init_width=120, optional=True),
+            "Name": Column("Name", StringCellType(), "Название *", "(Обязат.) Название пробы", init_width=self._get_column_width("Name")),
+            "Comment": Column(
+                "Comment", StringCellType(multiline=True), "Комментарий", "Комментарий", init_width=self._get_column_width("Comment"), optional=True
+            ),
         }
         data = select(o for o in MineObject if o.Type == "FIELD").order_by(lambda x: desc(x.RID))
         fields = []
         for o in data:
             fields.append(o.Name)
-        self._columns["@mine_object"] = Column("@mine_object", ChoiceCellType(fields), "Месторождение *", "(Обязат.) Месторождение", init_width=150)
+        self._columns["@mine_object"] = Column(
+            "@mine_object", ChoiceCellType(fields), "Месторождение *", "(Обязат.) Месторождение", init_width=self._get_column_width("@mine_object")
+        )
         data = select(o for o in Petrotype).order_by(lambda x: x.Name)
         fields = []
         for o in data:
             fields.append(o.Name)
         self._columns["@petrotype"] = Column(
-            "@petrotype", ChoiceCellType(fields, allow_other=True), "Петротип *", "(Обязат.) Петротип", init_width=120
+            "@petrotype",
+            ChoiceCellType(fields, allow_other=True),
+            "Петротип *",
+            "(Обязат.) Петротип",
+            init_width=self._get_column_width("@petrotype"),
         )
         self._columns["@petrotype_struct"] = Column(
-            "@petrotype_struct", StringCellType(), "Описание структуры\nпетротипа", "Описание структуры петротипа", init_width=120, optional=True
+            "@petrotype_struct",
+            StringCellType(),
+            "Описание структуры\nпетротипа",
+            "Описание структуры петротипа",
+            init_width=self._get_column_width("@petrotype_struct"),
+            optional=True,
         )
-        self._columns["SetDate"] = Column("SetDate", DateCellType(), "Дата отбора", "Дата отбора", 120, True)
-        self._columns["TestDate"] = Column("TestDate", DateCellType(), "Дата испытания", "Дата испытания", 120, True)
-        self._columns["CrackDescr"] = Column("CrackDescr", StringCellType(multiline=True), "Описание трещин", "Описание трещин", 200, True)
+        self._columns["SetDate"] = Column("SetDate", DateCellType(), "Дата отбора", "Дата отбора", self._get_column_width("SetDate"), True)
+        self._columns["TestDate"] = Column("TestDate", DateCellType(), "Дата испытания", "Дата испытания", self._get_column_width("TestDate"), True)
+        self._columns["CrackDescr"] = Column(
+            "CrackDescr", StringCellType(multiline=True), "Описание трещин", "Описание трещин", self._get_column_width("CrackDescr"), True
+        )
 
         self._deleted_objects = []
         self._rows = []
 
         self._load()
+
+    def _get_column_width(self, name):
+        column_width = self._config_provider["column_width"]
+        if column_width != None and name in column_width:
+            return column_width[name]
+        return -1
 
     @db_session
     def _load(self):
