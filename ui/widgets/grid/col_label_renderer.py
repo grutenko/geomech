@@ -18,12 +18,23 @@ class ColLabelRenderer(wx.lib.mixins.gridlabelrenderer.GridDefaultColLabelRender
             self.DrawHighlightBorder(grid, dc, rect)
         self.DrawText(grid, dc, rect, text, hAlign, vAlign)
 
+    def DrawBorder(self, grid, dc, rect):
+        top = rect.top
+        bottom = rect.bottom
+        left = rect.left
+        right = rect.right
+        dc.SetPen(wx.Pen(wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DSHADOW)))
+        dc.DrawLine(left, top, right, top)
+        dc.DrawLine(right, top, right, bottom)
+        dc.DrawLine(left, top, left, bottom)
+        dc.DrawLine(left, bottom, right, bottom)
+
     def DrawHighlightBorder(self, grid, dc, rect: wx.Rect):
         top = rect.top
         bottom = rect.bottom
         left = rect.left
         right = rect.right
         dc.SetBackground(wx.Brush(wx.Colour(150, 150, 150)))
-        dc.DrawRectangle(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2)
+        dc.DrawRectangle(rect.x, rect.y, rect.width, rect.height)
         dc.SetPen(wx.Pen(wx.Colour(0, 0, 0), 2))
         dc.DrawLine(left, bottom, right, bottom)

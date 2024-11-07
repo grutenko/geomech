@@ -11,7 +11,7 @@ from ui.delete_object import delete_object
 from ui.icon import get_icon
 from ui.windows.main.identity import Identity
 
-from .rock_burst import DialogCreateRockBurst
+from .editor import RockBurstEditor
 
 __CONFIG_VERSION__ = 2
 
@@ -108,15 +108,13 @@ class RbPanel(wx.Panel):
         pubsub.pub.sendMessage("cmd.supplied_data.show", target=self)
 
     def _on_add(self, event):
-        dlg = DialogCreateRockBurst(self)
-        if dlg.ShowModal() == wx.ID_OK:
-            self.render()
+        w = RockBurstEditor(self)
+        w.Show()
 
     def _on_edit(self, event):
         index = self.list.GetSelectedRow()
-        dlg = DialogCreateRockBurst(self, self.items[index], _type="UPDATE")
-        if dlg.ShowModal() == wx.ID_OK:
-            self.render()
+        w = RockBurstEditor(self, o=self.items[index])
+        w.Show()
 
     def _on_delete(self, event):
         index = self.list.GetSelectedRow()

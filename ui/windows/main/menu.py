@@ -20,6 +20,8 @@ ID_IMPORT_ROCK_BURSTS = ID_FIND_NEXT + 14
 ID_SETTINGS_DOCS = ID_FIND_NEXT + 15
 ID_CS_TRANS_UTLITY = ID_FIND_NEXT + 16
 ID_CS_FIND_MATRIX = ID_FIND_NEXT + 17
+ID_SETTINGS_RB = ID_FIND_NEXT + 18
+ID_SETTINGS_PT = ID_FIND_NEXT + 19
 
 
 class MainMenu(wx.MenuBar):
@@ -89,7 +91,10 @@ class MainMenu(wx.MenuBar):
 
         menu = wx.Menu()
         item = menu.Append(ID_SETTINGS_PM, "Физ. Мех. свойства")
+        item = menu.Append(ID_SETTINGS_RB, "Горные удары")
+        menu.AppendSeparator()
         item = menu.Append(ID_SETTINGS_CS, "Системы координат")
+        item = menu.Append(ID_SETTINGS_PT, "Петротипы")
         item = menu.Append(ID_SETTINGS_DOCS, "Документы")
         self.Append(menu, "Параметры")
 
@@ -103,6 +108,4 @@ class MainMenu(wx.MenuBar):
         item.Enable(False)
         menu.AppendSeparator()
         item = menu.Append(wx.ID_ABOUT, "О программе")
-        item = menu.AppendCheckItem(ID_OPEN_START_TAB, 'Открыть "Начало работы"')
-        item.Check(True)
         self.Append(menu, "Справка")

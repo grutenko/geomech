@@ -456,6 +456,7 @@ class DMEditor(BaseEditor):
             toolbar,
             statusbar,
             header_height=50,
+            freezed_cols=1,
         )
         self.editor.Bind(EVT_GRID_COLUMN_RESIZED, self._on_editor_column_resized)
 

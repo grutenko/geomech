@@ -2,7 +2,7 @@ import pubsub
 import wx
 from pony.orm import *
 
-from database import PMSample, PMSampleSet, PMTestSeries
+from database import PMSample, PmSamplePropertyValue, PMSampleSet, PMTestSeries
 from ui.icon import get_icon
 from ui.widgets.tree.widget import (
     EVT_WIDGET_TREE_ACTIVATED,
@@ -14,8 +14,8 @@ from ui.widgets.tree.widget import (
 from ..identity import Identity
 from ..notebook.widget import EditorNotebook
 from .grid_sample_sets import PmSampleSetsEditor
+from .grid_sample_test_values import GridSampleTests
 from .grid_samples import PmSampleEditor
-from .method_add_dialog import MethodAddDialog
 
 
 class Simple_Node(TreeNode):
@@ -59,25 +59,17 @@ class _PmSamples_Node(Simple_Node):
 
     @db_session
     def _make_name(self, _series):
-        count = select(o for o in PMSample if o.pm_sample_set in select(_set for _set in PMSampleSet if _set.pm_test_series == _series)).count()
+        count = select(o for o in PMSample if o.pm_sample_set.pm_test_series == _series).count()
         return "Образцы (%d)" % count
 
 
-class _PmValuesByMethodSection(TreeNode):
-    def __init__(self, o):
-        self.o = o
+class _PmSampleTestValues(Simple_Node):
+    def __init__(self, _series):
+        super().__init__(self._make_name(_series), ("table", get_icon("table")), Identity(_series, _series, PmSamplePropertyValue))
 
-    def get_name(self):
-        return "Испытания"
-
-    def get_icon(self):
-        return "folder", get_icon("folder")
-
-    def get_icon_open(self):
-        return "folder-open", get_icon("folder-open")
-
-    def get_subnodes(self):
-        return []
+    @db_session
+    def _make_name(self, _series):
+        return "Значения свойств для образцов"
 
 
 class Root_Node(TreeNode):
@@ -95,7 +87,7 @@ class Root_Node(TreeNode):
         nodes = []
         nodes.append(_PmSamplesSets_Node(self.o))
         nodes.append(_PmSamples_Node(self.o))
-        nodes.append(_PmValuesByMethodSection(self.o))
+        nodes.append(_PmSampleTestValues(self.o))
         return nodes
 
     def is_root(self):
@@ -147,21 +139,30 @@ class PmSeriesDetail(wx.Panel):
             else:
                 item = menu.Append(wx.ID_OPEN, "Перейти к открытому редактору")
             menu.Bind(wx.EVT_MENU, self._on_open_samples, item)
-        if isinstance(node, _PmValuesByMethodSection):
-            item = menu.Append(wx.ID_ADD, "Добавить метод испытаний")
-            item.SetBitmap(get_icon("file-add"))
-            menu.Bind(wx.EVT_MENU, self._on_add_values_by_method, item)
+        if isinstance(node, _PmSampleTestValues):
+            index, _ = EditorNotebook.get_instance().get_by_identity(Identity(self.o, self.o, PmSamplePropertyValue))
+            if index == -1:
+                item = menu.Append(wx.ID_OPEN, "Открыть редактор")
+            else:
+                item = menu.Append(wx.ID_OPEN, "Перейти к открытому редактору")
+            menu.Bind(wx.EVT_MENU, self._on_open_sample_propety_values, item)
         self.PopupMenu(menu, event.point)
 
-    def _on_add_values_by_method(self, event):
-        dlg = MethodAddDialog(self, self.o)
-        dlg.ShowModal()
+    def _on_add_values_by_method(self, event): ...
 
     def _on_item_activated(self, event):
         if isinstance(event.node, _PmSamplesSets_Node):
             self._on_open_sample_sets(event)
         if isinstance(event.node, _PmSamples_Node):
             self._on_open_samples(event)
+        if isinstance(event.node, _PmSampleTestValues):
+            self._on_open_sample_propety_values(event)
+
+    def _on_open_sample_propety_values(self, event):
+        n = EditorNotebook.get_instance()
+        _id = Identity(self.o, self.o, PmSamplePropertyValue)
+        if not n.select_by_identity(_id):
+            n.add_editor(GridSampleTests(n, _id, self.o, self.menubar, self.toolbar, self.statusbar))
 
     def _on_open_samples(self, event):
         n = EditorNotebook.get_instance()

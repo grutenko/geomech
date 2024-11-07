@@ -59,6 +59,12 @@ class BasicEditor(wx.Panel):
     def get_icon(self):
         return None
 
+    def can_find(self) -> bool:
+        return False
+    
+    def can_find_next(self) -> bool:
+        return False
+
     def can_save(self) -> bool:
         return False
 
@@ -77,6 +83,8 @@ class BasicEditor(wx.Panel):
     def can_redo(self) -> bool:
         return False
 
+    def find(self): ...
+    def find_next(self): ...
     def save(self): ...
     def copy(self): ...
     def cut(self): ...
@@ -249,6 +257,12 @@ class EditorNotebook(wx.Panel):
     def can_redo(self):
         return self._native_.GetPageCount() > 0 and self._native_.GetPage(self._native_.GetSelection()).can_redo()
 
+    def can_find(self):
+        return self._native_.GetPageCount() > 0 and self._native_.GetPage(self._native_.GetSelection()).can_find()
+
+    def can_find_next(self):
+        return self._native_.GetPageCount() > 0 and self._native_.GetPage(self._native_.GetSelection()).can_find_next()
+
     def save(self):
         _saved = False
         _editor = None
@@ -278,6 +292,14 @@ class EditorNotebook(wx.Panel):
     def redo(self):
         if self._native_.GetPageCount() > 0:
             self._native_.GetPage(self._native_.GetSelection()).redo()
+
+    def find(self):
+        if self._native_.GetPageCount() > 0:
+            self._native_.GetPage(self._native_.GetSelection()).find()
+
+    def find_next(self):
+        if self._native_.GetPageCount() > 0:
+            self._native_.GetPage(self._native_.GetSelection()).find_next()
 
     def go_next_editor(self):
         if self.can_go_next_editor():

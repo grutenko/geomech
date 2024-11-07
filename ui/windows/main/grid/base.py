@@ -12,14 +12,14 @@ from ..notebook.widget import *
 
 
 class BaseEditor(wx.Panel):
-    def __init__(self, parent, title, identity, model, menubar, toolbar, statusbar, header_height=-1):
+    def __init__(self, parent, title, identity, model, menubar, toolbar, statusbar, header_height=-1, freezed_cols=0):
         super().__init__(parent.get_native())
         self.o = identity.o
         self._identity = identity
         self._title = title
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.editor = GridEditor(self, model, menubar, toolbar, statusbar, header_height=header_height)
+        self.editor = GridEditor(self, model, menubar, toolbar, statusbar, header_height=header_height, freezed_cols=freezed_cols)
         main_sizer.Add(self.editor, 1, wx.EXPAND)
         self.SetSizer(main_sizer)
 
@@ -59,6 +59,18 @@ class BaseEditor(wx.Panel):
 
     def can_redo(self) -> bool:
         return self.editor.can_redo()
+
+    def can_find(self) -> bool:
+        return self.editor.can_find()
+
+    def can_find_next(self) -> bool:
+        return self.editor.can_find_next()
+
+    def find(self):
+        self.editor.find()
+
+    def find_next(self):
+        self.editor.find_next()
 
     def save(self):
         return self.editor.save()

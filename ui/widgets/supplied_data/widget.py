@@ -384,6 +384,13 @@ class SuppliedDataWidget(wx.Panel):
 
         self.Layout()
 
+    def hide_target_name(self, hide=True):
+        if hide:
+            self.statusbar.Hide()
+        else:
+            self.statusbar.Show()
+        self.Layout()
+
     def _on_selection_changed(self, event):
         self._update_controls_state()
 

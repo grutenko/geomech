@@ -13,6 +13,8 @@ from ui.windows.cs.matrix import CreateTransfMatrixWindow
 from ui.windows.cs.transl import CsTransl
 from ui.windows.doc.main import ManageDocumentsWindow
 from ui.windows.pm.main import PmSettingsWindow
+from ui.windows.pt.main import PetrotypesProperties
+from ui.windows.rb.main import RockBursrsProperties
 from version import __GEOMECH_VERSION__
 
 from .dg.widget import DischargePanel, EVT_Dm_SELECTED
@@ -227,7 +229,9 @@ class MainFrame(wx.Frame):
         self._cs_settings_window = ManageCoordSystemsWindow(self)
         self._docs_window = ManageDocumentsWindow(self)
         self._cs_transf_window = CsTransl(self)
+        self._rb_settings = RockBursrsProperties(self)
         self._cs_find_matrix = CreateTransfMatrixWindow(self)
+        self._pt_settings = PetrotypesProperties(self)
 
         self._root_object = select(o for o in MineObject if o.Level == 0).first()
 
@@ -266,6 +270,8 @@ class MainFrame(wx.Frame):
         menu.Bind(wx.EVT_MENU, self._on_toggle_import_bore_holes, id=ID_IMPORT_BORE_HOLES)
         menu.Bind(wx.EVT_MENU, self._on_toggle_import_stations, id=ID_IMPORT_STATIONS)
         menu.Bind(wx.EVT_MENU, self._on_open_docs_window, id=ID_SETTINGS_DOCS)
+        menu.Bind(wx.EVT_MENU, self._on_open_rb, id=ID_SETTINGS_RB)
+        menu.Bind(wx.EVT_MENU, self._on_open_pt, id=ID_SETTINGS_PT)
         menu.Bind(wx.EVT_MENU, self._on_open_cs_trans, id=ID_CS_TRANS_UTLITY)
         tb = self.toolbar
         tb.Bind(wx.EVT_TOOL, self._on_editor_save, id=wx.ID_SAVE)
@@ -299,6 +305,24 @@ class MainFrame(wx.Frame):
         pubsub.pub.subscribe(self._cmd_dm_select, "cmd.dm.select")
         pubsub.pub.subscribe(self._cmd_on_close_editor, "cmd.editor.close")
         pubsub.pub.subscribe(self._cmd_on_open_editor, "cmd.editor.open")
+
+    def _on_open_pt(self, event):
+        if self._pt_settings.IsShown():
+            self._pt_settings.Raise()
+        else:
+            self._pt_settings.Show()
+
+    def _on_open_rb(self, event):
+        if self._rb_settings.IsShown():
+            self._rb_settings.Raise()
+        else:
+            self._rb_settings.Show()
+
+    def _on_find(self, event):
+        self.editors.find()
+
+    def _on_find_next(self, event):
+        self.editors.find_next()
 
     def _on_open_cs_trans(self, event):
         if self._cs_transf_window.IsShown():
@@ -430,10 +454,6 @@ class MainFrame(wx.Frame):
             self._start_tab = MdViewer(self.editors, "[Чтение] Начало работы")
             self.editors.add_editor(self._start_tab)
 
-    def _on_find(self, event): ...
-
-    def _on_find_next(self, event): ...
-
     def _on_pane_closed(self, event):
         if event.GetPane().name == "objects":
             o = self.supplied_data.get_current_object()
@@ -525,7 +545,6 @@ class MainFrame(wx.Frame):
             self.supplied_data.end()
 
     def _on_toggle_objects(self, event: wx.CommandEvent):
-        print(event.IsChecked())
         self.mgr.GetPane("objects").Show(event.IsChecked())
         self.mgr.Update()
         self._update_controls_state()
@@ -620,6 +639,8 @@ class MainFrame(wx.Frame):
         self.toolbar.EnableTool(wx.ID_PASTE, not self._disable_controls and self.editors.can_paste())
         self.toolbar.EnableTool(wx.ID_UNDO, not self._disable_controls and self.editors.can_undo())
         self.toolbar.EnableTool(wx.ID_REDO, not self._disable_controls and self.editors.can_redo())
+        self.menu_bar.Enable(wx.ID_FIND, not self._disable_controls and self.editors.can_find())
+        self.menu_bar.Enable(ID_FIND_NEXT, not self._disable_controls and self.editors.can_find_next())
         self.menu_bar.Enable(wx.ID_SAVE, not self._disable_controls and self.editors.can_save())
         self.menu_bar.Enable(wx.ID_COPY, not self._disable_controls and self.editors.can_copy())
         self.menu_bar.Enable(wx.ID_CUT, not self._disable_controls and self.editors.can_cut())

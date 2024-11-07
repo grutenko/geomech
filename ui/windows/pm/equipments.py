@@ -5,9 +5,9 @@ from pony.orm import *
 from database import PmTestEquipment
 from ui.datetimeutil import decode_date
 from ui.delete_object import delete_object
-from ui.icon import get_art
+from ui.icon import get_art, get_icon
 
-from .pm_equipment_editor import PmEquipmentEditor
+from .equipment_editor import PmEquipmentEditor
 
 
 class PmEquipment(wx.Panel, listmix.ColumnSorterMixin):
@@ -17,12 +17,12 @@ class PmEquipment(wx.Panel, listmix.ColumnSorterMixin):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self._toolbar = wx.ToolBar(self, style=wx.TB_FLAT | wx.TB_HORZ_TEXT | wx.TB_BOTTOM)
-        tool = self._toolbar.AddTool(wx.ID_ADD, "Добавить оборудование", get_art(wx.ART_PLUS))
+        tool = self._toolbar.AddTool(wx.ID_ADD, "Добавить оборудование", get_icon("add-row"))
         self._toolbar.Bind(wx.EVT_TOOL, self._on_create, id=wx.ID_ADD)
-        tool = self._toolbar.AddTool(wx.ID_EDIT, "Редактировать оборудование", get_art(wx.ART_EDIT))
+        tool = self._toolbar.AddTool(wx.ID_EDIT, "Редактировать оборудование", get_icon("edit"))
         tool.Enable(False)
         self._toolbar.Bind(wx.EVT_TOOL, self._on_update, id=wx.ID_EDIT)
-        tool = self._toolbar.AddTool(wx.ID_DELETE, "Удалить оборудование", get_art(wx.ART_DELETE))
+        tool = self._toolbar.AddTool(wx.ID_DELETE, "Удалить оборудование", get_icon("delete"))
         tool.Enable(False)
         self._toolbar.Bind(wx.EVT_TOOL, self._on_delete, id=wx.ID_DELETE)
         self._toolbar.Realize()
@@ -40,9 +40,6 @@ class PmEquipment(wx.Panel, listmix.ColumnSorterMixin):
         self.table.Bind(wx.EVT_RIGHT_DOWN, self._on_whitespace_right_click)
         main_sizer.Add(self.table, 1, wx.EXPAND)
 
-        self.statusbar = wx.StatusBar(self)
-        main_sizer.Add(self.statusbar, 0, wx.EXPAND)
-
         self.SetSizer(main_sizer)
 
         self.Layout()
@@ -51,6 +48,8 @@ class PmEquipment(wx.Panel, listmix.ColumnSorterMixin):
         self._methods = {}
         self.itemDataMap = {}
         self._q = ""
+
+        self.start()
 
     def GetListCtrl(self):
         return self.table
@@ -79,7 +78,6 @@ class PmEquipment(wx.Panel, listmix.ColumnSorterMixin):
                 decode_date(e.StartDate).__str__(),
             ]
             self.table.SetItemData(item, e.RID)
-        self.statusbar.SetStatusText("Элементов:%d" % len(equipment))
         self._update_controls_state()
 
     def _on_create(self, event):

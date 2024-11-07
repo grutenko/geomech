@@ -5,9 +5,9 @@ from pony.orm import *
 from database import PmTestMethod
 from ui.datetimeutil import decode_date
 from ui.delete_object import delete_object
-from ui.icon import get_art
+from ui.icon import get_art, get_icon
 
-from .pm_method_editor import PmMethodEditor
+from .method_editor import PmMethodEditor
 
 
 class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
@@ -17,12 +17,12 @@ class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self._toolbar = wx.ToolBar(self, style=wx.TB_FLAT | wx.TB_HORZ_TEXT | wx.TB_BOTTOM)
-        tool = self._toolbar.AddTool(wx.ID_ADD, "Добавить метод", get_art(wx.ART_PLUS))
+        tool = self._toolbar.AddTool(wx.ID_ADD, "Добавить метод", get_icon("add-row"))
         self._toolbar.Bind(wx.EVT_TOOL, self._on_create_pm_method, id=wx.ID_ADD)
-        tool = self._toolbar.AddTool(wx.ID_EDIT, "Редактировать метод", get_art(wx.ART_EDIT))
+        tool = self._toolbar.AddTool(wx.ID_EDIT, "Редактировать метод", get_icon("edit"))
         tool.Enable(False)
         self._toolbar.Bind(wx.EVT_TOOL, self._on_item_activated, id=wx.ID_EDIT)
-        tool = self._toolbar.AddTool(wx.ID_DELETE, "Удалить метод", get_art(wx.ART_DELETE))
+        tool = self._toolbar.AddTool(wx.ID_DELETE, "Удалить метод", get_icon("delete"))
         tool.Enable(False)
         self._toolbar.Bind(wx.EVT_TOOL, self._on_delete_pm_method, id=wx.ID_DELETE)
         self._toolbar.Realize()
@@ -42,9 +42,6 @@ class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
         self.table.Bind(wx.EVT_RIGHT_DOWN, self._on_whitespace_right_click)
         main_sizer.Add(self.table, 1, wx.EXPAND)
 
-        self.statusbar = wx.StatusBar(self)
-        main_sizer.Add(self.statusbar, 0, wx.EXPAND)
-
         self.SetSizer(main_sizer)
 
         self.Layout()
@@ -52,6 +49,8 @@ class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
 
         self._methods = {}
         self.itemDataMap = {}
+
+        self.start()
 
         self._q = ""
 
@@ -88,7 +87,6 @@ class PmMethodsPanel(wx.Panel, listmix.ColumnSorterMixin):
             self.table.SetItem(item, 4, analytic)
             self.table.SetItemData(item, method.RID)
             self.itemDataMap[method.RID] = [method.Name, decode_date(method.StartDate).__str__(), end_date, analytic]
-        self.statusbar.SetStatusText("Элементов:%d" % len(methods))
         self._update_controls_state()
 
     def _on_whitespace_right_click(self, event: wx.MouseEvent):

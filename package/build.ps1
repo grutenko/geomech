@@ -4,7 +4,7 @@ $WorkPath = "$PSScriptRoot/../build"
 $DistPath = "$PSScriptRoot/../dist"
 Write-Output $Version
 (Get-Content $PSScriptRoot/versionfile.yml.in).Replace('#VERSION#', $Version) | Set-Content $WorkPath/versionfile.yml
-$Name = "geomech-" + $Version
+$Name = "БД Геомеханика верс." + $Version
 create-version-file $WorkPath/versionfile.yml --outfile $WorkPath/win32_versionfile.txt
 
 pyinstaller --onefile `

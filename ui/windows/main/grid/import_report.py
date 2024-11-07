@@ -88,3 +88,15 @@ class ImportReport(wx.Panel):
     def on_close(self) -> bool:
         self.grid.end()
         return True
+
+    def can_find(self) -> bool:
+        return self.grid.can_find()
+
+    def can_find_next(self) -> bool:
+        return self.grid.can_find_next()
+
+    def find(self):
+        self.grid.find()
+
+    def find_next(self):
+        self.grid.find_next()

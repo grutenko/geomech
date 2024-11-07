@@ -489,6 +489,18 @@ class ImportBoreHoles(wx.Panel):
     def can_redo(self) -> bool:
         return self.grid.can_redo()
 
+    def can_find(self) -> bool:
+        return self.grid.can_find()
+
+    def can_find_next(self) -> bool:
+        return self.grid.can_find_next()
+
+    def find(self):
+        self.grid.find()
+
+    def find_next(self):
+        self.grid.find_next()
+
     @db_session
     def save(self):
         if not self.grid.validate():

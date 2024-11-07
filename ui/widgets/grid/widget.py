@@ -13,6 +13,7 @@ import wx.lib.newevent
 from ui.icon import get_art
 
 from .col_label_renderer import ColLabelRenderer
+from .find import FindDialog
 from .row_label_renderer import RowLabelRenderer
 
 
@@ -390,10 +391,11 @@ class CustomGrid(wx.grid.Grid, wx.lib.mixins.gridlabelrenderer.GridWithLabelRend
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
         wx.lib.mixins.gridlabelrenderer.GridWithLabelRenderersMixin.__init__(self)
+        self.SetScrollRate(1, 100)
 
 
 class GridEditor(wx.Panel):
-    def __init__(self, parent, model, menubar, toolbar, statusbar, header_height=-1, read_only=False):
+    def __init__(self, parent, model, menubar, toolbar, statusbar, header_height=-1, read_only=False, freezed_cols=0):
         super().__init__(parent)
         self.menubar: wx.MenuBar = menubar
         self.toolbar: wx.ToolBar = toolbar
@@ -465,6 +467,7 @@ class GridEditor(wx.Panel):
             "can_redo": False,
             "can_save": False,
             "can_delete_row": False,
+            "can_find_next": False,
         }
 
         self._command_processor = wx.CommandProcessor()
@@ -478,12 +481,18 @@ class GridEditor(wx.Panel):
         self._delete_rows_undo_stack = []
         self._past_undo_stack = []
         self._hightlight_cells = []
+        self._freezed_cols = freezed_cols
+
+        self._q = ""
+        self._strict_mode = True
+        self._find_pos = (0, 0)
         self._render(initial=True)
 
     def _bind_all(self):
         self._view.Bind(wx.grid.EVT_GRID_SELECT_CELL, self._on_change_selected_cell)
         self._view.Bind(wx.grid.EVT_GRID_RANGE_SELECTED, self._on_change_selection)
         self._view.Bind(wx.EVT_MOUSEWHEEL, self._on_zoom)
+        self._view.Bind(wx.EVT_SCROLLWIN, self._on_scroll)
         self._view.Bind(wx.grid.EVT_GRID_CMD_COL_SIZE, self._on_cell_dragged)
         self._view.Bind(wx.grid.EVT_GRID_CELL_CHANGING, self._on_cell_changing)
         self._view.Bind(wx.grid.EVT_GRID_CELL_RIGHT_CLICK, self._on_cell_context_menu)
@@ -498,7 +507,7 @@ class GridEditor(wx.Panel):
         )
         self._view.Bind(wx.grid.EVT_GRID_EDITOR_SHOWN, self._on_editor_shown)
         self._view.Bind(wx.grid.EVT_GRID_EDITOR_HIDDEN, self._on_editor_hidden)
-        self._view.Bind(wx.EVT_MOUSEWHEEL, self._on_scroll)
+        self._view.Bind(wx.EVT_MOUSEWHEEL, self._on_mouse_wheel)
 
     def auto_size_columns(self, autosize=True):
         self._auto_size_columns = autosize
@@ -517,7 +526,11 @@ class GridEditor(wx.Panel):
         self._in_edit_mode = False
         self._update_controls_state()
 
-    def _on_scroll(self, event: wx.MouseEvent):
+    def _on_scroll(self, event):
+        self._view.FreezeTo(0, self._freezed_cols)
+        event.Skip()
+
+    def _on_mouse_wheel(self, event: wx.MouseEvent):
         if not event.ControlDown():
             self._view.ScrollLines(1 if event.GetWheelRotation() < 0 else -1)
         else:
@@ -826,14 +839,16 @@ class GridEditor(wx.Panel):
 
     def save(self):
         try:
-            self._model.save()
+            success = self._model.save()
         except Exception as e:
             wx.MessageBox(str(e), "Ошибка записи в БД", style=wx.OK | wx.ICON_ERROR)
             return False
 
-        self._render()
-        self._update_controls_state()
-        return True
+        if success:
+            self._render()
+            self._update_controls_state()
+
+        return success
 
     def copy(self, with_headers=False):
         blocks: List[wx.grid.GridBlockCoords] = [x for x in self._view.GetSelectedBlocks()]
@@ -1049,7 +1064,6 @@ class GridEditor(wx.Panel):
     def remove_controls(self):
         if not self._controls_initialized:
             return
-        print(self.statusbar)
         menu: wx.Menu = self.menubar.GetMenu(1)
         menu.Remove(self._sep_0).Destroy()
         menu.Remove(self._item_0).Destroy()
@@ -1284,3 +1298,51 @@ class GridEditor(wx.Panel):
         self._hightlight_cells = hightlight
         self._do_hightlight_cells()
         return len(errors) == 0
+
+    def can_find(self) -> bool:
+        return True
+
+    def can_find_next(self) -> bool:
+        row, col = self._find_pos
+        return self._view.GetNumberRows() > row and len(self._q) > 0
+
+    def _find_go_next_cell(self):
+        _row, _col = self._find_pos
+        _col += 1
+        if _col > self._view.GetNumberCols() - 1:
+            _col = 0
+            _row += 1
+        self._find_pos = (_row, _col)
+
+    def _find_have_next_cell(self):
+        _row, _col = self._find_pos
+        return _row < self._view.GetNumberRows() - 1 or (_row == self._view.GetNumberRows() - 1 and _col < self._view.GetNumberCols() - 1)
+
+    def _do_find(self):
+        while self._find_have_next_cell():
+            _row, _col = self._find_pos
+            if self._view.GetCellValue(_row, _col) == self._q:
+                self._view.SelectBlock(_row, _col, _row, _col)
+                self._view.GoToCell(_row, _col)
+                return
+            self._find_go_next_cell()
+
+        wx.Bell()
+
+    def find(self):
+        dlg = FindDialog(self, q=self._q, strict_mode=self._strict_mode)
+        if dlg.ShowModal() == wx.ID_OK:
+            self._q = dlg.get_q()
+            self._strict_mode = dlg.is_strict_mode()
+            self._find_pos = (0, 0)
+            self._set_state({"can_find_next": self.can_find_next()})
+            self._do_find()
+
+    def find_next(self):
+        _row, _col = self._find_pos
+        _col += 1
+        if _col > self._view.GetNumberCols() - 1:
+            _col = 0
+            _row += 1
+        self._find_pos = (_row, _col)
+        self._do_find()

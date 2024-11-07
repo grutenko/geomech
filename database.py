@@ -171,6 +171,9 @@ class FoundationDocument(db.Entity):
     Type = Optional(str, column="Type")
     Number = Optional(str, column="Number")
 
+    def get_tree_name(self):
+        return "[Документ] " + self.Name
+
 
 class DischargeSeries(db.Entity):
     _table_ = "DischargeSeries"
@@ -427,7 +430,7 @@ class PmSamplePropertyValue(db.Entity):
     Value = Required(float, column="Value")
 
 
-class PmPerformedTasks(db.Entity):
+class PmPerformedTask(db.Entity):
     _table_ = "PMPerformedTasks"
 
     RID = PrimaryKey(int, auto=True, column="RID")

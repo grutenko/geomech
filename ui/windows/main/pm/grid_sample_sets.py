@@ -121,15 +121,10 @@ class PmSampleSetModel(Model):
         return list(self._columns.values())
 
     def insert_row(self, row):
-        choices = self._columns["@mine_object"].cell_type.choices
-        if len(choices) > 0:
-            mine_object = choices[0]
-        else:
-            mine_object = ""
         _fields = {
             "Name": "",
             "Comment": "",
-            "@mine_object": mine_object,
+            "@mine_object": "",
             "@petrotype": "",
             "@petrotype_struct": "",
             "SetDate": "",
@@ -169,11 +164,11 @@ class PmSampleSetModel(Model):
             return self._rows[row].changed_fields[col_id]
 
     def set_value_at(self, col, row, value):
+        value = value.strip()
         col_id = list(self._columns.keys())[col]
-        if self._rows[row].o != None and self._rows[row].have_childs and col_id == "Name":
-            wx.MessageBox("Нельзя менять номер пробы если к нему есть связаные данные.", "Ошибка записи")
-            return False
-        if self.get_value_at(col, row) != value:
+        if self._rows[row].fields[col_id] == value:
+            del self._rows[row].changed_fields[col_id]
+        else:
             self._rows[row].changed_fields[col_id] = value
 
     def validate(self):
@@ -194,6 +189,22 @@ class PmSampleSetModel(Model):
                     _msg = 'Неподходящее значение для ячейки типа "%s"' % col.cell_type.get_type_descr()
                     errors.append((col, row_index, _msg))
 
+        duplicates = {}
+        for index, row in enumerate(self._rows):
+            if "Name" in row.changed_fields:
+                _v = row.changed_fields["Name"]
+            else:
+                _v = row.fields["Name"]
+            if len(_v) == 0:
+                continue
+            if _v not in duplicates:
+                duplicates[_v] = []
+            duplicates[_v].append(index)
+        col = self._columns["Name"]
+        for indexes in duplicates.values():
+            if len(indexes) > 1:
+                errors.append((col, indexes[0], "Номер пробы должен быть уникален"))
+
         return errors
 
     def have_changes(self):
@@ -211,8 +222,7 @@ class PmSampleSetModel(Model):
         _created = {}
         _updated = {}
         _petrotypes = {}
-        for o in self._deleted_objects:
-            PMSampleSet[o.RID].delete()
+        _available_numbers = []
 
         for index, row in enumerate(self._rows):
             _fields = {**row.fields, **row.changed_fields}
@@ -264,12 +274,24 @@ class PmSampleSetModel(Model):
                 _out["CrackDescr"] = ""
             _out["RealDetails"] = True
 
-            if row.o == None:
-                _created[index] = PMSampleSet(**_out)
-            else:
-                o = PMSampleSet[row.o.RID]
+            _available_numbers.append(_out["Number"])
+            o = select(o for o in PMSampleSet if o.Number == _out["Number"] and o.pm_test_series == self.o).first()
+            if o != None:
                 o.set(**_out)
                 _updated[index] = o
+            else:
+                _created[index] = PMSampleSet(**_out)
+
+        _objects_to_delete = select(o for o in PMSampleSet if o.Number not in _available_numbers and o.pm_test_series == self.o)
+        if len(_objects_to_delete) > 0:
+            ret = wx.MessageBox(
+                "Из базы данных будут удалены следующие пробы: " + ", ".join(map(lambda x: x.Number, _objects_to_delete)) + ".\nПродолжить?",
+                "Подтвердите удаление",
+                style=wx.YES | wx.NO | wx.CANCEL | wx.NO_DEFAULT | wx.ICON_INFORMATION,
+            )
+            if ret == wx.YES:
+                for o in _objects_to_delete:
+                    o.delete()
 
         commit()
 
@@ -301,6 +323,7 @@ class PmSampleSetsEditor(BaseEditor):
             toolbar,
             statusbar,
             header_height=30,
+            freezed_cols=1,
         )
         self.editor.show_errors_view()
         self.editor.Bind(EVT_GRID_COLUMN_RESIZED, self._on_editor_column_resized)
