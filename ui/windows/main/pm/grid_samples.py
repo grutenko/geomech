@@ -348,14 +348,16 @@ class PmSamplesModel(Model):
             wx.MessageBox("В таблице обнаружены ошибки. Сохранение невозможно.", "Ошибка сохранения.", style=wx.OK | wx.ICON_ERROR)
             return False
 
-        print(self._rows)
-
         _created = {}
         _updated = {}
         _available_sample_sets = []
         _available_numbers = []
 
         for index, row in enumerate(self._rows):
+            if len(row.changed_fields.keys()) == 0:
+                # Просукаем строки которые не были изменены
+                continue
+
             _in = {**row.fields, **row.changed_fields}
             _out = {}
             _c = self._columns
@@ -481,7 +483,7 @@ class PmSamplesModel(Model):
             else:
                 _created[index] = PMSample(**_out)
 
-        _objects_to_delete = select(o for o in PMSample if o.Number not in _available_numbers and o.pm_sample_set in _available_sample_sets)
+        _objects_to_delete = select(o for o in PMSample if o.Number not in _available_numbers and o.pm_sample_set.pm_test_series == self.o)
         if len(_objects_to_delete) > 0:
             ret = wx.MessageBox(
                 "Из базы данных будут удалены следующие образцы: " + ", ".join(map(lambda x: x.Number, _objects_to_delete)) + ".\nПродолжить?",
@@ -503,7 +505,7 @@ class PmSamplesModel(Model):
             self._rows[row_index].changed_fields = {}
 
         self._deleted_objects = []
-
+        pubsub.pub.sendMessage("entity.mass_changed", entity_class=PMSample, bounds=self.o)
         return True
 
 
@@ -540,16 +542,16 @@ class PmSampleEditor(BaseEditor):
         self._config_provider["column_width"][event.column.id] = event.size
         self._config_provider.flush()
 
-    def _on_object_added(self, o):
-        if isinstance(o, BoreHole):
-            self._on_bore_holes_changed()
+    def _on_object_added(self, o, topic=None):
+        if isinstance(o, OrigSampleSet):
+            self._on_orig_sample_set_changed()
 
     def _on_object_deleted(self, o, topic=None):
         if isinstance(o, BoreHole):
             self._on_bore_holes_changed()
 
-    def _on_bore_holes_changed(self):
-        self.editor._model.reload_bore_holes()
+    def _on_orig_sample_set_changed(self):
+        self.editor._model.reload_orig_sample_sets()
         self.editor._render()
         self.editor.validate()
 

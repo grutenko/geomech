@@ -225,6 +225,10 @@ class PmSampleSetModel(Model):
         _available_numbers = []
 
         for index, row in enumerate(self._rows):
+            if len(row.changed_fields.keys()) == 0:
+                # Просукаем строки которые не были изменены
+                continue
+
             _fields = {**row.fields, **row.changed_fields}
             _out = {}
 
@@ -304,7 +308,7 @@ class PmSampleSetModel(Model):
             self._rows[row_index].changed_fields = {}
 
         self._deleted_objects = []
-
+        pubsub.pub.sendMessage("entity.mass_changed", entity_class=PMSampleSet, bounds=self.o)
         return True
 
 
@@ -341,7 +345,7 @@ class PmSampleSetsEditor(BaseEditor):
         self._config_provider["column_width"][event.column.id] = event.size
         self._config_provider.flush()
 
-    def _on_object_added(self, o):
+    def _on_object_added(self, o, topic=None):
         if isinstance(o, MineObject) and o.Type == "FIELD":
             self._on_mine_objects_changed()
 

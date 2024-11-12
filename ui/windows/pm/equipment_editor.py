@@ -1,5 +1,6 @@
 import wx
 from pony.orm import *
+from pubsub import pub
 from wx.adv import DP_ALLOWNONE, DP_DEFAULT, DP_SHOWCENTURY, DatePickerCtrl
 
 from database import *
@@ -87,16 +88,16 @@ class PmEquipmentEditor(wx.Dialog):
         }
         fields["StartDate"] = encode_date(self.field_start_date.GetValue())
 
-        try:
-            if self._type == "CREATE":
-                self.o = PmTestEquipment(**fields)
-            else:
-                self.o = PmTestEquipment[self._target.RID]
-                self.o.set(**fields)
-        except Exception as e:
-            wx.MessageBox(str(e))
+        if self._type == "CREATE":
+            o = PmTestEquipment(**fields)
         else:
-            self.EndModal(wx.ID_OK)
+            o = PmTestEquipment[self._target.RID]
+            o.set(**fields)
+
+        commit()
+        self.o = o
+        self.EndModal(wx.ID_OK)
+        pub.sendMessage("object.added", o=o)
 
     def _set_fields(self):
         o = self._target

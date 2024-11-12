@@ -68,7 +68,6 @@ class CellType(Protocol):
 
 
 from wx.grid import (
-    GridCellAutoWrapStringEditor,
     GridCellEditor,
     GridCellRenderer,
     GridCellStringRenderer,
@@ -604,6 +603,7 @@ class GridEditor(wx.Panel):
         menu.Bind(wx.EVT_MENU, self._on_select_all, item)
         item = menu.Append(wx.ID_ANY, "Снять выделение")
         menu.Bind(wx.EVT_MENU, self._on_cancel_selection, item)
+        menu.AppendSeparator()
         self.PopupMenu(menu, event.GetPosition())
 
     def _on_add_rows(self, event: wx.MenuEvent):
@@ -651,7 +651,7 @@ class GridEditor(wx.Panel):
         item = menu.AppendSubMenu(submenu, "Добавить строки")
         submenu.Bind(wx.EVT_MENU, self._on_add_rows)
         item.SetBitmap(get_icon("add-row"))
-        item = menu.Append(ID_REMOVE_ROW, "Удалить строку\tDEL")
+        item = menu.Append(ID_REMOVE_ROW, "Удалить строку\tCTRL+D")
         item.SetBitmap(get_icon("delete-row"))
         item.Enable(self._state["can_delete_row"])
         menu.Bind(wx.EVT_MENU, self._on_delete_row, item)
@@ -660,7 +660,23 @@ class GridEditor(wx.Panel):
         menu.Bind(wx.EVT_MENU, self._on_select_all, item)
         item = menu.Append(wx.ID_ANY, "Снять выделение")
         menu.Bind(wx.EVT_MENU, self._on_cancel_selection, item)
+        menu.AppendSeparator()
+        item = menu.Append(wx.ID_ANY, "Убрать значения\tDEL")
+        menu.Bind(wx.EVT_MENU, self._on_remove_values, item)
         self.PopupMenu(menu, event.GetPosition())
+
+    def _on_remove_values(self, event):
+        blocks: List[wx.grid.GridBlockCoords] = [x for x in self._view.GetSelectedBlocks()]
+        cells = []
+        if len(blocks) == 0:
+            cells.append((self._view.GetGridCursorRow(), self._view.GetGridCursorCol()))
+        else:
+            for block in blocks:
+                for row_index in range(block.TopRow, block.BottomRow + 1):
+                    for col_index in range(block.LeftCol, block.RightCol + 1):
+                        cells.append((row_index, col_index))
+        self._command_processor.Submit(cmdSetValue(self, cells, ""))
+        self._update_controls_state()
 
     def _on_copy(self, event):
         self.copy(False)
@@ -1015,7 +1031,7 @@ class GridEditor(wx.Panel):
         self._item_0.Enable(False)
         menu.Bind(wx.EVT_MENU, self._on_add_row, self._item_0)
         self._item_0.SetBitmap(get_icon("add-row"))
-        self._item_1 = menu.Append(ID_REMOVE_ROW, "Удалить строку\tDEL")
+        self._item_1 = menu.Append(ID_REMOVE_ROW, "Удалить строку\tCTRL+D")
         self._item_1.SetBitmap(get_icon("delete-row"))
         self._item_1.Enable(False)
         menu.Bind(wx.EVT_MENU, self._on_delete_row, self._item_1)
@@ -1024,6 +1040,9 @@ class GridEditor(wx.Panel):
         menu.Bind(wx.EVT_MENU, self._on_select_all, self._item_2)
         self._item_3 = menu.Append(ID_CANCEL_SELECTION, "Снять выделение\tCTRL+SHIFT+A")
         menu.Bind(wx.EVT_MENU, self._on_cancel_selection, self._item_3)
+        menu.AppendSeparator()
+        self._item_4 = menu.Append(wx.ID_ANY, "Убрать значения\tDEL")
+        menu.Bind(wx.EVT_MENU, self._on_remove_values, self._item_4)
 
         menu: wx.Menu = self.menubar.GetMenu(2)
 
@@ -1071,6 +1090,7 @@ class GridEditor(wx.Panel):
         menu.Remove(self._sep_1).Destroy()
         menu.Remove(self._item_2).Destroy()
         menu.Remove(self._item_3).Destroy()
+        menu.Remove(self._item_4).Destroy()
         menu = self.menubar.GetMenu(2)
         menu.Remove(self._item_5).Destroy()
         menu.Remove(self._sep_2).Destroy()

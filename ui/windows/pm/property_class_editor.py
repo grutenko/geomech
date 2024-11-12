@@ -1,5 +1,6 @@
 import wx
 from pony.orm import *
+from pubsub import pub
 
 from database import PmPropertyClass
 from ui.icon import *
@@ -70,12 +71,14 @@ class PmPropertyClassEditor(wx.Dialog):
 
         _fields = {"Name": self.field_name.GetValue(), "Comment": self.field_comment.GetValue()}
         if self._type == "CREATE":
-            self.o = PmPropertyClass(**_fields)
+            o = PmPropertyClass(**_fields)
         else:
-            self.o = PmPropertyClass[self._target.RID]
-            self.o.set(**_fields)
+            o = PmPropertyClass[self._target.RID]
+            o.set(**_fields)
         commit()
+        self.o = o
         self.EndModal(wx.ID_OK)
+        pub.sendMessage("object.added", o=o)
 
     def _set_fields(self):
         self.field_name.SetValue(self._target.Name)

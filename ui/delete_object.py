@@ -1,5 +1,6 @@
 import wx
 from pony.orm import *
+from pubsub import pub
 
 
 @db_session
@@ -27,5 +28,6 @@ def delete_object(o, relations=[]) -> bool:
             return False
 
     o.delete()
-
+    commit()
+    pub.sendMessage("object.deleted", o=o)
     return True
