@@ -38,7 +38,7 @@ class PmSampleSetModel(Model):
         self.o = o
         self._config_provider = config
         self._columns = {
-            "Name": Column("Name", StringCellType(), "Название *", "(Обязат.) Название пробы", init_width=self._get_column_width("Name")),
+            "Number": Column("Number", StringCellType(), "Название *", "(Обязат.) Название пробы", init_width=self._get_column_width("Number")),
             "Comment": Column(
                 "Comment", StringCellType(multiline=True), "Комментарий", "Комментарий", init_width=self._get_column_width("Comment"), optional=True
             ),
@@ -91,7 +91,7 @@ class PmSampleSetModel(Model):
         data = select(o for o in PMSampleSet if o.pm_test_series == self.o).order_by(lambda x: x.RID)
         for o in data:
             _fields = {
-                "Name": o.Name,
+                "Number": o.Name,
                 "Comment": o.Comment if o.Comment != None else "",
                 "@mine_object": o.mine_object.Name,
                 "@petrotype": o.petrotype_struct.petrotype.Name,
@@ -122,7 +122,7 @@ class PmSampleSetModel(Model):
 
     def insert_row(self, row):
         _fields = {
-            "Name": "",
+            "Number": "",
             "Comment": "",
             "@mine_object": "",
             "@petrotype": "",
@@ -191,16 +191,16 @@ class PmSampleSetModel(Model):
 
         duplicates = {}
         for index, row in enumerate(self._rows):
-            if "Name" in row.changed_fields:
-                _v = row.changed_fields["Name"]
+            if "Number" in row.changed_fields:
+                _v = row.changed_fields["Number"]
             else:
-                _v = row.fields["Name"]
+                _v = row.fields["Number"]
             if len(_v) == 0:
                 continue
             if _v not in duplicates:
                 duplicates[_v] = []
             duplicates[_v].append(index)
-        col = self._columns["Name"]
+        col = self._columns["Number"]
         for indexes in duplicates.values():
             if len(indexes) > 1:
                 errors.append((col, indexes[0], "Номер пробы должен быть уникален"))
@@ -259,8 +259,7 @@ class PmSampleSetModel(Model):
             mine_object = select(o for o in MineObject if o.Name == _fields["@mine_object"]).first()
             _out["mine_object"] = mine_object
             _out["pm_test_series"] = PMTestSeries[self.o.RID]
-            _out["Number"] = _fields["Name"]
-            _out["Name"] = _fields["Name"]
+            _out["Number"] = _fields["Number"]
 
             if len(_fields["Comment"]) > 0:
                 _out["Comment"] = _fields["Comment"]

@@ -166,13 +166,16 @@ class FoundationDocument(db.Entity):
     pm_test_series = Set("PMTestSeries")
 
     RID = PrimaryKey(int, auto=True, column="RID")
-    Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
     Type = Optional(str, column="Type")
     Number = Optional(str, column="Number")
 
     def get_tree_name(self):
         return "[Документ] " + self.Name
+
+    @property
+    def Name(self):
+        return self.Number
 
 
 class DischargeSeries(db.Entity):
@@ -314,9 +317,12 @@ class PMTestSeries(db.Entity):
 
     RID = PrimaryKey(int, auto=True, column="RID")
     Number = Required(str, column="Number")
-    Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
     Location = Optional(str, column="Location")
+
+    @property
+    def Name(self):
+        return self.Number
 
     def get_tree_name(self):
         return "[Набор испытаний] " + self.Name
@@ -332,7 +338,6 @@ class PMSampleSet(db.Entity):
 
     RID = PrimaryKey(int, auto=True, column="RID")
     Number = Required(str, column="Number")
-    Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
     SetDate = Optional(int, column="SetDate", size=64)
     TestDate = Optional(int, column="TestDate", size=64)
@@ -342,6 +347,10 @@ class PMSampleSet(db.Entity):
 
     def get_tree_name(self):
         return "[Набор образцов] " + self.Name
+
+    @property
+    def Name(self):
+        return self.Number
 
 
 class PMSample(db.Entity):
@@ -361,17 +370,6 @@ class PMSample(db.Entity):
     Length2 = Optional(float, column="Length2")
     Height = Optional(float, column="Height")
     MassAirDry = Optional(float, column="MassAirDry")
-    MassNatMoist = Optional(float, column="MassNatMoist")
-    MassWater = Optional(float, column="MassWater")
-    MassWaterSatur = Optional(float, column="MassWaterSatur")
-    MassWaterSatWater = Optional(float, column="MassWaterSatWater")
-    MassDry = Optional(float, column="MassDry")
-    UniAxCompDistort = Optional(float, column="UniAxCompDistort")
-    UniAxTensDistort = Optional(float, column="UniAxTensDistort")
-    ElasticityModulus = Optional(float, column="ElasticityModulus")
-    DeclineModulus = Optional(float, column="DeclineModulus")
-    PuassonCoeff = Optional(float, column="PuassonCoeff")
-    DiffStrength = Optional(float, column="DiffStrength")
 
 
 class PmTestMethod(db.Entity):

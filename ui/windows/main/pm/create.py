@@ -31,15 +31,6 @@ class DialogCreatePmSeries(wx.Dialog):
 
         label = wx.StaticText(
             self,
-            label="Название",
-        )
-        main_sizer.Add(label, 0)
-        self.field_name = wx.TextCtrl(self, size=wx.Size(250, -1))
-        self.field_name.SetValidator(TextValidator(lenMin=1, lenMax=256))
-        main_sizer.Add(self.field_name, 0, wx.EXPAND | wx.BOTTOM, border=10)
-
-        label = wx.StaticText(
-            self,
             label="Регистрационный номер",
         )
         main_sizer.Add(label, 0, wx.EXPAND | wx.TOP, border=10)
@@ -114,7 +105,6 @@ class DialogCreatePmSeries(wx.Dialog):
     @db_session
     def _on_save(self, event):
         fields = {
-            "Name": self.field_name.GetValue().strip(),
             "Number": self.field_number.GetValue().strip(),
             "Comment": self.field_comment.GetValue().strip(),
             "Location": self.field_location.GetValue().strip(),

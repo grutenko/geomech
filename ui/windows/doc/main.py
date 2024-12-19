@@ -29,12 +29,11 @@ class ManageDocumentsWindow(wx.Frame, listmix.ColumnSorterMixin):
         self._image_list = wx.ImageList(16, 16)
         self._book_stack_icon = self._image_list.Add(get_icon("file"))
         self._list = wx.ListCtrl(self, style=wx.LC_REPORT)
-        self._list.AppendColumn("Название", width=250)
         self._list.AppendColumn("Тип", width=100)
         self._list.AppendColumn("Номер", width=100)
         self._list.AppendColumn("ID", format=wx.LIST_FORMAT_RIGHT, width=70)
         self._list.AssignImageList(self._image_list, wx.IMAGE_LIST_SMALL)
-        listmix.ColumnSorterMixin.__init__(self, 4)
+        listmix.ColumnSorterMixin.__init__(self, 3)
         main_sizer.Add(self._list, 1, wx.EXPAND)
 
         self.toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL | wx.TB_FLAT)
@@ -70,14 +69,12 @@ class ManageDocumentsWindow(wx.Frame, listmix.ColumnSorterMixin):
 
         for index, o in enumerate(data):
             _row = []
-            _row.append(o.Name)
             _row.append(o.Type)
             _row.append(o.Number)
             _row.append(o.RID)
             item = self._list.InsertItem(index, _row[0], self._book_stack_icon)
             self._list.SetItem(item, 1, _row[1].__str__())
             self._list.SetItem(item, 2, _row[2].__str__())
-            self._list.SetItem(item, 3, _row[3].__str__())
             self._list.SetItemData(item, o.RID)
             self._items.append(o)
             self.itemDataMap[o.RID] = _row

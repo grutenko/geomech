@@ -42,19 +42,22 @@ class VecCellType(CellType):
         return "[Список] %s" % self._item_type.get_type_descr()
 
     def test_repr(self, value) -> bool:
-        return super().test_repr(value)
+        for item in re.split("\s+", value.strip()):
+            if self._item_type.test_repr(item) == False:
+                return False
+        return True
 
     def to_string(self, value) -> str:
         if value == None:
             return ""
-        return ";".join(map(lambda x: self._item_type.to_string(x), value))
+        return " ".join(map(lambda x: self._item_type.to_string(x), value))
 
     def from_string(self, value: str):
         value = value.strip()
         if value == None or value == "":
             return []
         values = []
-        for item in re.split("\s*;\s*", value):
+        for item in re.split("\s+", value.strip()):
             values.append(self._item_type.from_string(item))
         return values
 
@@ -88,15 +91,13 @@ class DMModel(Model):
             "Weight": str(o.Weight),
             "CoreDepth": str(o.CoreDepth),
         }
-        columns = {}
-        for c in self._columns:
-            columns[c.id] = c
+        columns = self._columns
         e = []
         e.append(str(o.E1))
         e.append(str(o.E2))
         e.append(str(o.E3))
         e.append(str(o.E4))
-        fields["E"] = "; ".join(e)
+        fields["E"] = " ".join(e)
         fields["Rotate"] = str(o.Rotate)
         fields["PartNumber"] = o.PartNumber
         fields["RTens"] = str(o.RTens)
@@ -107,25 +108,25 @@ class DMModel(Model):
             tp1.append(str(o.TP1_1))
         if o.TP1_2 != None:
             tp1.append(str(o.TP1_2))
-        fields["TP1"] = "; ".join(tp1)
+        fields["TP1"] = " ".join(tp1)
         tp2 = []
         if o.TP2_1 != None:
             tp2.append(str(o.TP2_1))
         if o.TP2_2 != None:
             tp2.append(str(o.TP2_2))
-        fields["TP2"] = "; ".join(tp2)
+        fields["TP2"] = " ".join(tp2)
         tr = []
         if o.TR_1 != None:
             tr.append(str(o.TR_1))
         if o.TR_2 != None:
             tr.append(str(o.TR_2))
-        fields["TR"] = "; ".join(tr)
+        fields["TR"] = " ".join(tr)
         ts = []
         if o.TS_1 != None:
             ts.append(str(o.TS_1))
         if o.TS_2 != None:
             ts.append(str(o.TS_2))
-        fields["TS"] = "; ".join(ts)
+        fields["TS"] = " ".join(ts)
         fields["PWSpeed"] = str(o.PWSpeed) if o.PWSpeed != None else ""
         fields["RWSpeed"] = str(o.RWSpeed) if o.RWSpeed != None else ""
         fields["SWSpeed"] = str(o.SWSpeed) if o.SWSpeed != None else ""
@@ -149,163 +150,168 @@ class DMModel(Model):
         return -1
 
     def _build_columns(self):
-        return [
-            Column(
+        return {
+            "SampleNumber": Column(
                 "SampleNumber",
                 StringCellType(),
                 "* № Образца",
                 "Регистрационный номер образца керна",
                 self._get_column_width("SampleNumber"),
             ),
-            Column(
+            "Diameter": Column(
                 "Diameter",
                 FloatCellType(),
-                "* Диаметр\n(м)",
+                "* Диаметр\n(мм)",
                 "Диаметр образца керна",
                 self._get_column_width("Diameter"),
             ),
-            Column(
+            "Length": Column(
                 "Length",
                 FloatCellType(),
-                "* Длина\n(м)",
+                "* Длина\n(см)",
                 "Длина образца керна",
                 self._get_column_width("Length"),
             ),
-            Column(
+            "Weight": Column(
                 "Weight",
                 FloatCellType(),
                 "* Вес\n(г)",
                 "Вес образца\nкерна",
                 self._get_column_width("Weight"),
             ),
-            Column(
+            "CoreDepth": Column(
                 "CoreDepth",
                 FloatCellType(),
                 "* Глубина\nвзятия (м)",
                 "Глубина взятия образца керна",
                 self._get_column_width("CoreDepth"),
             ),
-            Column(
+            "RockType": Column(
                 "RockType",
                 StringCellType(),
                 "* Тип породы",
                 "Тип породы",
                 self._get_column_width("RockType"),
             ),
-            Column(
+            "E": Column(
                 "E",
                 VecCellType(FloatCellType(), min_count=1, max_count=4),
                 "* Относит.\nдеформ",
                 "Относительная деформация образца",
                 self._get_column_width("E"),
             ),
-            Column(
+            "Rotate": Column(
                 "Rotate",
                 FloatCellType(),
                 "* Угол корр.\nнапряж.\n(град.)",
                 "Угол коррекции направления напряжений",
                 self._get_column_width("Rotate"),
             ),
-            Column(
+            "PartNumber": Column(
                 "PartNumber",
                 StringCellType(),
                 "* № партии\nтензодат",
                 "Номер партии тензодатчиков",
                 self._get_column_width("PartNumber"),
             ),
-            Column(
+            "RTens": Column(
                 "RTens",
                 FloatCellType(),
                 "* Сопрот.\nТезодат. (Ом)",
                 "Сопротивление тензодатчиков",
                 self._get_column_width("RTens"),
             ),
-            Column(
+            "Sensitivity": Column(
                 "Sensitivity",
                 FloatCellType(),
                 "* Чувств.\nТезодат.",
                 "Коэффициент чувствительности тензодатчиков",
                 self._get_column_width("Sensitivity"),
             ),
-            Column(
+            "TP1": Column(
                 "TP1",
                 VecCellType(FloatCellType(), 0, 2),
                 "Время\nпродоль.\n(мс)",
                 "Замер времени прохождения продольных волн (ультразвуковое профилирование или др.)",
                 self._get_column_width("TP1"),
+                optional=True,
             ),
-            Column(
+            "TP2": Column(
                 "TP2",
                 VecCellType(FloatCellType(), 0, 2),
                 "Время продоль.\n(торц.) (мс)",
                 "Замер времени прохождения продольных волн (торц.)",
                 self._get_column_width("TP2"),
+                optional=True,
             ),
-            Column(
+            "PWSpeed": Column(
                 "PWSpeed",
                 FloatCellType(),
                 "Скорость\nпродоль.\n(м/с)",
                 "Коэффициент чувствительности тензодатчиков",
                 self._get_column_width("PWSpeed"),
+                optional=True,
             ),
-            Column(
+            "TR": Column(
                 "TR",
                 VecCellType(FloatCellType(), 0, 2),
                 "Время\nповерхност.\n(мс)",
                 "Замер времени прохождения поверхностных волн",
                 self._get_column_width("TR"),
+                optional=True,
             ),
-            Column(
+            "RWSpeed": Column(
                 "RWSpeed",
                 FloatCellType(),
                 "Скорость\nповерхност.\n(мс)",
                 "Скорость поверхностны волн",
                 self._get_column_width("RWSpeed"),
+                optional=True,
             ),
-            Column(
+            "TS": Column(
                 "TS",
                 VecCellType(FloatCellType(), 0, 2),
                 "t попереч.\n(мс)",
                 "Замер времени прохождения поперечных волн",
                 self._get_column_width("TS"),
+                optional=True,
             ),
-            Column(
-                "SWSpeed",
-                FloatCellType(),
-                "Скорость\nпопереч.\n(м/с)",
-                "Скорость поперечных волн",
-                self._get_column_width("SWSpeed"),
+            "SWSpeed": Column(
+                "SWSpeed", FloatCellType(), "Скорость\nпопереч.\n(м/с)", "Скорость поперечных волн", self._get_column_width("SWSpeed"), optional=True
             ),
-            Column(
+            "PuassonStatic": Column(
                 "PuassonStatic",
                 FloatCellType(),
                 "Пуассон\nстатич.",
                 "Статический коэффициент Пуассона",
                 self._get_column_width("PuassonStatic"),
+                optional=True,
             ),
-            Column(
+            "YungStatic": Column(
                 "YungStatic",
                 FloatCellType(),
                 "Юнг\nстатич.",
                 "Статический модуль Юнга",
                 self._get_column_width("YungStatic"),
+                optional=True,
             ),
-        ]
+        }
 
     def get_columns(self) -> Iterable[Column]:
-        return self._columns
+        return list(self._columns.values())
 
     def get_row_state(self, row: int):
         return self._rows[row]
 
     def get_value_at(self, col: int, row: int) -> str:
+        _id = list(self._columns.keys()).__getitem__(col)
         row = self._rows[row]
-        _id = self._columns[col].id
         return row.fields[_id] if _id not in row.changed_fields else row.changed_fields[_id]
 
     def set_value_at(self, col: int, row: int, value: str):
         if self.get_value_at(col, row) != value:
-            self._rows[row].changed_fields[self._columns[col].id] = value
+            _id = list(self._columns.keys()).__getitem__(col)
+            self._rows[row].changed_fields[_id] = value
 
     def insert_row(self, row: int):
         fields = {
@@ -313,7 +319,7 @@ class DMModel(Model):
             "Length": "0.0",
             "Weight": "0.0",
             "CoreDepth": "0.0",
-            "E": "0.0; 0.0; 0.0; 0.0",
+            "E": "0.0 0.0 0.0 0.0",
             "Rotate": "0.0",
             "PartNumber": "",
             "RTens": "0.0",
@@ -351,10 +357,48 @@ class DMModel(Model):
                 return True
         return len(self._deleted_rows) > 0
 
-    def validate(self): ...
+    def validate(self):
+        errors = []
+        for col in self._columns.values():
+            for row_index, row in enumerate(self._rows):
+                if col.id in row.changed_fields:
+                    value = row.changed_fields[col.id]
+                else:
+                    value = row.fields[col.id]
+                if len(value) == 0:
+                    if col.optional:
+                        continue
+                    else:
+                        _msg = "Значение не должно быть пустым."
+                        errors.append((col, row_index, _msg))
+                if len(value) > 0 and not col.cell_type.test_repr(value):
+                    _msg = 'Неподходящее значение для ячейки типа "%s"' % col.cell_type.get_type_descr()
+                    errors.append((col, row_index, _msg))
+
+        duplicates = {}
+        for index, row in enumerate(self._rows):
+            if "SampleNumber" in row.changed_fields:
+                _v = row.changed_fields["SampleNumber"]
+            else:
+                _v = row.fields["SampleNumber"]
+            if len(_v) == 0:
+                continue
+            if _v not in duplicates:
+                duplicates[_v] = []
+            duplicates[_v].append(index)
+        col = self._columns["SampleNumber"]
+        for indexes in duplicates.values():
+            if len(indexes) > 1:
+                errors.append((col, indexes[0], "Номер замера должен быть уникален"))
+
+        return errors
 
     @db_session
     def save(self):
+        if len(self.validate()) > 0:
+            wx.MessageBox("В таблице обнаружены ошибки. Сохранение невозможно.", "Ошибка сохранения.", style=wx.OK | wx.ICON_ERROR)
+            return False
+
         try:
             for _id in self._deleted_rows:
                 DischargeMeasurement[_id].delete()
@@ -362,9 +406,7 @@ class DMModel(Model):
             rollback()
             raise
         self._deleted_rows = []
-        columns = {}
-        for c in self._columns:
-            columns[c.id] = c
+        columns = self._columns
         sample_set = OrigSampleSet[self._core.RID]
         new_rows = []
         max_dsch_number = 0
@@ -418,6 +460,7 @@ class DMModel(Model):
             fields["E3"] = e0[2]
             fields["E4"] = e0[3]
             fields["Rotate"] = columns["Rotate"].cell_type.from_string(f["Rotate"])
+            print(fields)
             if row.o != None:
                 try:
                     o = DischargeMeasurement[row.o.RID]
@@ -456,9 +499,12 @@ class DMEditor(BaseEditor):
             toolbar,
             statusbar,
             header_height=50,
-            freezed_cols=1,
         )
         self.editor.Bind(EVT_GRID_COLUMN_RESIZED, self._on_editor_column_resized)
+        self.editor.Bind(EVT_GRID_MODEL_STATE_CHANGED, self._on_model_state_changed)
+
+    def _on_model_state_changed(self, event):
+        self.editor.validate(save_edit_control=False)
 
     def _on_editor_column_resized(self, event):
         if self._config_provider["column_width"] == None:
