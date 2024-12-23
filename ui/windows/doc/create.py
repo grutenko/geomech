@@ -27,14 +27,6 @@ class CreateDocumentDialog(wx.Dialog):
         top_sizer.Add(main_sizer, 0, wx.EXPAND | wx.ALL, border=10)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(self, label="Название*")
-        sizer.Add(label, 0)
-        self.field_name = wx.TextCtrl(self, size=wx.Size(250, -1))
-        self.field_name.SetValidator(TextValidator(lenMin=1, lenMax=256))
-        sizer.Add(self.field_name, 0, wx.EXPAND)
-        left_sizer.Add(sizer, 0, wx.EXPAND | wx.BOTTOM, border=5)
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(self, label="Тип документа*")
         sizer.Add(label, 0)
         self.field_type = wx.TextCtrl(self, size=wx.Size(250, -1))
@@ -90,16 +82,10 @@ class CreateDocumentDialog(wx.Dialog):
             return
 
         fields = {
-            "Name": self.field_name.GetValue(),
+            "Number": self.field_number.GetValue().strip(),
             "Type": self.field_type.GetValue(),
             "Comment": self.field_comment.GetValue(),
         }
-
-        number = self.field_number.GetValue().strip()
-        if len(number) > 0:
-            fields["Number"] = number
-        else:
-            fields["Number"] = fields["Name"]
 
         if self._type == "CREATE":
             o = FoundationDocument(**fields)

@@ -70,7 +70,7 @@ class PmList(wx.Panel):
         discharges = select(o for o in PMTestSeries).order_by(lambda x: desc(x.RID))
         self._items = []
         for index, o in enumerate(discharges):
-            item = self._list.InsertItem(index, o.Name, self._book_stack_icon)
+            item = self._list.InsertItem(index, o.Number, self._book_stack_icon)
             self._list.SetItem(item, 1, o.Location if o.Location != None else o.Location)
             self._list.SetItemData(item, o.RID)
             self._items.append(o)

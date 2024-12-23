@@ -118,6 +118,7 @@ class Root_Node(TreeNode):
 class PmSeriesDetail(wx.Panel):
     def __init__(self, parent, menubar, toolbar, statusbar):
         super().__init__(parent)
+        self.o = None
         self.menubar = menubar
         self.toolbar = toolbar
         self.statusbar = statusbar

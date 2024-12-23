@@ -24,12 +24,12 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
         self._image_list = wx.ImageList(16, 16)
         self._book_stack_icon = self._image_list.Add(get_icon("read"))
         self._list = wx.ListCtrl(self, style=wx.LC_REPORT)
-        self._list.AppendColumn("Название", width=250)
+        self._list.AppendColumn("Скважина", width=50)
+        self._list.AppendColumn("Кол.во. замеров", width=50)
         self._list.AppendColumn("Дата начала", width=100)
         self._list.AppendColumn("Дата окончания", width=100)
         self._list.AppendColumn("Договор", width=150)
         self._list.AppendColumn("Месторождение", width=150)
-        self._list.AppendColumn("ID", format=wx.LIST_FORMAT_RIGHT, width=70)
         self._list.AssignImageList(self._image_list, wx.IMAGE_LIST_SMALL)
         listmix.ColumnSorterMixin.__init__(self, 6)
         main_sizer.Add(self._list, 1, wx.EXPAND)
@@ -125,7 +125,8 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
         self.itemDataMap = {}
         for index, o in enumerate(discharges):
             _row = []
-            _row.append(o.Name)
+            _row.append(o.orig_sample_set.bore_hole.Number.split("@", 1).__getitem__(0))
+            _row.append(len(o.orig_sample_set.discharge_measurements))
             _row.append(decode_date(o.StartMeasure))
             if o.EndMeasure != None:
                 _end_measure = decode_date(o.EndMeasure)
@@ -148,7 +149,7 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
             item = self._list.InsertItem(index, _row[0], self._book_stack_icon)
             self._list.SetItem(item, 1, _row[1].__str__())
             self._list.SetItem(item, 2, _row[2].__str__())
-            self._list.SetItem(item, 3, _row[3])
+            self._list.SetItem(item, 3, _row[3].__str__())
             self._list.SetItem(item, 4, _row[4])
             self._list.SetItem(item, 5, _row[5].__str__())
             self._list.SetItemData(item, o.RID)
