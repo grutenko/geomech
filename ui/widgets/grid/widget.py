@@ -1040,7 +1040,7 @@ class GridEditor(wx.Panel):
         menu.Bind(wx.EVT_MENU, self._on_select_all, self._item_2)
         self._item_3 = menu.Append(ID_CANCEL_SELECTION, "Снять выделение\tCTRL+SHIFT+A")
         menu.Bind(wx.EVT_MENU, self._on_cancel_selection, self._item_3)
-        menu.AppendSeparator()
+        self._sep_3 = menu.AppendSeparator()
         self._item_4 = menu.Append(wx.ID_ANY, "Убрать значения\tDEL")
         menu.Bind(wx.EVT_MENU, self._on_remove_values, self._item_4)
 
@@ -1091,6 +1091,7 @@ class GridEditor(wx.Panel):
         menu.Remove(self._item_2).Destroy()
         menu.Remove(self._item_3).Destroy()
         menu.Remove(self._item_4).Destroy()
+        menu.Remove(self._sep_3).Destroy()
         menu = self.menubar.GetMenu(2)
         menu.Remove(self._item_5).Destroy()
         menu.Remove(self._sep_2).Destroy()

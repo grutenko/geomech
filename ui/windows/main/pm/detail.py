@@ -1,8 +1,10 @@
 import pubsub
 import wx
 from pony.orm import *
+from pubsub import pub
 
-from database import PMSample, PmSamplePropertyValue, PMSampleSet, PMTestSeries
+from database import PMSample, PMSampleSet, PMTestSeries
+from ui.delete_object import delete_object
 from ui.icon import get_icon
 from ui.widgets.tree.widget import (
     EVT_WIDGET_TREE_ACTIVATED,
@@ -13,9 +15,8 @@ from ui.widgets.tree.widget import (
 
 from ..identity import Identity
 from ..notebook.widget import EditorNotebook
-from .grid_sample_sets import PmSampleSetsEditor
-from .grid_sample_test_values import GridSampleTests
-from .grid_samples import PmSampleEditor
+from .grid_samples import GridSamples
+from .sample_set_dialog import SampleSetDialog
 
 
 class Simple_Node(TreeNode):
@@ -43,33 +44,52 @@ class Simple_Node(TreeNode):
         return isinstance(node, Simple_Node) and node.identity.__eq__(self.identity)
 
 
-class _PmSamplesSets_Node(Simple_Node):
-    def __init__(self, _series):
-        super().__init__(self._make_name(_series), ("table", get_icon("table")), Identity(_series, _series, PMSampleSet))
+class PmSampleSet_Node(Simple_Node):
+    def __init__(self, o):
+        self.o = o
+        super().__init__(self._make_name(), ("file", get_icon("file")), Identity(o, o, None))
 
     @db_session
-    def _make_name(self, _series):
-        count = select(o for o in PMSampleSet if o.pm_test_series == _series).count()
+    def get_parent(self):
+        return PmSampleSetsSection_Node(PMTestSeries[self.o.pm_test_series.RID])
+
+    @db_session
+    def _make_name(self):
+        name = self.o.Number
+        samples_count = select(o for o in PMSample if o.pm_sample_set == self.o).count()
+        name += " (Образцов: %d)" % samples_count
+        return name
+
+
+class PmSampleSetsSection_Node(TreeNode):
+    def __init__(self, o):
+        super().__init__()
+        self.o = o
+
+    def get_parent(self):
+        return Root_Node(self.o)
+
+    @db_session
+    def get_name(self):
+        count = select(o for o in PMSampleSet if o.pm_test_series == self.o).count()
         return "Пробы (%d)" % count
 
+    def get_icon(self):
+        return "folder", get_icon("folder")
 
-class _PmSamples_Node(Simple_Node):
-    def __init__(self, _series):
-        super().__init__(self._make_name(_series), ("table", get_icon("table")), Identity(_series, _series, PMSample))
-
-    @db_session
-    def _make_name(self, _series):
-        count = select(o for o in PMSample if o.pm_sample_set.pm_test_series == _series).count()
-        return "Образцы (%d)" % count
-
-
-class _PmSampleTestValues(Simple_Node):
-    def __init__(self, _series):
-        super().__init__(self._make_name(_series), ("table", get_icon("table")), Identity(_series, _series, PmSamplePropertyValue))
+    def get_icon_open(self):
+        return "folder-open", get_icon("folder-open")
 
     @db_session
-    def _make_name(self, _series):
-        return "Значения свойств для образцов"
+    def get_subnodes(self):
+        nodes = []
+
+        for o in select(o for o in PMSampleSet if o.pm_test_series == self.o).order_by(lambda o: o.Number):
+            nodes.append(PmSampleSet_Node(o))
+        return nodes
+
+    def __eq__(self, node):
+        return isinstance(node, PmSampleSetsSection_Node) and node.o.RID == self.o.RID
 
 
 class Root_Node(TreeNode):
@@ -77,7 +97,7 @@ class Root_Node(TreeNode):
         self.o = o
 
     def get_parent(self) -> "TreeNode":
-        return TreeNode(self.o)
+        return Root_Node(self.o)
 
     def get_name(self) -> str:
         return "Объекты"
@@ -85,9 +105,7 @@ class Root_Node(TreeNode):
     @db_session
     def get_subnodes(self):
         nodes = []
-        nodes.append(_PmSamplesSets_Node(self.o))
-        nodes.append(_PmSamples_Node(self.o))
-        nodes.append(_PmSampleTestValues(self.o))
+        nodes.append(PmSampleSetsSection_Node(self.o))
         return nodes
 
     def is_root(self):
@@ -125,56 +143,79 @@ class PmSeriesDetail(wx.Panel):
     def _on_item_menu(self, event):
         menu = wx.Menu()
         node = event.node
-        if isinstance(node, _PmSamplesSets_Node):
-            index, _ = EditorNotebook.get_instance().get_by_identity(Identity(self.o, self.o, PMSampleSet))
-            if index == -1:
-                item = menu.Append(wx.ID_OPEN, "Открыть редактор")
+        if isinstance(node, PmSampleSetsSection_Node):
+            item = menu.Append(wx.ID_ANY, "Добавить пробу")
+            menu.Bind(wx.EVT_MENU, self._on_append_sample_sets, item)
+        if isinstance(node, PmSampleSet_Node):
+            _n: EditorNotebook = EditorNotebook.get_instance()
+            index, page = _n.get_by_identity(Identity(node.identity.o, node.identity.o, PMSample))
+            if index != -1:
+                title = "Перейти к открытому редактору образцов"
             else:
-                item = menu.Append(wx.ID_OPEN, "Перейти к открытому редактору")
-            menu.Bind(wx.EVT_MENU, self._on_open_sample_sets, item)
-        if isinstance(node, _PmSamples_Node):
-            index, _ = EditorNotebook.get_instance().get_by_identity(Identity(self.o, self.o, PMSample))
-            if index == -1:
-                item = menu.Append(wx.ID_OPEN, "Открыть редактор")
-            else:
-                item = menu.Append(wx.ID_OPEN, "Перейти к открытому редактору")
-            menu.Bind(wx.EVT_MENU, self._on_open_samples, item)
-        if isinstance(node, _PmSampleTestValues):
-            index, _ = EditorNotebook.get_instance().get_by_identity(Identity(self.o, self.o, PmSamplePropertyValue))
-            if index == -1:
-                item = menu.Append(wx.ID_OPEN, "Открыть редактор")
-            else:
-                item = menu.Append(wx.ID_OPEN, "Перейти к открытому редактору")
-            menu.Bind(wx.EVT_MENU, self._on_open_sample_propety_values, item)
+                title = "Открыть редактор образцов"
+            item = menu.Append(wx.ID_ANY, title)
+            menu.Bind(wx.EVT_MENU, self._on_open_samples_editor, item)
+            menu.AppendSeparator()
+            item = menu.Append(wx.ID_ANY, "Изменить")
+            menu.Bind(wx.EVT_MENU, self._on_edit_sample_set, item)
+            item = menu.Append(wx.ID_ANY, "Удалить")
+            menu.Bind(wx.EVT_MENU, self._on_delete_sample_set, item)
         self.PopupMenu(menu, event.point)
 
-    def _on_add_values_by_method(self, event): ...
+    def _on_open_samples_editor(self, event=None):
+        node = self._tree.get_current_node()
+        _n: EditorNotebook = EditorNotebook.get_instance()
+        index, page = _n.get_by_identity(Identity(node.identity.o, node.identity.o, PMSample))
+        if index != -1:
+            _n.select_by_index(index)
+        else:
+            _n.add_editor(GridSamples(_n, node.identity.o, self.menubar, self.toolbar, self.statusbar))
+
+    def _on_append_sample_sets(self, event):
+        dlg = SampleSetDialog(self, self.o)
+        if dlg.ShowModal() == wx.ID_OK:
+            node = self._tree.get_current_node()
+            self._tree.soft_reload_childrens(node)
+            self._tree.soft_reload_node(node)
+            self._tree.select_node(PmSampleSet_Node(dlg.o))
+
+    def _on_edit_sample_set(self, event):
+        node = self._tree.get_current_node()
+        if isinstance(node, PmSampleSet_Node):
+            dlg = SampleSetDialog(self, node.o, _type="UPDATE")
+            if dlg.ShowModal() == wx.ID_OK:
+                self._tree.soft_reload_node(node)
+
+    def _on_delete_sample_set(self, event):
+        node = self._tree.get_current_node()
+        if isinstance(node, PmSampleSet_Node):
+
+            _n: EditorNotebook = EditorNotebook.get_instance()
+            index, page = _n.get_by_identity(Identity(node.identity.o, node.identity.o, PMSample))
+            if index != -1:
+                wx.MessageBox(
+                    "Таблица-редактор для этой пробы открыт.\nЗакройте редактор и повторите удаление.", "Удаление запрещено.", wx.OK | wx.ICON_ERROR
+                )
+                return
+
+            if delete_object(node.o, ["pm_samples"]):
+                node = node.get_parent()
+                self._tree.soft_reload_childrens(node)
+                self._tree.soft_reload_node(node)
+                pub.sendMessage("object.deleted", o=node.o)
 
     def _on_item_activated(self, event):
-        if isinstance(event.node, _PmSamplesSets_Node):
-            self._on_open_sample_sets(event)
-        if isinstance(event.node, _PmSamples_Node):
-            self._on_open_samples(event)
-        if isinstance(event.node, _PmSampleTestValues):
-            self._on_open_sample_propety_values(event)
+        node = self._tree.get_current_node()
+        if isinstance(node, PmSampleSet_Node):
+            self._on_open_samples_editor()
 
-    def _on_open_sample_propety_values(self, event):
-        n = EditorNotebook.get_instance()
-        _id = Identity(self.o, self.o, PmSamplePropertyValue)
-        if not n.select_by_identity(_id):
-            n.add_editor(GridSampleTests(n, _id, self.o, self.menubar, self.toolbar, self.statusbar))
-
-    def _on_open_samples(self, event):
-        n = EditorNotebook.get_instance()
-        _id = Identity(self.o, self.o, PMSample)
-        if not n.select_by_identity(_id):
-            n.add_editor(PmSampleEditor(n, _id, self.menubar, self.toolbar, self.statusbar))
-
-    def _on_open_sample_sets(self, event):
-        n = EditorNotebook.get_instance()
-        _id = Identity(self.o, self.o, PMSampleSet)
-        if not n.select_by_identity(_id):
-            n.add_editor(PmSampleSetsEditor(n, _id, self.menubar, self.toolbar, self.statusbar))
+    def get_current_sample_set(self):
+        node = self._tree.get_current_node()
+        if isinstance(node, PmSampleSet_Node):
+            o = node.o
+        else:
+            o = None
+        return o
 
     def get_item_name(self):
         if self.o != None:

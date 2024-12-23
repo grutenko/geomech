@@ -8,6 +8,7 @@ from .bore_hole import BoreHoleFastview
 from .core import CoreFastview
 from .discharge_series import DischargeSeriesFastview
 from .mine_object import MineObjectFastview
+from .pm_sample_set import PmSampleSetFastview
 from .pm_test_series import PmTestSeriesFastview
 from .rock_burst import RockBurstFastview
 from .station import StationFastview
@@ -45,6 +46,7 @@ class FastView(wx.Panel):
         self._pm_test_series = PmTestSeriesFastview(self)
         self._rock_burst = RockBurstFastview(self)
         self._station = StationFastview(self)
+        self._pm_sample_set = PmSampleSetFastview(self)
 
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self._sizer)
@@ -75,6 +77,8 @@ class FastView(wx.Panel):
             new_win = self._discharge_series
         elif isinstance(identity.rel_data_o, PMTestSeries):
             new_win = self._pm_test_series
+        elif isinstance(identity.rel_data_o, PMSampleSet):
+            new_win = self._pm_sample_set
         else:
             self.stop()
             return

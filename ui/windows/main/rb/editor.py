@@ -104,7 +104,6 @@ class RockBurstEditor(wx.Frame):
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.page1_propgrid = wx.propgrid.PropertyGrid(self.page1, style=wx.propgrid.PG_DEFAULT_STYLE | wx.propgrid.PG_SPLITTER_AUTO_CENTER)
         pg = self.page1_propgrid
-        pg.Append(wx.propgrid.IntProperty("ID события в АСКСМ", "ASKSM_ID"))
         pg.Append(wx.propgrid.StringProperty("Дата и время", "ASKSM_Date"))
         pg.Append(wx.propgrid.FloatProperty("Энергия", "ASKSM_Energy"))
         pg.Append(wx.propgrid.LongStringProperty("Комментарий", "ASKSM_Comment"))
@@ -143,7 +142,7 @@ class RockBurstEditor(wx.Frame):
         self.page4_list = wx.ListCtrl(self.page4)
         sizer.Add(self.page4_list, 1, wx.EXPAND)
         self.page4.SetSizer(sizer)
-        self.notebook.AddPage(self.page4, "Признаки")
+        self.notebook.AddPage(self.page4, "Признаки удароопасности")
 
         self.page5 = wx.Panel(self.notebook)
         self.notebook.AddPage(self.page5, "Мероприятия")

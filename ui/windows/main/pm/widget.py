@@ -3,6 +3,7 @@ import wx.lib.newevent
 
 from ui.class_config_provider import ClassConfigProvider
 from ui.icon import get_icon
+from ui.widgets.tree.widget import EVT_WIDGET_TREE_SEL_CHANGED
 
 from ..identity import Identity
 from .create import DialogCreatePmSeries
@@ -50,6 +51,7 @@ class PmPanel(wx.Panel):
         self.main_sizer = main_sizer
 
         self._details = PmSeriesDetail(self, self.menubar, self.toolbar, self._statusbar)
+        self._details._tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self._on_selection_changed)
         self._list = PmList(self)
         self._list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_item_activated)
         self._list.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_selection_changed)
@@ -72,7 +74,11 @@ class PmPanel(wx.Panel):
         )
 
     def _on_selection_changed(self, event):
-        o = self._list.get_current_o()
+        if self._current_rid == None:
+            o = self._list.get_current_o()
+        else:
+            o = self._details.get_current_sample_set()
+
         if o != None:
             identity = Identity(o, o, None)
         else:

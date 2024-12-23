@@ -272,6 +272,8 @@ class Tree(wx.Panel):
             WidgetTreeSelChanged(node=(self._tree.GetItemData(event.GetItem()).node if self._tree.GetSelection().IsOk() else None)),
         )
 
+        event.Skip()
+
     def _on_native_item_activated(self, event: wx.TreeEvent):
         wx.PostEvent(self, WidgetTreeActivated(node=self._tree.GetItemData(event.GetItem()).node))
 
