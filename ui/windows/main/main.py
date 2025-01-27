@@ -303,8 +303,16 @@ class MainFrame(wx.Frame):
         pubsub.pub.subscribe(self._cmd_on_select_object, "cmd.object.select")
         pubsub.pub.subscribe(self._cmd_on_show_supplied_data, "cmd.supplied_data.show")
         pubsub.pub.subscribe(self._cmd_dm_open, "cmd.dm.open")
+        pubsub.pub.subscribe(self._cmd_dm_create, "cmd.dm.create")
+        pubsub.pub.subscribe(self._cmd_dm_delete, "cmd.dm.delete")
         pubsub.pub.subscribe(self._cmd_on_close_editor, "cmd.editor.close")
         pubsub.pub.subscribe(self._cmd_on_open_editor, "cmd.editor.open")
+
+    def _cmd_dm_delete(self, target, core):
+        self.dm.delete(core)
+
+    def _cmd_dm_create(self, target, core):
+        self.dm.create(core)
 
     def _on_open_pt(self, event):
         if self._pt_settings.IsShown():

@@ -89,8 +89,8 @@ class DischargePanel(wx.Panel):
             self._config_provider["notebook_page"] = self._notebook.GetSelection()
             self._config_provider.flush()
 
-    def _on_add_btn(self, event):
-        dlg = DialogCreateDischargeSeries(self)
+    def _on_add_btn(self, event=None, core=None):
+        dlg = DialogCreateDischargeSeries(self, suggested_core=core)
         if dlg.ShowModal() == wx.ID_OK:
             self._list._load()
 
@@ -154,3 +154,11 @@ class DischargePanel(wx.Panel):
                     self._details._open_editor()
                 except Exception as e:
                     logging.exception(e)
+
+    def create(self, core):
+        self._on_add_btn(core=core)
+
+    @db_session
+    def delete(self, core):
+        self._list.select_by_identity(Identity(core, core))
+        self._list._on_delete()

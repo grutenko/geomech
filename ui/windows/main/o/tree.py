@@ -464,16 +464,33 @@ class TreeWidget(Tree):
             item = m.Append(wx.ID_ANY, "Открыть (замеров: %d)" % count)
         item.SetBitmap(get_icon("book-stack"))
         m.Bind(wx.EVT_MENU, self._on_select_dm, item)
-        if series != None:
-            item = m.Append(wx.ID_ANY, "(Привязано) Привязать серию замеров")
+        if series == None:
+            item = m.Append(wx.ID_ANY, "(Серия не создана) Удалить серию замеров")
             item.Enable(False)
         else:
-            item = m.Append(wx.ID_ANY, "Привязать серию замеров")
+            item = m.Append(wx.ID_ANY, "Удалить серию замеров")
+            m.Bind(wx.EVT_MENU, self._on_delete_discharge_series, item)
+        if series != None:
+            item = m.Append(wx.ID_ANY, "(Привязано) Создать серию замеров")
+            item.Enable(False)
+        else:
+            item = m.Append(wx.ID_ANY, "Создать серию замеров")
+            m.Bind(wx.EVT_MENU, self._on_create_discharge_series, item)
         menu.AppendSubMenu(m, "Разгрузочные замеры")
         item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
         item.SetBitmap(get_icon("versions"))
         menu.Bind(wx.EVT_MENU, self._on_open_supplied_data, item)
         self.PopupMenu(menu, point)
+
+    def _on_delete_discharge_series(self, event):
+        o = self._current_object
+        # Посылаем команду открытия окна создания серии замеров
+        pubsub.pub.sendMessage("cmd.dm.delete", target=self, core=o)
+
+    def _on_create_discharge_series(self, event):
+        o = self._current_object
+        # Посылаем команду открытия окна создания серии замеров
+        pubsub.pub.sendMessage("cmd.dm.create", target=self, core=o)
 
     def _on_select_dm(self, event):
         o = self._current_object

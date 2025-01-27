@@ -77,7 +77,7 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
         self.PopupMenu(menu, event.GetPosition())
 
     @db_session
-    def _on_delete(self, event):
+    def _on_delete(self, event=None):
         if self._list.GetFirstSelected() == -1:
             return None
         ds = self._items[self._list.GetItemData(self._list.GetFirstSelected())]

@@ -12,7 +12,7 @@ WizPageChangingEvent, EVT_WIZ_PAGE_CHAGING = wx.lib.newevent.NewEvent()
 
 class DialogCreateDischargeSeries(wx.Dialog):
     @db_session
-    def __init__(self, parent, o=None, _type="CREATE"):
+    def __init__(self, parent, o=None, _type="CREATE", suggested_core=None):
         super().__init__(parent, title="Добавить набор замеров", size=wx.Size(400, 600))
         self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnScreen()
@@ -40,10 +40,13 @@ class DialogCreateDischargeSeries(wx.Dialog):
         self._cores = []
         if _type == "CREATE":
             cores = select(o for o in OrigSampleSet if len(o.discharge_series) == 0).order_by(lambda x: desc(x.RID))
-            for o in cores:
+            for i, o in enumerate(cores):
                 self._cores.append(o)
                 self.field_core.Append(o.Name)
-            if len(cores) > 0:
+                if suggested_core != None and suggested_core.RID == o.RID:
+                    self.field_core.SetSelection(i)
+                    wx.CallAfter(self._set_auto_fields)
+            if suggested_core != None and len(cores) > 0:
                 self.field_core.SetSelection(0)
         else:
             core = OrigSampleSet[self._target.orig_sample_set.RID]
@@ -126,7 +129,11 @@ class DialogCreateDischargeSeries(wx.Dialog):
 
     @db_session
     def _set_auto_fields(self):
-        o = self._cores[self.field_core.GetSelection()]
+        o: OrigSampleSet = self._cores[self.field_core.GetSelection()]
+        start_date = decode_date(o.StartSetDate)
+        self.field_start_date.SetValue(str(start_date))
+        if o.EndSetDate != None:
+            self.field_end_date.SetValue(str(decode_date(o.EndSetDate)))
         date = self.field_start_date.GetValue()
         self.field_name.SetValue(date + " " + o.Name)
 
