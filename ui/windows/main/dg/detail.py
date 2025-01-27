@@ -28,7 +28,7 @@ class DischargeDetails(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self._image_list = wx.ImageList(16, 16)
         self._table_icon = self._image_list.Add(get_icon("data-sheet"))
-        self._list = wx.ListCtrl(self, style=wx.LC_LIST)
+        self._list = wx.ListCtrl(self, style=wx.LC_REPORT)
         self._list.AssignImageList(self._image_list, wx.IMAGE_LIST_SMALL)
         self._list.AppendColumn("Элемент")
         self._list.InsertItem(1, "Замеры", self._table_icon)

@@ -302,7 +302,7 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MOVE_END, self._on_move, self)
         pubsub.pub.subscribe(self._cmd_on_select_object, "cmd.object.select")
         pubsub.pub.subscribe(self._cmd_on_show_supplied_data, "cmd.supplied_data.show")
-        pubsub.pub.subscribe(self._cmd_dm_select, "cmd.dm.select")
+        pubsub.pub.subscribe(self._cmd_dm_open, "cmd.dm.open")
         pubsub.pub.subscribe(self._cmd_on_close_editor, "cmd.editor.close")
         pubsub.pub.subscribe(self._cmd_on_open_editor, "cmd.editor.open")
 
@@ -364,12 +364,8 @@ class MainFrame(wx.Frame):
         else:
             self.editors.add_editor(ImportBoreHoles(self.editors, self.menu_bar, self.toolbar, self.statusbar))
 
-    def _cmd_dm_select(self, target, identity):
-        if not self.mgr.GetPane("dm").IsShown():
-            self.mgr.GetPane("dm").Show()
-            self.mgr.Update()
-            self._update_controls_state()
-        self.dm.select_by_identity(identity)
+    def _cmd_dm_open(self, target, identity):
+        self.dm.open_by_identity(identity)
 
     def _cmd_on_show_supplied_data(self, target):
         if not self.mgr.GetPane("supplied_data").IsShown():

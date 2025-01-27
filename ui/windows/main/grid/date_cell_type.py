@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from ui.custom_datetime import date, datetime
 
 import wx
 from wx.grid import (

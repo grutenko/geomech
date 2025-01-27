@@ -45,7 +45,6 @@ class DischargeList(wx.Panel, listmix.ColumnSorterMixin):
         self._list.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._on_item_selected)
 
     def _on_item_selected(self, event):
-        print(self._silence_select)
         if not self._silence_select:
             event.Skip()
 

@@ -40,11 +40,11 @@ class RbPanel(wx.Panel):
 
         self.list = wx.dataview.DataViewListCtrl(self, style=wx.dataview.DV_ROW_LINES)
         self.list.AppendBitmapColumn("", 0, width=20, flags=0)
-        column = self.list.AppendTextColumn("Название", 1, width=350)
+        column = self.list.AppendTextColumn("Название", width=350)
         column.SetSortable(sortable=True)
         column = self.list.AppendDateColumn("Дата события", 2)
         column.SetSortable(sortable=True)
-        column = self.list.AppendTextColumn("Месторождение", 3)
+        column = self.list.AppendTextColumn("Месторождение")
         column.SetSortable(sortable=True)
         main_sizer.Add(self.list, 1, wx.EXPAND)
 

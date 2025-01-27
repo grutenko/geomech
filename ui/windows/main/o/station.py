@@ -67,12 +67,14 @@ class DialogCreateStation(wx.Dialog):
 
         label = wx.StaticText(self, label="Дата закладки станции / начала измерений*")
         main_sizer.Add(label, 0)
-        self.field_start_date = DatePickerCtrl(self)
+        self.field_start_date = wx.TextCtrl(self)
+        self.field_start_date.SetValidator(DateValidator())
         main_sizer.Add(self.field_start_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(self, label="Дата завершения измерений")
         main_sizer.Add(label, 0)
-        self.field_end_date = DatePickerCtrl(self, style=DP_DEFAULT | DP_SHOWCENTURY | DP_ALLOWNONE)
+        self.field_end_date = wx.TextCtrl(self)
+        self.field_end_date.SetValidator(DateValidator(allow_empty=True))
         main_sizer.Add(self.field_end_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         collpane = wx.CollapsiblePane(self, wx.ID_ANY, "Координаты")
@@ -146,9 +148,9 @@ class DialogCreateStation(wx.Dialog):
         self.field_x.SetValue(o.X)
         self.field_y.SetValue(o.Y)
         self.field_z.SetValue(o.Z)
-        self.field_start_date.SetValue(ui.datetimeutil.decode_date(o.StartDate))
+        self.field_start_date.SetValue(ui.datetimeutil.decode_date(o.StartDate).__str__())
         if o.EndDate != None:
-            self.field_end_date.SetValue(ui.datetimeutil.decode_date(o.EndDate))
+            self.field_end_date.SetValue(ui.datetimeutil.decode_date(o.EndDate).__str__())
 
     @db_session
     def _on_orig_no_updated(self, event):
@@ -193,8 +195,8 @@ class DialogCreateStation(wx.Dialog):
         if self._type == "CREATE":
             fields["mine_object"] = self.parent
 
-        date: wx.DateTime = self.field_end_date.GetValue()
-        if date.IsValid():
+        date = self.field_end_date.GetValue()
+        if len(date.strip()) > 0:
             fields["EndDate"] = ui.datetimeutil.encode_date(date)
 
         if self._type == "CREATE":

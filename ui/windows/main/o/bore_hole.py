@@ -139,20 +139,17 @@ class DialogCreateBoreHole(wx.Dialog):
 
         label = wx.StaticText(props_pane, label="Азимут (град.)")
         props_sizer.Add(label, 0)
-        self.field_azimuth = wx.SpinCtrlDouble(props_pane, min=-100000000.0, max=10000000000.0)
-        self.field_azimuth.SetDigits(2)
+        self.field_azimuth = wx.SpinCtrl(props_pane, min=-100000000, max=10000000000)
         props_sizer.Add(self.field_azimuth, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(props_pane, label="Наклон (град.)")
         props_sizer.Add(label, 0)
-        self.field_tilt = wx.SpinCtrlDouble(props_pane, min=-100000000.0, max=10000000000.0)
-        self.field_tilt.SetDigits(2)
+        self.field_tilt = wx.SpinCtrl(props_pane, min=-100000000, max=10000000000)
         props_sizer.Add(self.field_tilt, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
-        label = wx.StaticText(props_pane, label="Диаметр (м)")
+        label = wx.StaticText(props_pane, label="Диаметр (мм)")
         props_sizer.Add(label, 0)
-        self.field_diameter = wx.SpinCtrlDouble(props_pane, min=-100000000.0, max=10000000000.0)
-        self.field_diameter.SetDigits(2)
+        self.field_diameter = wx.SpinCtrl(props_pane, min=-100000000, max=10000000000)
         props_sizer.Add(self.field_diameter, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(props_pane, label="Длина (м)")
@@ -200,14 +197,14 @@ class DialogCreateBoreHole(wx.Dialog):
         self.field_x.SetValue(o.X)
         self.field_y.SetValue(o.Y)
         self.field_z.SetValue(o.Z)
-        self.field_start_date.SetValue(str(ui.datetimeutil.decode_date(o.StartDate)))
+        self.field_start_date.SetValue(ui.datetimeutil.decode_date(o.StartDate).__str__())
         if o.EndDate != None:
-            self.field_end_date.SetValue(str(ui.datetimeutil.decode_date(o.EndDate)))
+            self.field_end_date.SetValue(ui.datetimeutil.decode_date(o.EndDate).__str__())
         if o.DestroyDate != None:
-            self.field_destroy_date.SetValue(str(ui.datetimeutil.decode_date(o.DestroyDate)))
-        self.field_azimuth.SetValue(o.Azimuth)
-        self.field_tilt.SetValue(o.Tilt)
-        self.field_diameter.SetValue(o.Diameter)
+            self.field_destroy_date.SetValue(ui.datetimeutil.decode_date(o.DestroyDate).__str__())
+        self.field_azimuth.SetValue(int(o.Azimuth))
+        self.field_tilt.SetValue(int(o.Tilt))
+        self.field_diameter.SetValue(int(o.Diameter * 1000))
         self.field_length.SetValue(o.Length)
 
     def _on_open_cs_transf(self, event):
@@ -251,9 +248,9 @@ class DialogCreateBoreHole(wx.Dialog):
             "X": self.field_x.GetValue(),
             "Y": self.field_y.GetValue(),
             "Z": self.field_z.GetValue(),
-            "Azimuth": self.field_azimuth.GetValue(),
-            "Tilt": self.field_tilt.GetValue(),
-            "Diameter": self.field_diameter.GetValue(),
+            "Azimuth": float(self.field_azimuth.GetValue()),
+            "Tilt": float(self.field_tilt.GetValue()),
+            "Diameter": float(self.field_diameter.GetValue() / 1000),
             "Length": self.field_length.GetValue(),
         }
 
@@ -269,11 +266,11 @@ class DialogCreateBoreHole(wx.Dialog):
         fields["StartDate"] = ui.datetimeutil.encode_date(self.field_start_date.GetValue())
 
         date = self.field_end_date.GetValue()
-        if len(date) > 0:
+        if len(date.strip()) > 0:
             fields["EndDate"] = ui.datetimeutil.encode_date(date)
 
         date = self.field_destroy_date.GetValue()
-        if len(date) > 0:
+        if len(date.strip()) > 0:
             fields["DestroyDate"] = ui.datetimeutil.encode_date(date)
 
         if self._type == "CREATE":

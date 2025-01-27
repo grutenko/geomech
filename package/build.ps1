@@ -23,5 +23,6 @@ pyinstaller --onefile `
             --hidden-import=pony.orm.dbproviders `
             --hidden-import=pony.orm.dbproviders.postgres `
             --hidden-import=psycopg2 `
-            --optimize=1 `
+            --hidden-import=transliterate `
+            --optimize=2 `
             $PSScriptRoot/../main.py

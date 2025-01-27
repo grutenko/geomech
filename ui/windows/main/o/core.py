@@ -54,12 +54,14 @@ class DialogCreateCore(wx.Dialog):
 
         label = wx.StaticText(self, label="Дата начала отбора образцов*")
         main_sizer.Add(label, 0)
-        self.field_start_date = DatePickerCtrl(self)
+        self.field_start_date = wx.TextCtrl(self)
+        self.field_start_date.SetValidator(DateValidator())
         main_sizer.Add(self.field_start_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(self, label="Дата завершения отбора")
         main_sizer.Add(label, 0)
-        self.field_end_date = DatePickerCtrl(self, style=DP_DEFAULT | DP_SHOWCENTURY | DP_ALLOWNONE)
+        self.field_end_date = wx.TextCtrl(self)
+        self.field_start_date.SetValidator(DateValidator(allow_empty=True))
         main_sizer.Add(self.field_end_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         line = wx.StaticLine(self)
@@ -100,9 +102,9 @@ class DialogCreateCore(wx.Dialog):
         self.field_number.SetValue(o.Number)
         self.field_name.SetValue(o.Name)
         self.field_comment.SetValue(o.Comment if o.Comment != None else "")
-        self.field_start_date.SetValue(ui.datetimeutil.decode_date(o.StartSetDate))
+        self.field_start_date.SetValue(ui.datetimeutil.decode_date(o.StartSetDate).__str__())
         if o.EndSetDate != None:
-            self.field_end_date.SetValue(ui.datetimeutil.decode_date(o.EndSetDate))
+            self.field_end_date.SetValue(ui.datetimeutil.decode_date(o.EndSetDate).__str__())
 
     def _apply_fields(self):
         self.field_name.SetValue("Керн:" + self.parent.Name)
@@ -129,8 +131,8 @@ class DialogCreateCore(wx.Dialog):
 
         fields["StartSetDate"] = ui.datetimeutil.encode_date(self.field_start_date.GetValue())
 
-        date: wx.DateTime = self.field_end_date.GetValue()
-        if date.IsValid():
+        date = self.field_end_date.GetValue()
+        if len(date.strip()) > 0:
             fields["EndSetDate"] = ui.datetimeutil.encode_date(date)
 
         if self._type == "CREATE":

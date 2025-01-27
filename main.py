@@ -10,7 +10,7 @@ import config
 import database
 import options
 import ui.windows.main.main
-import version
+import ui.icon
 from ui.start import StartDialog
 
 
@@ -35,6 +35,9 @@ if __name__ == "__main__":
         show_exception(exception_value)
 
     sys.excepthook = excepthook
+
+    if os.name != "nt":
+        ui.icon.icon_set_extesion_by_default("png")
 
     app = MyApp(0)
 

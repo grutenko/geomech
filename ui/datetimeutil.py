@@ -1,4 +1,4 @@
-import datetime
+from ui.custom_datetime import date as cdate, datetime as cdatetime
 
 import dateutil.parser
 import wx
@@ -9,12 +9,12 @@ def encode_date(date):
         year = date.GetYear()
         month = date.GetMonth() + 1
         day = date.GetDay()
-    elif isinstance(date, datetime.date):
+    elif isinstance(date, cdate):
         year = date.year
         month = date.month
         day = date.day
     elif isinstance(date, str):
-        date = dateutil.parser.parse(date)
+        date = dateutil.parser.parse(date, dayfirst=True)
         year = date.year
         month = date.month
         day = date.day
@@ -45,11 +45,11 @@ def encode_datetime(date: wx.DateTime, hour, minute, seconds):
 
 
 def decode_date(n):
-    return datetime.date(int(str(n)[:4]), int(str(n)[4:6]), int(str(n)[6:8]))
+    return cdate(int(str(n)[:4]), int(str(n)[4:6]), int(str(n)[6:8]))
 
 
 def decode_datetime(n):
-    return datetime.datetime(
+    return cdatetime(
         int(str(n)[:4]),
         int(str(n)[4:6]),
         int(str(n)[6:8]),

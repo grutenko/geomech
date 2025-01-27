@@ -5,7 +5,7 @@ pony==0.7.19
 psycopg2==2.9.9
 pypubsub==4.0.3
 markdown==3.7
-bs4==4.12.3
+bs4==0.0.2
 attrdict2==0.0.2
 numpy==2.1.2
 transliterate==1.10.2

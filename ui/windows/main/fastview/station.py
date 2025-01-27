@@ -31,8 +31,10 @@ class StationFastview(wx.Panel):
         self.propgrid.SetPropertyReadOnly(prop)
         category = self.propgrid.Append(wx.propgrid.PropertyCategory("Параметры", "Params"))
         prop = self.propgrid.AppendIn(category, wx.propgrid.DateProperty("Дата закладки", "StartDate"))
+        prop.SetFormat("%d.%m.%Y")
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.AppendIn(category, wx.propgrid.DateProperty("Дата завершения", "EndDate"))
+        prop.SetFormat("%d.%m.%Y")
         self.propgrid.SetPropertyReadOnly(prop)
         main_sizer.Add(self.propgrid, 1, wx.EXPAND)
 

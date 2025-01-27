@@ -8,7 +8,9 @@ from ui.windows.main.identity import Identity
 
 from .create import DialogCreateDischargeSeries
 from .detail import DischargeDetails
+from database import OrigSampleSet, DischargeSeries
 from .list import DischargeList
+import logging
 
 __CONFIG_VERSION__ = 2
 
@@ -141,3 +143,14 @@ class DischargePanel(wx.Panel):
 
     def select_by_identity(self, identity):
         self._list.select_by_identity(identity)
+
+    @db_session
+    def open_by_identity(self, identity: Identity):
+        if isinstance(identity.rel_data_o, OrigSampleSet):
+            series = select(o for o in DischargeSeries if o.orig_sample_set == identity.rel_data_o).first()
+            if series != None:
+                self._go_to_item(series.RID)
+                try:
+                    self._details._open_editor()
+                except Exception as e:
+                    logging.exception(e)

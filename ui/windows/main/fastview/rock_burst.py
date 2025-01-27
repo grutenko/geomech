@@ -22,6 +22,7 @@ class RockBurstFastview(wx.Panel):
         prop = self.propgrid.Append(wx.propgrid.LongStringProperty("Комментарий", "Comment"))
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.DateProperty("Дата события", "BurstDate"))
+        prop.SetFormat("%d.%m.%Y")
         self.propgrid.SetPropertyReadOnly(prop)
         category = self.propgrid.Append(wx.propgrid.PropertyCategory("Координаты", "Coords"))
         prop = self.propgrid.AppendIn(category, wx.propgrid.FloatProperty("X (м)", "X"))

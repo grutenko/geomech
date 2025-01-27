@@ -116,8 +116,9 @@ class StringCellType(CellType):
 
 
 class FloatCellType(CellType):
-    def __init__(self) -> None:
+    def __init__(self, prec=2) -> None:
         super().__init__()
+        self.prec = prec
 
     def get_type_name(self):
         return "float"
@@ -156,10 +157,10 @@ class FloatCellType(CellType):
         return str(value)
 
     def get_grid_renderer(self) -> GridCellRenderer:
-        return wx.grid.GridCellFloatRenderer(precision=2, format=wx.grid.GRID_FLOAT_FORMAT_FIXED)
+        return wx.grid.GridCellFloatRenderer(precision=self.prec, format=wx.grid.GRID_FLOAT_FORMAT_FIXED)
 
     def get_grid_editor(self) -> GridCellEditor:
-        return wx.grid.GridCellFloatEditor(precision=2, format=wx.grid.GRID_FLOAT_FORMAT_FIXED)
+        return wx.grid.GridCellFloatEditor(precision=self.prec, format=wx.grid.GRID_FLOAT_FORMAT_FIXED)
 
     def __eq__(self, value: object) -> bool:
         return type(value) == FloatCellType
@@ -185,8 +186,8 @@ class NumberCellType(CellType):
         return ret
 
     def from_string(self, value: str):
-        if value == None:
-            return 0
+        if value == None or len(value.strip()) == 0:
+            return None
         return int(value)
 
     def to_string(self, value) -> str:

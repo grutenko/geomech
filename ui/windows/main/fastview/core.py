@@ -22,8 +22,10 @@ class CoreFastview(wx.Panel):
         prop = self.propgrid.Append(wx.propgrid.LongStringProperty("Комментарий", "Comment"))
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.DateProperty("Дата отбора", "StartDate"))
+        prop.SetFormat("%d.%m.%Y")
         self.propgrid.SetPropertyReadOnly(prop)
         prop = self.propgrid.Append(wx.propgrid.DateProperty("Дата завершения отбора", "EndDate"))
+        prop.SetFormat("%d.%m.%Y")
         self.propgrid.SetPropertyReadOnly(prop)
         main_sizer.Add(self.propgrid, 1, wx.EXPAND)
 

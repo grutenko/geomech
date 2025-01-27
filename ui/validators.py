@@ -68,7 +68,7 @@ class DateValidator(Validator):
             ok = True
         else:
             try:
-                date = dateutil.parser.parse(ctrl.GetValue())
+                date = dateutil.parser.parse(ctrl.GetValue(), dayfirst=True)
             except:
                 ok = False
             else:

@@ -463,7 +463,8 @@ class TreeWidget(Tree):
 
     def _on_select_dm(self, event):
         o = self._current_object
-        pubsub.pub.sendMessage("cmd.dm.select", target=self, identity=Identity(o, o, None))
+        # Посылаем запрос на открытие вкладки таблицы замеров для этого керна
+        pubsub.pub.sendMessage("cmd.dm.open", target=self, identity=Identity(o, o, None))
 
     def _on_open_supplied_data(self, event):
         pubsub.pub.sendMessage("cmd.supplied_data.show", target=self)

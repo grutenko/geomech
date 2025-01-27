@@ -54,7 +54,7 @@ class VecCellType(CellType):
 
     def from_string(self, value: str):
         value = value.strip()
-        if value == None or value == "":
+        if value == None or value.strip() == "":
             return []
         values = []
         for item in re.split("\s+", value.strip()):
@@ -87,8 +87,8 @@ class DMModel(Model):
         fields = {
             "SampleNumber": str(o.SampleNumber),
             "Diameter": str(o.Diameter),
-            "Length": str(o.Length),
-            "Weight": str(o.Weight),
+            "Length": str(int(o.Length)),
+            "Weight": str(int(o.Weight)),
             "CoreDepth": str(o.CoreDepth),
         }
         columns = self._columns
@@ -105,31 +105,31 @@ class DMModel(Model):
         fields["RockType"] = str(o.RockType) if o.RockType != None else ""
         tp1 = []
         if o.TP1_1 != None:
-            tp1.append(str(o.TP1_1))
+            tp1.append(str(int(o.TP1_1)))
         if o.TP1_2 != None:
-            tp1.append(str(o.TP1_2))
+            tp1.append(str(int(o.TP1_2)))
         fields["TP1"] = " ".join(tp1)
         tp2 = []
         if o.TP2_1 != None:
-            tp2.append(str(o.TP2_1))
+            tp2.append(str(int(o.TP2_1)))
         if o.TP2_2 != None:
-            tp2.append(str(o.TP2_2))
+            tp2.append(str(int(o.TP2_2)))
         fields["TP2"] = " ".join(tp2)
         tr = []
         if o.TR_1 != None:
-            tr.append(str(o.TR_1))
+            tr.append(str(int(o.TR_1)))
         if o.TR_2 != None:
-            tr.append(str(o.TR_2))
+            tr.append(str(int(o.TR_2)))
         fields["TR"] = " ".join(tr)
         ts = []
         if o.TS_1 != None:
-            ts.append(str(o.TS_1))
+            ts.append(str(int(o.TS_1)))
         if o.TS_2 != None:
-            ts.append(str(o.TS_2))
+            ts.append(str(int(o.TS_2)))
         fields["TS"] = " ".join(ts)
-        fields["PWSpeed"] = str(o.PWSpeed) if o.PWSpeed != None else ""
-        fields["RWSpeed"] = str(o.RWSpeed) if o.RWSpeed != None else ""
-        fields["SWSpeed"] = str(o.SWSpeed) if o.SWSpeed != None else ""
+        fields["PWSpeed"] = str(int(o.PWSpeed)) if o.PWSpeed != None else ""
+        fields["RWSpeed"] = str(int(o.RWSpeed)) if o.RWSpeed != None else ""
+        fields["SWSpeed"] = str(int(o.SWSpeed)) if o.SWSpeed != None else ""
         fields["PuassonStatic"] = str(o.PuassonStatic) if o.PuassonStatic != None else ""
         fields["YungStatic"] = str(o.YungStatic) if o.YungStatic != None else ""
         r.fields = fields
@@ -160,21 +160,21 @@ class DMModel(Model):
             ),
             "Diameter": Column(
                 "Diameter",
-                FloatCellType(),
+                FloatCellType(prec=1),
                 "* Диаметр\n(мм)",
                 "Диаметр образца керна",
                 self._get_column_width("Diameter"),
             ),
             "Length": Column(
                 "Length",
-                FloatCellType(),
+                NumberCellType(),
                 "* Длина\n(см)",
                 "Длина образца керна",
                 self._get_column_width("Length"),
             ),
             "Weight": Column(
                 "Weight",
-                FloatCellType(),
+                NumberCellType(),
                 "* Вес\n(г)",
                 "Вес образца\nкерна",
                 self._get_column_width("Weight"),
@@ -196,8 +196,8 @@ class DMModel(Model):
             "E": Column(
                 "E",
                 VecCellType(FloatCellType(), min_count=1, max_count=4),
-                "* Относит.\nдеформ",
-                "Относительная деформация образца",
+                "* Относит.\nдеформ. (усл. ед.)",
+                "Относительная деформация образца (усл. ед.)",
                 self._get_column_width("E"),
             ),
             "Rotate": Column(
@@ -230,7 +230,7 @@ class DMModel(Model):
             ),
             "TP1": Column(
                 "TP1",
-                VecCellType(FloatCellType(), 0, 2),
+                VecCellType(NumberCellType(), 0, 2),
                 "Время\nпродоль.\n(мс)",
                 "Замер времени прохождения продольных волн (ультразвуковое профилирование или др.)",
                 self._get_column_width("TP1"),
@@ -238,7 +238,7 @@ class DMModel(Model):
             ),
             "TP2": Column(
                 "TP2",
-                VecCellType(FloatCellType(), 0, 2),
+                VecCellType(NumberCellType(), 0, 2),
                 "Время продоль.\n(торц.) (мс)",
                 "Замер времени прохождения продольных волн (торц.)",
                 self._get_column_width("TP2"),
@@ -246,7 +246,7 @@ class DMModel(Model):
             ),
             "PWSpeed": Column(
                 "PWSpeed",
-                FloatCellType(),
+                NumberCellType(),
                 "Скорость\nпродоль.\n(м/с)",
                 "Коэффициент чувствительности тензодатчиков",
                 self._get_column_width("PWSpeed"),
@@ -254,7 +254,7 @@ class DMModel(Model):
             ),
             "TR": Column(
                 "TR",
-                VecCellType(FloatCellType(), 0, 2),
+                VecCellType(NumberCellType(), 0, 2),
                 "Время\nповерхност.\n(мс)",
                 "Замер времени прохождения поверхностных волн",
                 self._get_column_width("TR"),
@@ -262,36 +262,36 @@ class DMModel(Model):
             ),
             "RWSpeed": Column(
                 "RWSpeed",
-                FloatCellType(),
-                "Скорость\nповерхност.\n(мс)",
+                NumberCellType(),
+                "Скорость\nповерхност.\n(м/с)",
                 "Скорость поверхностны волн",
                 self._get_column_width("RWSpeed"),
                 optional=True,
             ),
             "TS": Column(
                 "TS",
-                VecCellType(FloatCellType(), 0, 2),
+                VecCellType(NumberCellType(), 0, 2),
                 "t попереч.\n(мс)",
                 "Замер времени прохождения поперечных волн",
                 self._get_column_width("TS"),
                 optional=True,
             ),
             "SWSpeed": Column(
-                "SWSpeed", FloatCellType(), "Скорость\nпопереч.\n(м/с)", "Скорость поперечных волн", self._get_column_width("SWSpeed"), optional=True
+                "SWSpeed", NumberCellType(), "Скорость\nпопереч.\n(м/с)", "Скорость поперечных волн", self._get_column_width("SWSpeed"), optional=True
             ),
             "PuassonStatic": Column(
                 "PuassonStatic",
                 FloatCellType(),
-                "Пуассон\nстатич.",
-                "Статический коэффициент Пуассона",
+                "Пуассон\nдинамич.",
+                "Динамический коэффициент Пуассона",
                 self._get_column_width("PuassonStatic"),
                 optional=True,
             ),
             "YungStatic": Column(
                 "YungStatic",
                 FloatCellType(),
-                "Юнг\nстатич.",
-                "Статический модуль Юнга",
+                "Юнг\nдинамич.",
+                "Динамический модуль Юнга",
                 self._get_column_width("YungStatic"),
                 optional=True,
             ),
@@ -316,8 +316,8 @@ class DMModel(Model):
     def insert_row(self, row: int):
         fields = {
             "Diameter": "0.0",
-            "Length": "0.0",
-            "Weight": "0.0",
+            "Length": "0",
+            "Weight": "0",
             "CoreDepth": "0.0",
             "E": "0.0 0.0 0.0 0.0",
             "Rotate": "0.0",
@@ -425,33 +425,28 @@ class DMModel(Model):
             fields["PartNumber"] = f["PartNumber"]
             fields["RTens"] = columns["RTens"].cell_type.from_string(f["RTens"])
             fields["Sensitivity"] = columns["Sensitivity"].cell_type.from_string(f["Sensitivity"])
-            tp = columns["TP1"].cell_type.from_string(f["TP1"])
-            if len(tp) > 0:
-                fields["TP1_1"] = tp[0]
-            if len(tp) > 1:
-                fields["TP1_2"] = tp[1]
-            tp = columns["TP2"].cell_type.from_string(f["TP2"])
-            if len(tp) > 0:
-                fields["TP2_1"] = tp[0]
-            if len(tp) > 1:
-                fields["TP2_2"] = tp[1]
-            tr = columns["TR"].cell_type.from_string(f["TR"])
-            if len(tr) > 0:
-                fields["TR_1"] = tr[0]
-            if len(tr) > 1:
-                fields["TR_2"] = tr[1]
-            ts = columns["TS"].cell_type.from_string(f["TS"])
-            if len(ts) > 0:
-                fields["TS_1"] = ts[0]
-            if len(ts) > 1:
-                fields["TS_2"] = ts[1]
+            tp = [None, None]
+            d = columns["TP1"].cell_type.from_string(f["TP1"])
+            tp[: len(d)] = d
+            fields["TP1_1"] = tp[0]
+            fields["TP1_2"] = tp[1]
+            tr = [None, None]
+            d = columns["TR"].cell_type.from_string(f["TR"])
+            tr[: len(d)] = d
+            fields["TR_1"] = tr[0]
+            fields["TR_2"] = tr[1]
+            ts = [None, None]
+            d = columns["TS"].cell_type.from_string(f["TS"])
+            ts[: len(d)] = d
+            fields["TS_1"] = ts[0]
+            fields["TS_2"] = ts[1]
             fields["PWSpeed"] = columns["PWSpeed"].cell_type.from_string(f["PWSpeed"])
             fields["RWSpeed"] = columns["RWSpeed"].cell_type.from_string(f["RWSpeed"])
             fields["SWSpeed"] = columns["SWSpeed"].cell_type.from_string(f["SWSpeed"])
             fields["PuassonStatic"] = columns["PuassonStatic"].cell_type.from_string(f["PuassonStatic"])
             fields["YungStatic"] = columns["YungStatic"].cell_type.from_string(f["YungStatic"])
             fields["CoreDepth"] = columns["CoreDepth"].cell_type.from_string(f["CoreDepth"])
-            e0 = [0.0, 0.0, 0.0, 0.0]
+            e0 = [0.0, None, None, None]
             e = columns["E"].cell_type.from_string(f["E"])
             for i, v in enumerate(e):
                 e0[i] = v
