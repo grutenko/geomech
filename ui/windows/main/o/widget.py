@@ -92,7 +92,11 @@ class Objects(wx.Panel):
     def _on_open_self_editor(self, event):
         if event.target == None:
             return
-        window = wx.GetApp().GetTopWindow().FindFocus().GetTopLevelParent()
+        focus = wx.GetApp().GetTopWindow().FindFocus()
+        if focus != None:
+            window = focus.GetTopLevelParent()
+        else:
+            window = None
         if isinstance(event.target, MineObject):
             dlg = DialogCreateMineObject(window, event.target, _type="UPDATE")
         elif isinstance(event.target, Station):
