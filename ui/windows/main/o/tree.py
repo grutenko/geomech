@@ -443,6 +443,7 @@ class TreeWidget(Tree):
     def _on_delete_bore_hole(self, event):
         self._delete_object(self._current_node)
 
+    @db_session
     def _core_context_menu(self, node: _Core_Node, point: wx.Point):
         self._current_object = node.o
         menu = wx.Menu()
@@ -453,9 +454,22 @@ class TreeWidget(Tree):
         item.SetBitmap(get_icon("delete", scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_delete_core, item)
         menu.AppendSeparator()
-        item = menu.Append(wx.ID_ANY, "Разгрузочные замеры")
+        m = wx.Menu()
+        series = select(o for o in DischargeSeries if o.orig_sample_set == node.o).first()
+        if series == None:
+            item = m.Append(wx.ID_ANY, "(Серия не создана) Открыть")
+            item.Enable(False)
+        else:
+            count = select(o for o in DischargeMeasurement if o.orig_sample_set == node.o).count()
+            item = m.Append(wx.ID_ANY, "Открыть (замеров: %d)" % count)
         item.SetBitmap(get_icon("book-stack"))
-        menu.Bind(wx.EVT_MENU, self._on_select_dm, item)
+        m.Bind(wx.EVT_MENU, self._on_select_dm, item)
+        if series != None:
+            item = m.Append(wx.ID_ANY, "(Привязано) Привязать серию замеров")
+            item.Enable(False)
+        else:
+            item = m.Append(wx.ID_ANY, "Привязать серию замеров")
+        menu.AppendSubMenu(m, "Разгрузочные замеры")
         item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
         item.SetBitmap(get_icon("versions"))
         menu.Bind(wx.EVT_MENU, self._on_open_supplied_data, item)
