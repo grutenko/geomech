@@ -36,7 +36,7 @@ class DateCellType(CellType):
 
     def to_string(self, value) -> str:
         _date = datetime(value.year, value.month, value.day)
-        return datetime.strptime(_date, "%d.%m.%Y")
+        return _date.strftime("%d.%m.%Y")
 
     def from_string(self, value: str):
         try:

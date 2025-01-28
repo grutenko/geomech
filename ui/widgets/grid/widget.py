@@ -392,6 +392,7 @@ class CustomGrid(wx.grid.Grid, wx.lib.mixins.gridlabelrenderer.GridWithLabelRend
         super().__init__(*args, **kw)
         wx.lib.mixins.gridlabelrenderer.GridWithLabelRenderersMixin.__init__(self)
         self.SetScrollRate(1, 100)
+        self.SetGridLineColour(wx.Colour(50, 50, 50))
 
 
 class GridEditor(wx.Panel):
@@ -432,7 +433,7 @@ class GridEditor(wx.Panel):
         self._original_row_size = 20
         initial_columns = []
         for column in model.get_columns():
-            initial_columns.append(column.init_width if column.init_width > 0 else 100)
+            initial_columns.append([column.init_width if column.init_width > 0 else 100, column.id])
         self._original_col_sizes = initial_columns
         self._original_font_size = 9
 
@@ -719,6 +720,19 @@ class GridEditor(wx.Panel):
         """
         last_cursor_pos = self._last_cursor_pos
         self._columns = self._model.get_columns()
+        # Обновление данных о размеразх столбцов удаление несуществующих столбцов, пересортировка
+        new_column_sizes = []
+        column: Column
+        for column in self._columns:
+            finded = False
+            for index, (size, column_id) in enumerate(self._original_col_sizes):
+                if column_id == column.id:
+                    new_column_sizes.append([size, column_id])
+                    finded = True
+                    break
+            if not finded:
+                new_column_sizes.append([column.init_width, column.id])
+        self._original_col_sizes = new_column_sizes
 
         self._view.BeginBatch()
 
@@ -767,7 +781,7 @@ class GridEditor(wx.Panel):
         if begin_batch:
             self._view.BeginBatch()
 
-        for col_index, size in enumerate(self._original_col_sizes):
+        for col_index, (size, column_code) in enumerate(self._original_col_sizes):
             self._view.SetColSize(col_index, int(size * self._zoom))
 
         for row_index in range(self._view.GetNumberRows()):
@@ -808,13 +822,13 @@ class GridEditor(wx.Panel):
 
     def _on_cell_dragged(self, event):
         column_index = event.GetRowOrCol()
-        self._original_col_sizes[column_index] = self._view.GetColSize(column_index) / self._zoom
+        self._original_col_sizes[column_index][0] = self._view.GetColSize(column_index) / self._zoom
         wx.PostEvent(
             self,
             GridColumnResized(
                 target=self,
                 column=self._columns[column_index],
-                size=self._original_col_sizes[column_index],
+                size=self._original_col_sizes[column_index][0],
             ),
         )
 

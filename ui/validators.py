@@ -91,3 +91,34 @@ class DateValidator(Validator):
         c = DateValidator()
         c.__dict__.update(self.__dict__)
         return c
+
+
+class ChoiceValidator(Validator):
+    def __init__(self, msg: str = None, required=True):
+        super().__init__(msg)
+        self.required = required
+
+    def Validate(self, ctrl: wx.Choice):
+        ok = True
+        if not ctrl.IsEnabled():
+            return True
+        if ctrl.GetSelection() > -1 or not self.required:
+            ok = True
+        if not ok:
+            ctrl.SetBackgroundColour("red")
+            ctrl.Refresh()
+        else:
+            ctrl.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
+            ctrl.Refresh()
+        return ok
+
+    def TransferFromWindow(self):
+        return True
+
+    def TransferToWindow(self):
+        return True
+
+    def Clone(self):
+        c = ChoiceValidator()
+        c.__dict__.update(self.__dict__)
+        return c

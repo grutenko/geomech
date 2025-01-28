@@ -335,6 +335,7 @@ class PMSampleSet(db.Entity):
     pm_test_series = Required(PMTestSeries, column="TSID")
     petrotype_struct = Required(PetrotypeStruct, column="PTSID")
     pm_samples = Set("PMSample")
+    pm_user_properties = Set("PmSampleSetUsedProperties")
 
     RID = PrimaryKey(int, auto=True, column="RID")
     Number = Required(str, column="Number")
@@ -376,6 +377,7 @@ class PmTestMethod(db.Entity):
     _table_ = "PMTestMethods"
 
     pm_sample_property_values = Set("PmSamplePropertyValue")
+    pm_used_properties = Set("PmSampleSetUsedProperties")
 
     RID = PrimaryKey(int, auto=True, column="RID")
     Name = Required(str, column="Name")
@@ -387,6 +389,8 @@ class PmTestMethod(db.Entity):
 
 class PmTestEquipment(db.Entity):
     _table_ = "PMTestEquipment"
+
+    pm_used_properties = Set("PmSampleSetUsedProperties")
 
     RID = PrimaryKey(int, auto=True, column="RID")
     Name = Required(str, column="Name")
@@ -410,10 +414,12 @@ class PmProperty(db.Entity):
 
     pm_property_class = Required(PmPropertyClass, column="PCID")
     pm_sample_property_values = Set("PmSamplePropertyValue")
+    pm_used_properties = Set("PmSampleSetUsedProperties")
 
     RID = PrimaryKey(int, auto=True, column="RID")
     Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
+    Code = Required(str, column="Code")
     Unit = Optional(str, column="Unit")
 
 
@@ -434,3 +440,18 @@ class PmPerformedTask(db.Entity):
     RID = PrimaryKey(int, auto=True, column="RID")
     Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
+
+
+class PmSampleSetUsedProperties(db.Entity):
+    _table_ = "PMSampleSetUsedProperies"
+
+    pm_sample_set = Required(PMSampleSet, column="PMSSID")
+    pm_property = Required(PmProperty, column="PMPID")
+    pm_method = Required(PmTestMethod, column="PMTMID")
+    pm_equipment = Optional(PmTestEquipment, column="PMEQID")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+
+    @property
+    def Name(self):
+        return self.pm_property.Name
