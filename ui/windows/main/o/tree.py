@@ -280,6 +280,7 @@ class TreeWidget(Tree):
     def _on_node_activated(self, event):
         wx.PostEvent(self, OpenSelfEditorEvent(target=event.node.o))
 
+    @db_session
     def _mine_object_context_menu(self, node: _MineObject_Node, point: wx.Point):
         self._current_object = node.o
         menu = wx.Menu()
@@ -313,10 +314,24 @@ class TreeWidget(Tree):
         item.SetBitmap(get_icon("delete", scale_to=16))
         menu.Bind(wx.EVT_MENU, self._on_delete_mine_object, item)
         menu.AppendSeparator()
+        if node.o.Type == "FIELD":
+            m = wx.Menu()
+            sample_sets = select(o for o in PMSampleSet if o.mine_object == node.o)
+            for o in sample_sets:
+                item = m.Append(wx.ID_ANY, "Дог. %s Проба №%s" % (o.pm_test_series.Name, o.Number))
+                self._on_open_pm_sample_set_bind(m, o)
+            menu.AppendSubMenu(m, "ФМС")
         item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
         item.SetBitmap(get_icon("versions"))
         menu.Bind(wx.EVT_MENU, self._on_open_supplied_data, item)
         self.PopupMenu(menu, point)
+
+    def _on_open_pm_sample_set_bind(self, menu, pm_sample_set):
+        def handler(event):
+            print(event)
+            pubsub.pub.sendMessage("cmd.pm.open", target=self, pm_sample_set=pm_sample_set)
+
+        menu.Bind(wx.EVT_MENU, handler)
 
     def change_mode(self, mode):
         if mode == "all":

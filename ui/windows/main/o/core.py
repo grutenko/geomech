@@ -109,6 +109,9 @@ class DialogCreateCore(wx.Dialog):
     def _apply_fields(self):
         self.field_name.SetValue("Керн:" + self.parent.Name)
         self.field_number.SetValue("Керн:" + self.parent.Number)
+        self.field_start_date.SetValue(str(ui.datetimeutil.decode_date(self.parent.StartDate)))
+        if self.parent.StartDate != None:
+            self.field_end_date.SetValue(str(ui.datetimeutil.decode_date(self.parent.EndDate)))
 
     @db_session
     def _on_save(self, event):

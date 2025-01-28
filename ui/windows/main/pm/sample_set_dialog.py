@@ -187,7 +187,7 @@ class SampleSetDialog(wx.Dialog):
         if not self.Validate():
             return
 
-        fields = {"Number": self.field_name.GetValue(), "Name": self.field_name.GetValue(), "Comment": self.field_comment.GetValue()}
+        fields = {"Number": self.field_name.GetValue(), "Comment": self.field_comment.GetValue()}
         fields["mine_object"] = MineObject[self._mine_objects[self.field_mine_object.GetSelection()].RID]
         fields["pm_test_series"] = PMTestSeries[self.parent.RID]
         if len(self.field_set_date.GetValue()) > 0:

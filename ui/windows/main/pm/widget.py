@@ -4,7 +4,8 @@ import wx.lib.newevent
 from ui.class_config_provider import ClassConfigProvider
 from ui.icon import get_icon
 from ui.widgets.tree.widget import EVT_WIDGET_TREE_SEL_CHANGED
-
+from pony.orm import *
+from database import PMTestSeries
 from ..identity import Identity
 from .create import DialogCreatePmSeries
 from .detail import PmSeriesDetail
@@ -128,3 +129,8 @@ class PmPanel(wx.Panel):
 
     def remove_selection(self, silence=False):
         self._list.remove_selection(silence)
+
+    @db_session
+    def open(self, pm_sample_set):
+        self._go_to_item(pm_sample_set.pm_test_series.RID)
+        self._details.open_pm_sample_set(pm_sample_set)

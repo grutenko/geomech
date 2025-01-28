@@ -307,6 +307,10 @@ class MainFrame(wx.Frame):
         pubsub.pub.subscribe(self._cmd_dm_delete, "cmd.dm.delete")
         pubsub.pub.subscribe(self._cmd_on_close_editor, "cmd.editor.close")
         pubsub.pub.subscribe(self._cmd_on_open_editor, "cmd.editor.open")
+        pubsub.pub.subscribe(self._cmd_pm_sample_set_open, "cmd.pm.open")
+
+    def _cmd_pm_sample_set_open(self, target, pm_sample_set):
+        self.pm.open(pm_sample_set)
 
     def _cmd_dm_delete(self, target, core):
         self.dm.delete(core)

@@ -243,3 +243,8 @@ class PmSeriesDetail(wx.Panel):
         self._tree.unbind_all()
         self._tree.Unbind(EVT_WIDGET_TREE_ACTIVATED, handler=self._on_item_activated)
         self._tree.Unbind(EVT_WIDGET_TREE_MENU, handler=self._on_item_menu)
+
+    def open_pm_sample_set(self, pm_sample_set):
+        if self.o != None:
+            self._tree.select_node(PmSampleSet_Node(pm_sample_set))
+            self._on_open_samples_editor()
