@@ -318,7 +318,8 @@ class TreeWidget(Tree):
             m = wx.Menu()
             sample_sets = select(o for o in PMSampleSet if o.mine_object == node.o)
             for o in sample_sets:
-                item = m.Append(wx.ID_ANY, "Дог. %s Проба №%s" % (o.pm_test_series.Name, o.Number))
+                count = select(sample for sample in PMSample if sample.pm_sample_set == o).count()
+                item = m.Append(wx.ID_ANY, "Дог. %s Проба №%s (образцов: %d)" % (o.pm_test_series.Name, o.Number, count))
                 self._on_open_pm_sample_set_bind(m, o)
             menu.AppendSubMenu(m, "ФМС")
         item = menu.Append(wx.ID_ANY, "Сопутствующие материалы")
