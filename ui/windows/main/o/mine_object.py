@@ -149,13 +149,6 @@ class DialogCreateMineObject(wx.Dialog):
         dlg.CenterOnParent()
 
     @db_session
-    def _create_object(self, fields):
-        fields["coord_system"] = select(o for o in CoordSystem if o.RID == fields["coord_system"].RID).first()
-        if "parent" in fields:
-            fields["parent"] = select(o for o in MineObject if o.RID == fields["parent"].RID).first()
-        self.o = MineObject(**fields)
-
-    @db_session
     def _on_save(self, event):
         if not self.Validate():
             return
@@ -191,10 +184,14 @@ class DialogCreateMineObject(wx.Dialog):
         fields["Z_Max"] = self.field_z_max.GetValue()
 
         if self._type == "CREATE":
-            self._create_object(fields)
+            fields["coord_system"] = select(o for o in CoordSystem if o.RID == fields["coord_system"].RID).first()
+            if "parent" in fields:
+                fields["parent"] = select(o for o in MineObject if o.RID == fields["parent"].RID).first()
+            o = MineObject(**fields)
         else:
-            self.o = MineObject[self._target.RID]
-            self.o.set(**fields)
+            o = MineObject[self._target.RID]
+            o.set(**fields)
 
         commit()
+        self.o = o
         self.EndModal(wx.ID_OK)

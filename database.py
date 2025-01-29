@@ -1,4 +1,3 @@
-
 from pony.orm import Database, Optional, PrimaryKey, Required, Set
 
 db = Database()
@@ -30,8 +29,8 @@ class MineObject(db.Entity):
     pm_sample_set = Set("PMSampleSet")
 
     RID = PrimaryKey(int, auto=True, column="RID")
-    Level = Required(int, column="Level")
-    HCode = Required(str, column="HCode")
+    Level = Required(int, column="Level", volatile=True)
+    HCode = Required(str, column="HCode", volatile=True)
     Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
     Type = Required(str, column="Type")
@@ -135,7 +134,7 @@ class BoreHole(db.Entity):
 class OrigSampleSet(db.Entity):
     _table_ = "OrigSampleSets"
 
-    mine_object = Required(MineObject, column="MOID")
+    mine_object = Required(MineObject, column="MOID", volatile=True)
     bore_hole = Optional(BoreHole, column="HID")
     discharge_series = Set("DischargeSeries")
     discharge_measurements = Set("DischargeMeasurement")
@@ -180,7 +179,7 @@ class FoundationDocument(db.Entity):
 class DischargeSeries(db.Entity):
     _table_ = "DischargeSeries"
 
-    mine_object = Required(MineObject, column="MOID")
+    mine_object = Required(MineObject, column="MOID", volatile=True)
     orig_sample_set = Required(OrigSampleSet, column="OSSID")
     foundation_document = Optional(FoundationDocument, column="FDID")
 

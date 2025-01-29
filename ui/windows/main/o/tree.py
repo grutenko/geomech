@@ -67,13 +67,13 @@ class _MineObject_Node(TreeNode):
     def get_icon_open(self) -> Tuple[str | wx.Bitmap] | None:
         return "folder-open", get_icon("folder-open", 16)
 
-    @db_session
+    @db_session(optimistic=False)
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
         if not self._mine_objects_only:
-            for o in select(o for o in BoreHole if o.mine_object == self.o and o.station == None):
+            for o in select(o for o in BoreHole if o.mine_object.RID == self.o.RID and o.station == None):
                 nodes.append(_BoreHole_Node(o))
-            for o in select(o for o in Station if o.mine_object == self.o).order_by(lambda x: desc(x.RID)):
+            for o in select(o for o in Station if o.mine_object.RID == self.o.RID).order_by(lambda x: desc(x.RID)):
                 nodes.append(_Station_Node(o))
         for o in select(o for o in MineObject if o.parent == self.o).order_by(lambda x: desc(x.RID)):
             nodes.append(_MineObject_Node(o, mine_objects_only=self._mine_objects_only))
@@ -108,7 +108,7 @@ class _Station_Node(TreeNode):
     def get_icon_open(self) -> Tuple[str | wx.Bitmap] | None:
         return "folder-open", get_icon("folder-open", 16)
 
-    @db_session
+    @db_session(optimistic=False)
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
         for o in select(o for o in BoreHole if o.station == self.o).order_by(lambda x: desc(x.RID)):
@@ -148,7 +148,7 @@ class _BoreHole_Node(TreeNode):
     def get_icon_open(self) -> Tuple[str | wx.Bitmap] | None:
         return "folder-open", get_icon("folder-open", 16)
 
-    @db_session
+    @db_session(optimistic=False)
     def get_subnodes(self) -> List[TreeNode]:
         core = select(o for o in OrigSampleSet if o.bore_hole == self.o).first()
         if core != None:
@@ -193,7 +193,7 @@ class _Root_Node(TreeNode):
     def get_parent(self) -> TreeNode:
         return _Root_Node()
 
-    @db_session
+    @db_session(optimistic=False)
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
         for o in select(o for o in MineObject if o.Level == 0).order_by(lambda x: desc(x.RID)):
@@ -214,7 +214,7 @@ class _MineObjectsRoot_Node(TreeNode):
     def get_parent(self) -> TreeNode:
         return _MineObjectsRoot_Node()
 
-    @db_session
+    @db_session(optimistic=False)
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
         for o in select(o for o in MineObject if o.Level == 0).order_by(lambda x: desc(x.RID)):
@@ -235,7 +235,7 @@ class _StationsRoot_Node(TreeNode):
     def get_parent(self) -> TreeNode:
         return _StationsRoot_Node()
 
-    @db_session
+    @db_session(optimistic=False)
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
         for o in select(o for o in Station).order_by(lambda x: desc(x.RID)):
@@ -259,7 +259,7 @@ class _BoreHolesRoot_Node(TreeNode):
     def is_root(self) -> bool:
         return True
 
-    @db_session
+    @db_session(optimistic=False)
     def get_subnodes(self) -> List[TreeNode]:
         nodes = []
         for o in select(o for o in BoreHole).order_by(lambda x: desc(x.RID)):
@@ -345,7 +345,6 @@ class TreeWidget(Tree):
 
     def _on_open_pm_sample_set_bind(self, menu, pm_sample_set):
         def handler(event):
-            print(event)
             pubsub.pub.sendMessage("cmd.pm.open", target=self, pm_sample_set=pm_sample_set)
 
         menu.Bind(wx.EVT_MENU, handler)
