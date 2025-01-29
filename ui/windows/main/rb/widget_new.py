@@ -2,7 +2,7 @@ import pubsub
 import pubsub.pub
 import wx
 import wx.dataview
-from pony.orm import *
+from pony.orm import db_session, desc, select
 
 from database import MineObject, RockBurst
 from ui.class_config_provider import ClassConfigProvider

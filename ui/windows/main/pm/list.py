@@ -1,7 +1,7 @@
 import wx
-from pony.orm import *
+from pony.orm import db_session, desc, select
 
-from database import *
+from database import PMTestSeries
 from ui.delete_object import delete_object
 from ui.icon import get_icon
 

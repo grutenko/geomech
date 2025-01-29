@@ -1,10 +1,16 @@
 import wx
+from pony.orm import commit, db_session, select
 
-from ui.icon import get_icon
-from pony.orm import *
-from database import *
-from ui.validators import ChoiceValidator
+from database import (
+    PmProperty,
+    PMSampleSet,
+    PmSampleSetUsedProperties,
+    PmTestEquipment,
+    PmTestMethod,
+)
 from ui.delete_object import delete_object
+from ui.icon import get_icon
+from ui.validators import ChoiceValidator
 
 
 class RecordEditor(wx.Dialog):
@@ -64,6 +70,7 @@ class RecordEditor(wx.Dialog):
         main_sizer.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, border=10)
 
         self.Layout()
+        self.Fit()
 
     @db_session
     def _on_save(self, event):
@@ -90,7 +97,7 @@ class RecordEditor(wx.Dialog):
 
 class GridSamplePropertiesDialog(wx.Dialog):
     def __init__(self, parent, pm_sample_set, on_prop_add, on_prop_remove):
-        super().__init__(parent, title="Настроить свойства", size=wx.Size(400, 400), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        super().__init__(parent, title="Настроить свойства", size=wx.Size(800, 400), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnParent()
 

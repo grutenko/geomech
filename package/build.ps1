@@ -4,7 +4,7 @@ $WorkPath = "$PSScriptRoot/../build"
 $DistPath = "$PSScriptRoot/../dist"
 Write-Output $Version
 (Get-Content $PSScriptRoot/versionfile.yml.in).Replace('#VERSION#', $Version) | Set-Content $WorkPath/versionfile.yml
-$Name = "�� ����������� ����." + $Version
+$Name = "geomech." + $Version
 create-version-file $WorkPath/versionfile.yml --outfile $WorkPath/win32_versionfile.txt
 
 pyinstaller --onefile `
@@ -19,6 +19,8 @@ pyinstaller --onefile `
             --icon=$PSScriptRoot/../icons/logo.ico `
             --version-file=$WorkPath/win32_versionfile.txt `
             --runtime-hook=$PSScriptRoot/hooks/env.py `
+            --hidden-import=cairo `
+            --hidden-import=cairoffi `
             --hidden-import=wx._xml `
             --hidden-import=pony.orm.dbproviders `
             --hidden-import=pony.orm.dbproviders.postgres `

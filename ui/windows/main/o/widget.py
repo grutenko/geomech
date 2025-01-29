@@ -1,16 +1,18 @@
+import pubsub.pub
 import wx
 import wx.lib.agw.flatnotebook
 import wx.lib.newevent
 
-from database import *
+from database import BoreHole, MineObject, OrigSampleSet, Station
 from ui.class_config_provider import ClassConfigProvider
+from ui.widgets.tree import EVT_WIDGET_TREE_SEL_CHANGED
 from ui.windows.main.identity import Identity
 
 from .bore_hole import DialogCreateBoreHole
 from .core import DialogCreateCore
 from .mine_object import DialogCreateMineObject
 from .station import DialogCreateStation
-from .tree import EVT_TREE_OPEN_SELF_EDITOR, EVT_WIDGET_TREE_SEL_CHANGED, TreeWidget
+from .tree import EVT_TREE_OPEN_SELF_EDITOR, TreeWidget
 
 __CONFIG_VERSION__ = 2
 
@@ -109,6 +111,7 @@ class Objects(wx.Panel):
             return
         if dlg.ShowModal() == wx.ID_OK:
             self.tree.reload_object(event.target)
+            pubsub.pub.sendMessage("object.updated", o=event.target)
 
     def _on_sel_changed(self, event):
         if event.node == None:

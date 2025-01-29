@@ -4,8 +4,7 @@ import wx.lib.newevent
 from ui.class_config_provider import ClassConfigProvider
 from ui.icon import get_icon
 from ui.widgets.tree.widget import EVT_WIDGET_TREE_SEL_CHANGED
-from pony.orm import *
-from database import PMTestSeries
+from pony.orm import db_session
 from ..identity import Identity
 from .create import DialogCreatePmSeries
 from .detail import PmSeriesDetail

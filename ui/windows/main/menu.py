@@ -1,6 +1,6 @@
 import wx
 
-from ui.icon import get_art, get_icon
+from ui.icon import get_icon
 from version import __GEOMECH_VERSION__
 
 ID_FIND_NEXT = wx.ID_HIGHEST + 1

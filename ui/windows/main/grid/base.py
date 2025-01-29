@@ -1,11 +1,7 @@
-from dataclasses import dataclass, field
-
 import wx
 
-from ui.class_config_provider import ClassConfigProvider
-from ui.icon import get_art
-from ui.widgets.grid import *
-from ui.widgets.grid.widget import Column
+from ui.icon import get_icon
+from ui.widgets.grid import EVT_GRID_EDITOR_STATE_CHANGED, GridEditor
 
 from ..identity import Identity
 from ..notebook.widget import *

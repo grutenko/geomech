@@ -2,9 +2,9 @@ import wx
 from pony.orm import *
 
 from database import CoordSystem, MineObject
-from ui.ctrl.coord_system_ctrl import CoordSystemCtrl
 from ui.icon import get_icon
-from ui.validators import *
+from ui.validators import TextValidator
+from ui.widgets.coord_system_ctrl import CoordSystemCtrl
 from ui.windows.cs.transl import CsTransl
 
 

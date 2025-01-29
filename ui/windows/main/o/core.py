@@ -1,11 +1,11 @@
 import wx
 import wx.adv
-from wx.adv import DP_ALLOWNONE, DP_DEFAULT, DP_SHOWCENTURY, DatePickerCtrl
+from pony.orm import commit, db_session
 
 import ui.datetimeutil
-from database import *
+from database import BoreHole, MineObject, OrigSampleSet
 from ui.icon import get_icon
-from ui.validators import *
+from ui.validators import DateValidator, TextValidator
 
 
 class DialogCreateCore(wx.Dialog):

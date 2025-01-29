@@ -1,6 +1,6 @@
 import wx
 import wx.propgrid
-from pony.orm import *
+from pony.orm import db_session
 
 from database import CoordSystem
 

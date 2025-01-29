@@ -1,12 +1,20 @@
-from typing import Optional, Protocol, Tuple, runtime_checkable
+from typing import Protocol, Tuple, runtime_checkable
 
 import pubsub
 import pubsub.pub
 import wx
 import wx.lib.newevent
-from wx.lib.agw.flatnotebook import *
+from wx.lib.agw.flatnotebook import (
+    EVT_FLATNOTEBOOK_PAGE_CHANGED,
+    EVT_FLATNOTEBOOK_PAGE_CLOSED,
+    EVT_FLATNOTEBOOK_PAGE_CLOSING,
+    FNB_NO_NAV_BUTTONS,
+    FNB_NO_X_BUTTON,
+    FNB_VC8,
+    FNB_X_ON_TAB,
+    FlatNotebook,
+)
 
-from database import *
 from ui.class_config_provider import ClassConfigProvider
 from ui.windows.main.identity import Identity
 
@@ -61,7 +69,7 @@ class BasicEditor(wx.Panel):
 
     def can_find(self) -> bool:
         return False
-    
+
     def can_find_next(self) -> bool:
         return False
 
@@ -182,10 +190,12 @@ class EditorNotebook(wx.Panel):
             else:
                 self.notebook.GetPage(index).on_deselect()
                 self._closed_page_identity = self.notebook.GetPage(index).get_identity()
+                self._closed_page = self.notebook.GetPage(index)
 
     def _on_page_closed(self, event):
         wx.PostEvent(self, EditorNBStateChangedEvent(target=self))
         wx.PostEvent(self, EditorClosedEvent(target=self, identity=self._closed_page_identity))
+        self._closed_page.on_after_close()
 
     def _on_page_changed(self, event):
         self._notify_selection_changed(event.GetSelection(), event.GetOldSelection())
@@ -267,7 +277,7 @@ class EditorNotebook(wx.Panel):
         _saved = False
         _editor = None
         if self._native_.GetPageCount() > 0:
-            _editor = self._native_.GetPage(self._native_.GetSelection())
+            _editor: BasicEditor = self._native_.GetPage(self._native_.GetSelection())
             _saved = _editor.save()
         if _saved:
             wx.PostEvent(self, EditorSavedEvent(target=self, editor=_editor))

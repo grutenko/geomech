@@ -1,6 +1,6 @@
 import wx
 
-from database import *
+from database import BoreHole, DischargeSeries, MineObject, OrigSampleSet, PMSampleSet, PMTestSeries, RockBurst, Station
 from ui.class_config_provider import ClassConfigProvider
 from ui.windows.main.identity import Identity
 

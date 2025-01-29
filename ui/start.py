@@ -1,7 +1,7 @@
 import os
 
 import wx
-from pony.orm import *
+from pony.orm import Database
 
 import config
 from ui.icon import get_icon

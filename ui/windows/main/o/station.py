@@ -1,9 +1,6 @@
-import datetime
-
 import wx
 import wx.adv
-from pony.orm import *
-from wx.adv import DP_ALLOWNONE, DP_DEFAULT, DP_SHOWCENTURY, DatePickerCtrl
+from pony.orm import commit, db_session
 
 import ui.datetimeutil
 from database import MineObject, Station

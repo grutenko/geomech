@@ -1,13 +1,13 @@
 import datetime
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List
 
 import pubsub
 import pubsub.pub
 import wx
-from pony.orm import *
+from pony.orm import commit, db_session, select
 
-from database import *
+from database import BoreHole, MineObject, OrigSampleSet, Station
 from ui.datetimeutil import encode_date
 from ui.widgets.grid.widget import *
 from ui.widgets.grid.widget import Column

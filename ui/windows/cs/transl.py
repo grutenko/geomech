@@ -1,6 +1,6 @@
 import numpy as np
 import wx
-from pony.orm import *
+from pony.orm import db_session, select
 
 from database import CoordSystem
 from ui.icon import get_icon

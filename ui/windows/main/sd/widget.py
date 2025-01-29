@@ -1,8 +1,7 @@
 import wx
 
-from database import *
+from database import BoreHole, MineObject, OrigSampleSet, PMTestSeries, RockBurst, Station
 from ui.class_config_provider import ClassConfigProvider
-from ui.icon import get_icon
 from ui.widgets.supplied_data.widget import SuppliedDataWidget
 
 __CONFIG_VERSION__ = 3

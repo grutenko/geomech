@@ -3,8 +3,8 @@ from pony.orm import *
 from pubsub import pub
 
 from database import PmProperty, PmPropertyClass
-from ui.icon import *
-from ui.validators import *
+from ui.icon import get_icon
+from ui.validators import TextValidator
 
 
 class PmPropertyEditor(wx.Dialog):

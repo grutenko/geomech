@@ -4,8 +4,9 @@ import wx
 import wx.adv
 import wx.aui
 import wx.lib.agw.aui
+from pony.orm import db_session, select
 
-from database import *
+from database import BoreHole, MineObject, OrigSampleSet, Station
 from ui.class_config_provider import ClassConfigProvider
 from ui.icon import get_icon
 from ui.windows.cs.main import ManageCoordSystemsWindow
@@ -22,16 +23,45 @@ from .fastview import FastView
 from .grid.import_bore_holes import ImportBoreHoles
 from .grid.import_stations import ImportStations
 from .identity import Identity
-from .md_viewer import MdViewer
-from .menu import *
-from .mgr_panel_toolbar import *
-from .notebook.widget import *
-from .notebook.widget import EVT_ENB_EDITOR_CLOSED, EVT_ENB_STATE_CHANGED
+from .menu import (
+    ID_CS_TRANS_UTLITY,
+    ID_DM_TOGGLE,
+    ID_FASTVIEW_TOGGLE,
+    ID_FIND_NEXT,
+    ID_IMPORT_BORE_HOLES,
+    ID_IMPORT_STATIONS,
+    ID_OBJECTS_TOGGLE,
+    ID_OPEN_START_TAB,
+    ID_PM_TOGGLE,
+    ID_RB_TOGGLE,
+    ID_SETTINGS_CS,
+    ID_SETTINGS_DOCS,
+    ID_SETTINGS_PM,
+    ID_SETTINGS_PT,
+    ID_SETTINGS_RB,
+    ID_SUPPLIED_DATA_TOGGLE,
+    MainMenu,
+)
+from .mgr_panel_toolbar import (
+    ID_TOGGLE_CONTAINER,
+    ID_TOGGLE_DISCHARGE,
+    ID_TOGGLE_FASTVIEW,
+    ID_TOGGLE_OBJECTS,
+    ID_TOGGLE_PM,
+    ID_TOGGLE_ROCK_BURST,
+    ID_TOGGLE_SUPPLIED_DATA,
+    MgrPanelToolbar,
+)
+from .notebook.widget import (
+    EVT_ENB_EDITOR_CLOSED,
+    EVT_ENB_STATE_CHANGED,
+    EditorNotebook,
+)
 from .o import EVT_OBJECT_SELECTED, Objects
 from .pm.widget import EVT_PM_SELECTED, PmPanel
 from .rb.widget_new import EVT_RB_SELECTED, RbPanel
 from .sd import SuppliedData
-from .toolbar import *
+from .toolbar import MainToolbar
 
 __CONFIG_VERSION__ = 2
 
@@ -261,7 +291,6 @@ class MainFrame(wx.Frame):
         menu.Bind(wx.EVT_MENU, self._on_toggle_objects, id=ID_OBJECTS_TOGGLE)
         menu.Bind(wx.EVT_MENU, self._on_open_cs_settings_window, id=ID_SETTINGS_CS)
         menu.Bind(wx.EVT_MENU, self._on_toggle_fastview, id=ID_FASTVIEW_TOGGLE)
-        menu.Bind(wx.EVT_MENU, self._on_toggle_start, id=ID_OPEN_START_TAB)
         menu.Bind(wx.EVT_MENU, self._on_open_pm_settings_window, id=ID_SETTINGS_PM)
         menu.Bind(wx.EVT_MENU, self._on_toggle_supplied_data, id=ID_SUPPLIED_DATA_TOGGLE)
         menu.Bind(wx.EVT_MENU, self._on_toggle_dm, id=ID_DM_TOGGLE)
@@ -454,13 +483,6 @@ class MainFrame(wx.Frame):
         if event.identity == "help_page":
             self.menu_bar.Check(ID_OPEN_START_TAB, False)
             self._start_tab = None
-
-    def _on_toggle_start(self, event):
-        if self._start_tab != None:
-            self.editors.close_editor(self._start_tab)
-        else:
-            self._start_tab = MdViewer(self.editors, "[Чтение] Начало работы")
-            self.editors.add_editor(self._start_tab)
 
     def _on_pane_closed(self, event):
         if event.GetPane().name == "objects":

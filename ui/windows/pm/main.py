@@ -1,9 +1,7 @@
-from typing import List
 
 import wx
 
 from ui.icon import get_art, get_icon
-from ui.widgets.tree.widget import EVT_WIDGET_TREE_ACTIVATED, Tree, TreeNode
 
 from .equipments import PmEquipment
 from .methods import PmMethodsPanel

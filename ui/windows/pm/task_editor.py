@@ -1,10 +1,10 @@
 import wx
-from pony.orm import *
+from pony.orm import commit, db_session
 from pubsub import pub
 
 from database import PmPerformedTask
-from ui.icon import *
-from ui.validators import *
+from ui.icon import get_icon
+from ui.validators import TextValidator
 
 
 class PmTaskEditor(wx.Dialog):

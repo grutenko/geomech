@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable
 
 import wx
 import wx.grid

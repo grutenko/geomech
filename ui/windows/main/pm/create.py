@@ -1,10 +1,10 @@
 import wx
 import wx.adv
-from pony.orm import *
+from pony.orm import commit, db_session, desc, select
 
-from database import FoundationDocument, OrigSampleSet, PMTestSeries
+from database import FoundationDocument, PMTestSeries
 from ui.icon import get_icon
-from ui.validators import *
+from ui.validators import TextValidator
 
 WizPageChangingEvent, EVT_WIZ_PAGE_CHAGING = wx.lib.newevent.NewEvent()
 

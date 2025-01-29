@@ -7,7 +7,7 @@ from pony.orm import *
 from database import *
 from ui.datetimeutil import decode_date
 from ui.delete_object import delete_object
-from ui.icon import get_art, get_icon
+from ui.icon import get_icon
 from ui.windows.main.identity import Identity
 
 from .create import DialogCreateDischargeSeries

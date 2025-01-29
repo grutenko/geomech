@@ -1,7 +1,7 @@
 import wx
 
 from ui.resourcelocation import resource_path
-from ui.widgets.md.wxmarkdown import *
+from ui.widgets.md.wxmarkdown import Markdown
 
 from .notebook.widget import BasicEditor
 

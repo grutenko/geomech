@@ -1,5 +1,5 @@
 import wx
-from pony.orm import *
+from pony.orm import db_session
 
 from ui.datetimeutil import decode_date
 

@@ -1,5 +1,4 @@
 import dataclasses
-import time
 import typing
 
 import wx

@@ -1,12 +1,28 @@
+from typing import List, Tuple
+
 import pubsub
 import pubsub.pub
 import wx
-from pony.orm import *
+from pony.orm import commit, db_session, desc, select
 
-from database import *
+from database import (
+    BoreHole,
+    DischargeMeasurement,
+    DischargeSeries,
+    MineObject,
+    OrigSampleSet,
+    PMSample,
+    PMSampleSet,
+    Station,
+)
 from ui.delete_object import delete_object
 from ui.icon import get_art, get_icon
-from ui.widgets.tree import *
+from ui.widgets.tree import (
+    EVT_WIDGET_TREE_ACTIVATED,
+    EVT_WIDGET_TREE_MENU,
+    Tree,
+    TreeNode,
+)
 from ui.windows.main.identity import Identity
 
 from .bore_hole import DialogCreateBoreHole
@@ -391,7 +407,7 @@ class TreeWidget(Tree):
         elif isinstance(node.o, BoreHole):
             relations = ["orig_sample_sets"]
         elif isinstance(node.o, OrigSampleSet):
-            relations = ["discharge_series", "discharge_measurements"]
+            relations = ["discharge_series", "discharge_measurements", "pm_samples"]
 
         if delete_object(node.o, relations):
             pubsub.pub.sendMessage("object.deleted", o=node.o)

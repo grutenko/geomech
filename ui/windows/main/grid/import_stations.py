@@ -4,7 +4,7 @@ from typing import Dict
 
 import pubsub
 import wx
-from pony.orm import *
+from pony.orm import commit, db_session, select
 
 from database import MineObject, Station
 from ui.datetimeutil import encode_date

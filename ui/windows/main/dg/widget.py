@@ -1,9 +1,9 @@
 import wx
 import wx.lib.newevent
-from pony.orm import *
+from pony.orm import db_session, select
 
 from ui.class_config_provider import ClassConfigProvider
-from ui.icon import get_art, get_icon
+from ui.icon import get_icon
 from ui.windows.main.identity import Identity
 
 from .create import DialogCreateDischargeSeries

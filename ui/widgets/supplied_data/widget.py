@@ -1,12 +1,11 @@
 import mimetypes
 import os
 import threading
-import time
 
 import wx
 import wx.dataview
 from pony.orm import *
-from transliterate import get_available_language_codes, translit
+from transliterate import translit
 
 from database import *
 from ui.datetimeutil import *

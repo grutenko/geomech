@@ -1,11 +1,11 @@
 import wx
-from pony.orm import *
+from pony.orm import commit, db_session, desc, select
 from pubsub import pub
 
-from database import *
+from database import MineObject, Petrotype, PetrotypeStruct, PMSampleSet, PMTestSeries
 from ui.datetimeutil import decode_date, encode_date
 from ui.icon import get_icon
-from ui.validators import *
+from ui.validators import DateValidator, TextValidator
 
 
 class ComboBoxWithSuggesion(wx.ComboBox):

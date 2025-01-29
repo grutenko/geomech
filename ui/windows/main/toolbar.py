@@ -1,6 +1,6 @@
 import wx
 
-from ui.icon import get_art, get_icon
+from ui.icon import get_icon
 
 
 class MainToolbar(wx.ToolBar):

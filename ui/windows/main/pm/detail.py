@@ -1,12 +1,12 @@
 import pubsub
 import wx
-from pony.orm import *
+from pony.orm import db_session, select
 from pubsub import pub
 
 from database import PMSample, PMSampleSet, PMTestSeries
 from ui.delete_object import delete_object
 from ui.icon import get_icon
-from ui.widgets.tree.widget import (
+from ui.widgets.tree import (
     EVT_WIDGET_TREE_ACTIVATED,
     EVT_WIDGET_TREE_MENU,
     Tree,

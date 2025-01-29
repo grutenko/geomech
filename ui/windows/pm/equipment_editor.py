@@ -1,12 +1,12 @@
 import wx
-from pony.orm import *
+from pony.orm import commit, db_session, select
 from pubsub import pub
-from wx.adv import DP_ALLOWNONE, DP_DEFAULT, DP_SHOWCENTURY, DatePickerCtrl
+from wx.adv import DatePickerCtrl
 
 from database import *
 from ui.datetimeutil import decode_date, encode_date
 from ui.icon import get_icon
-from ui.validators import *
+from ui.validators import TextValidator
 
 
 class PmEquipmentEditor(wx.Dialog):

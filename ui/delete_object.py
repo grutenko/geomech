@@ -1,5 +1,5 @@
 import wx
-from pony.orm import *
+from pony.orm import commit, db_session
 from pubsub import pub
 
 

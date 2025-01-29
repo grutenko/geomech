@@ -1,6 +1,6 @@
 import wx
 
-from ui.widgets.grid.widget import *
+from ui.widgets.grid.widget import GridEditor, Model, get_icon
 
 
 class _Model(Model):

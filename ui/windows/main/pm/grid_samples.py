@@ -1,21 +1,40 @@
+import logging
 from dataclasses import dataclass, field
 from typing import Dict
 
+import pubsub
+import pubsub.pub
 import wx
-from pony.orm import *
+from pony.orm import commit, db_session, desc, select
 
-from database import *
+from database import (
+    OrigSampleSet,
+    PmProperty,
+    PMSample,
+    PmSamplePropertyValue,
+    PMSampleSet,
+    PmSampleSetUsedProperties,
+    PmTestEquipment,
+    PmTestMethod,
+)
 from ui.class_config_provider import ClassConfigProvider
+from ui.datetimeutil import decode_date
 from ui.icon import get_icon
-from ui.widgets.grid.widget import Column, FloatCellType, Model, StringCellType
+from ui.widgets.grid import (
+    EVT_GRID_COLUMN_RESIZED,
+    EVT_GRID_MODEL_STATE_CHANGED,
+    Column,
+    FloatCellType,
+    Model,
+    StringCellType,
+)
 from ui.windows.main.identity import Identity
 
 from ..grid.base import BaseEditor
 from ..grid.choice_cell_type import ChoiceCellType
 from ..grid.date_cell_type import DateCellType
+from .grid_samples_preview import GridSamplesPreview
 from .grid_samples_properties_dialog import GridSamplePropertiesDialog
-from ui.datetimeutil import decode_date
-import logging
 
 __CONFIG_VERSION__ = 1
 
@@ -65,7 +84,7 @@ class ColumnCollection:
             "Конечная\nпозиция, м",
             "Конечная позиция, м",
             optional=True,
-            init_width=_width_("@pm_sample_set"),
+            init_width=_width_("EndPosition"),
         )
         self.columns["BoxNumber"] = Column("BoxNumber", StringCellType(), "Ящик №", "Ящик №", optional=True, init_width=_width_("BoxNumber"))
         self.columns["Length1"] = Column(
@@ -99,7 +118,7 @@ class ColumnCollection:
 
         if code not in self.props:
             o = PmProperty.get(Code=code)
-            prop = PropertyColumn(code, Column(code, FloatCellType(), o.Name, o.Name, _width_(code)), o, method, equipment)
+            prop = PropertyColumn(code, Column(code, FloatCellType(), o.Name, o.Name, _width_(code), optional=True), o, method, equipment)
             self.props[code] = prop
 
     def remove_prop(self, code):
@@ -121,6 +140,24 @@ class ColumnCollection:
     def load_properties(self):
         for p in select(o for o in PmSampleSetUsedProperties):
             self.append_prop(p.pm_property.Code, p.pm_method, p.pm_equipment)
+
+    @db_session
+    def update_orig_sample_set_variants(self):
+        data = select(core for core in OrigSampleSet if len(core.discharge_series) == 0 and core.mine_object.Type == "FIELD").order_by(
+            lambda x: x.Name
+        )
+        fields = []
+        for o in data:
+            n = o.Number.split("@").__getitem__(0)
+            fields.append(n)
+        self.columns["@orig_sample_set"].cell_type.set_choices(fields)
+
+    def get_column(self, column_id):
+        if column_id in self.columns:
+            return self.columns[column_id]
+        if column_id in self.props:
+            return self.props[column_id].column
+        return None
 
 
 @dataclass
@@ -146,7 +183,7 @@ class GridSamplesModel(Model):
         for o in select(o for o in PMSample if o.pm_sample_set == self.sample_set):
             fields = {
                 "Number": self.columns.to_string_value("Number", o.Number),
-                "@orig_sample_set": o.orig_sample_set.Name,
+                "@orig_sample_set": o.orig_sample_set.Number.split("@").__getitem__(0),
                 "SetDate": self.columns.to_string_value("SetDate", decode_date(o.SetDate)),
                 "StartPosition": self.columns.to_string_value("StartPosition", o.StartPosition),
                 "EndPosition": self.columns.to_string_value("EndPosition", o.EndPosition),
@@ -160,7 +197,7 @@ class GridSamplesModel(Model):
                 value = select(
                     v
                     for v in PmSamplePropertyValue
-                    if v.pm_property == v.pm_property and v.pm_test_method == used_prop.pm_method and v.pm_sample == o
+                    if v.pm_property == v.pm_property and v.pm_test_method == used_prop.pm_method or o in v.pm_samples
                 ).first()
                 if value != None:
                     fields[used_prop.pm_property.Code] = self.columns.to_string_value(used_prop.Code, value.Value)
@@ -177,7 +214,7 @@ class GridSamplesModel(Model):
         for row_index in range(self.get_rows_count()):
             if self.rows[row_index].o != None:
                 value = select(
-                    o for o in PmSamplePropertyValue if o.pm_property == prop and o.pm_test_method == method and o.pm_sample == self.rows[row_index].o
+                    o for o in PmSamplePropertyValue if o.pm_property == prop and o.pm_test_method == method or self.rows[row_index].o in o.pm_samples
                 ).first()
             else:
                 value = None
@@ -189,12 +226,21 @@ class GridSamplesModel(Model):
     def on_prop_remove(self, prop):
         self.columns.remove_prop(prop.Code)
 
-    def on_object_updated(self, o): ...
+    @db_session
+    def _(self): ...
+
+    def on_object_updated(self, o):
+        if isinstance(o, OrigSampleSet):
+            self.columns.update_orig_sample_set_variants()
 
     def get_value_at(self, col, row):
         _id = list(self.columns.get_columns()).__getitem__(col).id
         row = self.rows[row]
         return row.fields[_id] if _id not in row.changed_fields else row.changed_fields[_id]
+
+    def set_value_at(self, col, row, value):
+        _id = list(self.columns.get_columns()).__getitem__(col).id
+        self.rows[row].changed_fields[_id] = value
 
     def get_rows_count(self):
         return len(self.rows)
@@ -221,6 +267,42 @@ class GridSamplesModel(Model):
     def get_row_state(self, row: int):
         return self.rows[row]
 
+    def validate(self):
+        errors = []
+        for col in self.columns.get_columns():
+            for row_index, row in enumerate(self.rows):
+                if col.id in row.changed_fields:
+                    value = row.changed_fields[col.id]
+                else:
+                    value = row.fields[col.id]
+                if len(value) == 0:
+                    if col.optional:
+                        continue
+                    else:
+                        _msg = "Значение не должно быть пустым."
+                        errors.append((col, row_index, _msg))
+                if len(value) > 0 and not col.cell_type.test_repr(value):
+                    _msg = 'Неподходящее значение для ячейки типа "%s"' % col.cell_type.get_type_descr()
+                    errors.append((col, row_index, _msg))
+
+        duplicates = {}
+        for index, row in enumerate(self.rows):
+            if "Number" in row.changed_fields:
+                _v = row.changed_fields["Number"]
+            else:
+                _v = row.fields["Number"]
+            if len(_v) == 0:
+                continue
+            if _v not in duplicates:
+                duplicates[_v] = []
+            duplicates[_v].append(index)
+        col = self.columns.get_column("Number")
+        for indexes in duplicates.values():
+            if len(indexes) > 1:
+                errors.append((col, indexes[0], "Номер должен быть уникален"))
+
+        return errors
+
 
 ID_APPLEND_COLUMN = wx.ID_HIGHEST + 384
 
@@ -245,6 +327,21 @@ class GridSamples(BaseEditor):
             statusbar,
             header_height=40,
         )
+        self.preview = GridSamplesPreview(self, sample_set)
+        self.editor.Bind(EVT_GRID_COLUMN_RESIZED, self.on_editor_column_resized)
+        self.editor.Bind(EVT_GRID_MODEL_STATE_CHANGED, self.on_model_state_changed)
+        pubsub.pub.subscribe(self.on_object_updated, "object.added")
+        pubsub.pub.subscribe(self.on_object_updated, "object.deleted")
+        pubsub.pub.subscribe(self.on_object_updated, "object.updated")
+
+    def on_editor_column_resized(self, event):
+        if self._config_provider["column_width"] == None:
+            self._config_provider["column_width"] = {}
+        self._config_provider["column_width"][event.column.id] = event.size
+        self._config_provider.flush()
+
+    def on_model_state_changed(self, event):
+        self.editor.validate(save_edit_control=False)
 
     def _on_open_props_editor(self, event):
         dlg = GridSamplePropertiesDialog(self, self.sample_set, self._on_prop_add, self._on_prop_remove)
@@ -262,7 +359,20 @@ class GridSamples(BaseEditor):
         self._tool_1 = self.toolbar.AddTool(ID_APPLEND_COLUMN, "Настроить свойства", get_icon("column"))
         self.toolbar.Bind(wx.EVT_TOOL, self._on_open_props_editor, id=ID_APPLEND_COLUMN)
         super().on_select()
+        self.preview.Show()
 
     def on_deselect(self):
         self.toolbar.DeleteTool(ID_APPLEND_COLUMN)
         super().on_deselect()
+        self.preview.Hide()
+
+    def on_object_updated(self, o):
+        self.editor._model.on_object_updated(o)
+        self.editor.validate()
+        self.editor._render()
+
+    def on_after_close(self):
+        print(self)
+        pubsub.pub.unsubscribe(self.on_object_updated, "object.added")
+        pubsub.pub.unsubscribe(self.on_object_updated, "object.deleted")
+        pubsub.pub.unsubscribe(self.on_object_updated, "object.updated")

@@ -4,7 +4,6 @@ import sys
 import traceback
 
 import wx
-from pony.orm import *
 
 import config
 import database

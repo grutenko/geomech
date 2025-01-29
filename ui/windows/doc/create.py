@@ -1,11 +1,10 @@
 import wx
-from pony.orm import *
+from pony.orm import commit, db_session, select
 
 from database import FoundationDocument
 from ui.icon import get_icon
-from ui.validators import *
-from ui.widgets.supplied_data.widget import SuppliedDataWidget
-from ui.widgets.supplied_data.widget_for_new_owner import SuppliedDataWidgetForNewOwner
+from ui.validators import TextValidator
+from ui.widgets.supplied_data import SuppliedDataWidget, SuppliedDataWidgetForNewOwner
 
 
 class CreateDocumentDialog(wx.Dialog):

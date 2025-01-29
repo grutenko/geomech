@@ -1,6 +1,5 @@
 import csv
 import io
-import traceback
 from dataclasses import dataclass
 from typing import List, Protocol
 
@@ -66,6 +65,12 @@ class CellType(Protocol):
         """
         return None
 
+    def get_cell_props_value_panel(self, parent, value) -> wx.Panel:
+        """
+        Return panel with interace for show value for this cell type and edit it
+        """
+        ...
+
 
 from wx.grid import (
     GridCellEditor,
@@ -110,6 +115,14 @@ class StringCellType(CellType):
         if dlg.ShowModal() == wx.ID_OK:
             return dlg.GetValue()
         return None
+
+    def get_cell_props_value_panel(self, parent, value) -> wx.Panel:
+        p = wx.Panel(parent)
+        sz = wx.BoxSizer(wx.VERTICAL)
+        field = wx.TextCtrl(p, value=value)
+        sz.Add(field, 0, wx.EXPAND)
+        p.SetSizer(sz)
+        return p
 
     def __eq__(self, value: object) -> bool:
         return type(value) == StringCellType
@@ -222,11 +235,11 @@ from ui.icon import get_icon
 
 
 class CellView(wx.Dialog):
-    def __init__(self, parent, column, row, value):
+    def __init__(self, parent, column: Column, row, value):
         colname = column.name_short.replace("\n", " ")
         super().__init__(
             parent,
-            title="Свойства ячейки: Строка: %d, Cтолбец: %s" % (row, colname),
+            title="Свойства ячейки: Строка: %d, Cтолбец: %s" % (row + 1, colname),
             size=wx.Size(400, 250),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
@@ -235,6 +248,12 @@ class CellView(wx.Dialog):
 
         self._notebook = wx.Notebook(self)
         self._cell_pane = wx.Panel(self._notebook)
+        self.cell_pane_inner_panel = column.cell_type.get_cell_props_value_panel(self._cell_pane, value)
+        if self.cell_pane_inner_panel != None:
+            sz = wx.BoxSizer(wx.VERTICAL)
+            sz.Add(self.cell_pane_inner_panel, 1, wx.EXPAND | wx.ALL, border=10)
+            self._cell_pane.SetSizer(sz)
+            self._cell_pane.Layout()
         self._col_pane = wx.Panel(self._notebook)
         self._type_pane = wx.Panel(self._notebook)
         self._notebook.AddPage(self._cell_pane, "Значение")
@@ -304,7 +323,6 @@ class Model(Protocol):
 GridEditorStateChangedEvent, EVT_GRID_EDITOR_STATE_CHANGED = wx.lib.newevent.NewEvent()
 GridModelStateChangedEvent, EVT_GRID_MODEL_STATE_CHANGED = wx.lib.newevent.NewEvent()
 
-from wx.core import EmptyString
 
 
 class cmdAppendRows(wx.Command):
@@ -711,7 +729,7 @@ class GridEditor(wx.Panel):
     def _on_open_cell_info(self, event):
         column = self._columns[self._view.GetGridCursorCol()]
         row = self._view.GetGridCursorRow()
-        dlg = CellView(self, column, row, "")
+        dlg = CellView(self, column, row, self._model.get_value_at(self._view.GetGridCursorCol(), row))
         dlg.ShowModal()
 
     def _render(self, initial=False):

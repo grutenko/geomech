@@ -1,6 +1,6 @@
 import wx
 import wx.lib.mixins.listctrl as listmix
-from pony.orm import *
+from pony.orm import db_session, select
 
 from database import PmTestEquipment
 from ui.datetimeutil import decode_date
