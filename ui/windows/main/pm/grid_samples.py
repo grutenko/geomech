@@ -33,7 +33,6 @@ from ui.windows.main.identity import Identity
 from ..grid.base import BaseEditor
 from ..grid.choice_cell_type import ChoiceCellType
 from ..grid.date_cell_type import DateCellType
-from .grid_samples_preview import GridSamplesPreview
 from .grid_samples_properties_dialog import GridSamplePropertiesDialog
 
 __CONFIG_VERSION__ = 1
@@ -50,9 +49,10 @@ class PropertyColumn:
 
 class ColumnCollection:
     @db_session
-    def __init__(self, config):
+    def __init__(self, config, pm_sample_set):
         self._config_provider = config
         self.columns: Dict[str, Column] = {}
+        self.pm_sample_set = pm_sample_set
 
         def _width_(name):
             w = config["column_width"]
@@ -138,7 +138,7 @@ class ColumnCollection:
 
     @db_session
     def load_properties(self):
-        for p in select(o for o in PmSampleSetUsedProperties):
+        for p in select(o for o in PmSampleSetUsedProperties if o.pm_sample_set == self.pm_sample_set):
             self.append_prop(p.pm_property.Code, p.pm_method, p.pm_equipment)
 
     @db_session
@@ -172,7 +172,7 @@ class GridSamplesModel(Model):
     def __init__(self, sample_set, config):
         self.sample_set = sample_set
         self._config_provider = config
-        self.columns = ColumnCollection(config)
+        self.columns = ColumnCollection(config, sample_set)
         self.columns.load_properties()
         self.rows = []
         self._deleted_rows = []
@@ -327,7 +327,6 @@ class GridSamples(BaseEditor):
             statusbar,
             header_height=40,
         )
-        self.preview = GridSamplesPreview(self, sample_set)
         self.editor.Bind(EVT_GRID_COLUMN_RESIZED, self.on_editor_column_resized)
         self.editor.Bind(EVT_GRID_MODEL_STATE_CHANGED, self.on_model_state_changed)
         pubsub.pub.subscribe(self.on_object_updated, "object.added")
@@ -359,12 +358,10 @@ class GridSamples(BaseEditor):
         self._tool_1 = self.toolbar.AddTool(ID_APPLEND_COLUMN, "Настроить свойства", get_icon("column"))
         self.toolbar.Bind(wx.EVT_TOOL, self._on_open_props_editor, id=ID_APPLEND_COLUMN)
         super().on_select()
-        self.preview.Show()
 
     def on_deselect(self):
         self.toolbar.DeleteTool(ID_APPLEND_COLUMN)
         super().on_deselect()
-        self.preview.Hide()
 
     def on_object_updated(self, o):
         self.editor._model.on_object_updated(o)

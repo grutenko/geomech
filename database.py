@@ -264,15 +264,13 @@ class RockBurst(db.Entity):
 
     RID = PrimaryKey(int, auto=True, column="RID")
     Number = Required(str, column="Number")
-    Name = Required(str, column="Name")
-    Comment = Optional(str, column="Comment")
-    X = Required(float, column="X")
-    Y = Required(float, column="Y")
-    Z = Required(float, column="Z")
-    BurstDate = Required(int, column="BurstDate", size=64)
 
     def get_tree_name(self):
         return "[Горный удар] " + self.Name
+
+    @property
+    def Name(self):
+        return "Горный удар"
 
 
 class CoreBoxStorage(db.Entity):
@@ -417,7 +415,7 @@ class PmProperty(db.Entity):
     RID = PrimaryKey(int, auto=True, column="RID")
     Name = Required(str, column="Name")
     Comment = Optional(str, column="Comment")
-    Code = Required(str, column="Code")
+    Code = Optional(str, column="Code")
     Unit = Optional(str, column="Unit")
 
 
