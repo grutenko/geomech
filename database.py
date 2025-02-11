@@ -261,16 +261,134 @@ class RockBurst(db.Entity):
     _table_ = "RockBursts"
 
     mine_object = Required(MineObject, column="MOID")
+    rb_type = Required("RBType", column="RBTID")
+    rb_causes = Set("RBCause")
+    rb_signs = Set("RBSign")
+    rb_prevent_actions = Set("RBPreventAction")
+    rb_gsras_events = Set("RBGSRASEvent")
+    rb_asksm_events = Set("RBASKSMEvent")
 
     RID = PrimaryKey(int, auto=True, column="RID")
-    Number = Required(str, column="Number")
+    Number = Optional(str, column="Number")
+    Comment = Optional(str, column="Comment")
+    BurstDate = Required(int, column="BurstDate", size=64)
+    IsDynamic = Required(bool, column="IsDynamic")
+    BurstDepth = Optional(float, column="BurstDepth")
+    LayerFrom = Optional(float, column="LayerFrom")
+    LayerTo = Optional(float, column="LayerTo")
+    MagistralFrom = Optional(float, column="MagistralFrom")
+    MagistralTo = Optional(float, column="MagistralTo")
+    HeightFrom = Optional(float, column="HeightFrom")
+    HeightTo = Optional(float, column="HeightTo")
+    Place = Optional(str, column="Place")
+    OccrVolume = Optional(float, column="OccrVolume")
+    OccrWeight = Optional(float, column="OccrWeight")
+    OccrSound = Optional(float, column="OccrSound")
+    OccrComment = Optional(float, column="OccrComment")
 
     def get_tree_name(self):
-        return "[Горный удар] " + self.Name
+        return "[Горный удар] №%s %s" % (
+            self.Number,
+            self.mine_object.Name,
+        )
 
-    @property
-    def Name(self):
-        return "Горный удар"
+
+class RBASKSMEvent(db.Entity):
+    _table_ = "RBASKSMEvents"
+
+    rock_burst = Required(RockBurst, column="RBID")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+    Date = Required(int, column="Date", size=64)
+    X = Required(float, column="X")
+    Y = Required(float, column="Y")
+    Z = Required(float, column="Z")
+    Energy = Optional(str, column="Energy")
+    Comment = Optional(str, column="Comment")
+    ASKSM_ID = Required(str, column="ASKSM_ID")
+
+
+class RBGSRASEvent(db.Entity):
+    _table_ = "RBGSRASEvents"
+
+    rock_burst = Required(RockBurst, column="RBID")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+    Date = Required(int, column="Date", size=64)
+    Latitude = Required(float, column="Latitude")
+    Longitude = Required(float, column="Longitude")
+    Depth = Required(float, column="Depth")
+    Magnitude = Optional(float, column="Magnitude")
+    Comment = Optional(str, column="Comment")
+    GSRAS_ID = Required(str, column="GSRAS_ID")
+
+
+class RBTypicalPreventAction(db.Entity):
+    _table_ = "RBTypicalPreventActions"
+
+    rb_prevent_actions = Set("RBPreventAction")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+    Name = Required(str, column="Name")
+    Comment = Optional(str, column="Comment")
+
+
+class RBTypicalSign(db.Entity):
+    _table_ = "RBTypicalSigns"
+
+    rb_signs = Set("RBSign")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+    Name = Required(str, column="Name")
+    Comment = Optional(str, column="Comment")
+
+
+class RBTypicalCause(db.Entity):
+    _table_ = "RBTypicalCauses"
+
+    rb_causes = Set("RBCause")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+    Name = Required(str, column="Name")
+    Comment = Optional(str, column="Comment")
+
+
+class RBCause(db.Entity):
+    _table_ = "RBCauses"
+
+    rock_burst = Required(RockBurst, column="RBID")
+    rb_typical_cause = Required(RBTypicalCause, column="RBCID")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+
+
+class RBSign(db.Entity):
+    _table_ = "RBSigns"
+
+    rb_typical_sign = Required(RBTypicalSign, column="RBSID")
+    rock_burst = Required(RockBurst, column="RBID")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+
+
+class RBType(db.Entity):
+    _table_ = "RBTypes"
+
+    rock_bursts = Set("RockBurst")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+    Name = Required(str, column="Name")
+    Comment = Optional(str, column="Comment")
+
+
+class RBPreventAction(db.Entity):
+    _table_ = "RBPreventActions"
+
+    rb_typical_prevent_action = Required(RBTypicalPreventAction, column="RBPAID")
+    rock_burst = Required(RockBurst, column="RBID")
+
+    RID = PrimaryKey(int, auto=True, column="RID")
+    ActDate = Optional(int, column="ActDate", size=64)
 
 
 class CoreBoxStorage(db.Entity):
