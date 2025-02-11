@@ -10,6 +10,8 @@ from .create import DialogCreateDischargeSeries
 from .detail import DischargeDetails
 from database import OrigSampleSet, DischargeSeries
 from .list import DischargeList
+from ..notebook.widget import EditorNotebook
+from database import DischargeMeasurement
 import logging
 
 __CONFIG_VERSION__ = 2
@@ -160,5 +162,11 @@ class DischargePanel(wx.Panel):
 
     @db_session
     def delete(self, core):
-        self._list.select_by_identity(Identity(core, core))
-        self._list._on_delete()
+        _id = Identity(core, core, DischargeMeasurement)
+        n = EditorNotebook.get_instance()
+        index, page = n.get_by_identity(_id)
+        if page != None:
+            wx.MessageBox("Таблица для этой серии замеров открыта. Закройте таблицу и повторите удаление.", "Ошибка", style=wx.ICON_ERROR | wx.OK)
+        else:
+            self._list.select_by_identity(Identity(core, core))
+            self._list._on_delete()

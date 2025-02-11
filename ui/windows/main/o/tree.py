@@ -293,8 +293,10 @@ class TreeWidget(Tree):
             return _Core_Node(o)
         return None
 
+    @db_session
     def _on_node_activated(self, event):
-        wx.PostEvent(self, OpenSelfEditorEvent(target=event.node.o))
+        if isinstance(event.node.o, OrigSampleSet) and select(o for o in DischargeSeries if o.orig_sample_set == event.node.o).count() > 0:
+            pubsub.pub.sendMessage("cmd.dm.open", target=self, identity=Identity(event.node.o, event.node.o))
 
     @db_session
     def _mine_object_context_menu(self, node: _MineObject_Node, point: wx.Point):
@@ -522,6 +524,7 @@ class TreeWidget(Tree):
         o = self._current_object
         # Посылаем команду открытия окна создания серии замеров
         pubsub.pub.sendMessage("cmd.dm.create", target=self, core=o)
+        pubsub.pub.sendMessage("cmd.dm.open", target=self, identity=Identity(o, o, None))
 
     def _on_select_dm(self, event):
         o = self._current_object
