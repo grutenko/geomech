@@ -1,11 +1,10 @@
 import wx
 import wx.propgrid
-from pony.orm import *
-import wx.propgrid
-
-from database import *
+from pony.orm import db_session, select, desc
+from database import RockBurst, RBTypicalCause, RBCause, RBType, RBTypicalPreventAction, RBPreventAction, RBSign, RBTypicalSign, MineObject
 from ui.icon import get_icon
-from ui.validators import *
+from ui.validators import TextValidator, DateValidator
+from .prevent_actions_list import PreventActionsList
 
 
 class RockBurstEditor(wx.Frame):
@@ -47,7 +46,11 @@ class RockBurstEditor(wx.Frame):
         left_sizer.Add(label, 0, wx.EXPAND)
         self.field_type = wx.Choice(self)
         left_sizer.Add(self.field_type, 0, wx.EXPAND | wx.BOTTOM, border=5)
-
+        self._types = []
+        data = select(o for o in RBType).order_by(lambda x: x.Name)
+        for o in data:
+            self.field_type.Append(o.Name)
+            self._types.append(o)
         self.field_dynamic = wx.CheckBox(self, label="Динамическое событие?")
         left_sizer.Add(self.field_dynamic, 0, wx.EXPAND | wx.BOTTOM, border=5)
 
@@ -62,12 +65,12 @@ class RockBurstEditor(wx.Frame):
 
         label = wx.StaticText(
             self,
-            label="Название",
+            label="Номер",
         )
         left_sizer.Add(label, 0)
-        self.field_name = wx.TextCtrl(self, size=wx.Size(250, -1))
-        self.field_name.SetValidator(TextValidator(lenMin=1, lenMax=256))
-        left_sizer.Add(self.field_name, 0, wx.EXPAND | wx.BOTTOM, border=5)
+        self.field_number = wx.TextCtrl(self, size=wx.Size(250, -1))
+        self.field_number.SetValidator(TextValidator(lenMin=1, lenMax=256))
+        left_sizer.Add(self.field_number, 0, wx.EXPAND | wx.BOTTOM, border=5)
 
         label = wx.StaticText(self, label="Комментарий")
         left_sizer.Add(label, 0)
@@ -102,6 +105,15 @@ class RockBurstEditor(wx.Frame):
         sizer.Add(self.page_main_propgrid, 1, wx.EXPAND)
         self.page_main.SetSizer(sizer)
         self.notebook.AddPage(self.page_main, "Карточка ГУ")
+
+        self.page_signs = wx.CheckListBox(self.notebook)
+        self.notebook.AddPage(self.page_signs, "Признаки удароопасности")
+
+        self.page_causes = wx.CheckListBox(self.notebook)
+        self.notebook.AddPage(self.page_causes, "Причины")
+
+        self.page_prevent_actions = PreventActionsList(self.notebook)
+        self.notebook.AddPage(self.page_prevent_actions, "Профилактические мероприятия")
 
         main_sizer.Add(self.notebook, 1, wx.EXPAND)
 

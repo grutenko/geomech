@@ -1,6 +1,9 @@
 import wx
 
 from ui.icon import get_icon
+from .causes_page import CausesPage
+from .prevent_actions import PreventActionsPage
+from .signs_page import SignsPage
 
 
 class RockBursrsProperties(wx.Frame):
@@ -12,6 +15,20 @@ class RockBursrsProperties(wx.Frame):
         self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnParent()
 
+        sz = wx.BoxSizer(wx.VERTICAL)
+        self.notebook = wx.Notebook(self)
+
+        self.causes_page = CausesPage(self.notebook)
+        self.notebook.AddPage(self.causes_page, "Типовые причины")
+
+        self.signs_page = SignsPage(self.notebook)
+        self.notebook.AddPage(self.signs_page, "Типовые признаки")
+
+        self.prevent_actions_page = PreventActionsPage(self.notebook)
+        self.notebook.AddPage(self.prevent_actions_page, "Типовые мероприятия")
+
+        sz.Add(self.notebook, 1, wx.EXPAND)
+        self.SetSizer(sz)
         self.Bind(wx.EVT_CLOSE, self._on_close)
 
     def _on_close(self, event):
