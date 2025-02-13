@@ -5,6 +5,7 @@ from database import RockBurst, RBTypicalCause, RBCause, RBType, RBTypicalPreven
 from ui.icon import get_icon
 from ui.validators import TextValidator, DateValidator
 from .prevent_actions_list import PreventActionsList
+from pubsub.pub import subscribe, unsubscribe
 
 
 class RockBurstEditor(wx.Frame):
@@ -23,6 +24,8 @@ class RockBurstEditor(wx.Frame):
             self.SetTitle("Добавить горный удар")
         else:
             self.SetTitle("Горный удар: " + o.Name)
+        self.my_signs = []
+        self.my_causes = []
 
         top_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -107,12 +110,14 @@ class RockBurstEditor(wx.Frame):
         self.notebook.AddPage(self.page_main, "Карточка ГУ")
 
         self.page_signs = wx.CheckListBox(self.notebook)
+        self.load_signs()
         self.notebook.AddPage(self.page_signs, "Признаки удароопасности")
 
         self.page_causes = wx.CheckListBox(self.notebook)
+        self.load_causes()
         self.notebook.AddPage(self.page_causes, "Причины")
 
-        self.page_prevent_actions = PreventActionsList(self.notebook)
+        self.page_prevent_actions = PreventActionsList(self.notebook, [])
         self.notebook.AddPage(self.page_prevent_actions, "Профилактические мероприятия")
 
         main_sizer.Add(self.notebook, 1, wx.EXPAND)
@@ -124,3 +129,37 @@ class RockBurstEditor(wx.Frame):
 
         self.SetSizer(top_sizer)
         self.Layout()
+
+        subscribe(self.on_object_changed, "object.added")
+        subscribe(self.on_object_changed, "object.deleted")
+        self.Bind(wx.EVT_CLOSE, self.on_close)
+
+    @db_session
+    def load_signs(self):
+        self.signs = []
+        self.page_signs.Clear()
+        self.my_signs = list(map(lambda x: x.rb_typical_sign, select(o for o in RBSign if o.rock_burst == self.o)))
+        for sign in select(o for o in RBTypicalSign):
+            self.page_signs.Append(sign.Name)
+            self.page_signs.Check(self.page_signs.GetCount() - 1, sign in self.my_signs)
+            self.signs.append(sign)
+
+    @db_session
+    def load_causes(self):
+        self.causes = []
+        self.page_causes.Clear()
+        self.my_causes = list(map(lambda x: x.rb_typical_cause, select(o for o in RBCause if o.rock_burst == self.o)))
+        for cause in select(o for o in RBTypicalCause):
+            self.page_causes.Append(cause.Name)
+            self.page_causes.Check(self.page_causes.GetCount() - 1, cause in self.my_causes)
+            self.causes.append(cause)
+
+    @db_session
+    def on_object_changed(self, o):
+        self.load_causes()
+        self.load_signs()
+
+    def on_close(self, event):
+        unsubscribe(self.on_object_changed, "object.added")
+        unsubscribe(self.on_object_changed, "object.deleted")
+        event.Skip()

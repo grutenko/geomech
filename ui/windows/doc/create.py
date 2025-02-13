@@ -3,8 +3,9 @@ from pony.orm import commit, db_session, select
 
 from database import FoundationDocument
 from ui.icon import get_icon
-from ui.validators import TextValidator
+from ui.validators import TextValidator, DateValidator
 from ui.widgets.supplied_data import SuppliedDataWidget, SuppliedDataWidgetForNewOwner
+from ui.datetimeutil import encode_date, decode_date
 
 
 class CreateDocumentDialog(wx.Dialog):
@@ -40,6 +41,14 @@ class CreateDocumentDialog(wx.Dialog):
         self.field_number.SetValidator(TextValidator(lenMin=0, lenMax=32))
         sizer.Add(self.field_number, 0, wx.EXPAND)
         left_sizer.Add(sizer, 0, wx.EXPAND)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        label = wx.StaticText(self, label="Дата*")
+        sizer.Add(label, 0)
+        self.field_date = wx.TextCtrl(self, size=wx.Size(250, -1))
+        self.field_date.SetValidator(DateValidator())
+        sizer.Add(self.field_date, 0, wx.EXPAND)
+        left_sizer.Add(sizer, 0, wx.EXPAND | wx.BOTTOM, border=5)
 
         main_sizer.Add(left_sizer, 1, wx.EXPAND)
         right_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -84,6 +93,7 @@ class CreateDocumentDialog(wx.Dialog):
             "Number": self.field_number.GetValue().strip(),
             "Type": self.field_type.GetValue(),
             "Comment": self.field_comment.GetValue(),
+            "DocDate": encode_date(self.field_date.GetValue()),
         }
 
         if self._type == "CREATE":

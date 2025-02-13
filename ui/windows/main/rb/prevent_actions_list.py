@@ -2,11 +2,15 @@ import wx
 
 from ui.icon import get_icon
 from .prevent_action_dialog import PreventActionDialog
+from database import RBPreventAction
+from pony.orm import db_session, select
+from ui.datetimeutil import decode_date
 
 
 class PreventActionsList(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, items):
         super().__init__(parent)
+        self.items = []
         sz = wx.BoxSizer(wx.VERTICAL)
         self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE | wx.TB_FLAT | wx.TB_HORZ_TEXT)
         self.toolbar.AddTool(wx.ID_ADD, "Добавить мероприятие", get_icon("file-add"))
@@ -22,6 +26,21 @@ class PreventActionsList(wx.Panel):
         self.SetSizer(sz)
         self.Layout()
 
+    def load(self):
+        self.list.DeleteAllItems()
+        for index, o in self.items:
+            self.list.InsertItem(index, o.rb_typical_prevent_action.Name)
+            self.list.SetItem(index, decode_date(o.Date).__str__())
+
     def on_add(self, event):
         dlg = PreventActionDialog(self)
-        dlg.ShowModal()
+        if dlg.ShowModal() == wx.ID_OK:
+            self.items.append(dlg.o)
+            self.load()
+            self.update_controls_state()
+
+    def update_controls_state(self):
+        self.toolbar.EnableTool(wx.ID_DELETE, self.list.GetSelectedItemCount() > 0)
+
+
+1

@@ -1,5 +1,8 @@
 import wx
 
+from pony.orm import db_session, commit
+from database import RBTypicalPreventAction
+
 
 class PreventActionDialog(wx.Dialog):
     def __init__(self, parent):
@@ -31,4 +34,13 @@ class PreventActionDialog(wx.Dialog):
         self.SetSizer(sz)
         self.Layout()
 
-    def on_save(self, event): ...
+    @db_session
+    def on_save(self, event):
+        fields = {
+            "Name": self.field_name.GetValue().strip(),
+            "Comment": self.field_comment.GetValue().strip(),
+        }
+        o = RBTypicalPreventAction(**fields)
+        commit()
+        self.o = o
+        self.EndModal(wx.ID_OK)

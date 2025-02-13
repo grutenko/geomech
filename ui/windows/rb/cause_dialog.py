@@ -1,8 +1,13 @@
 import wx
 
 
+from database import RBTypicalCause
+from pony.orm import db_session, commit
+import pubsub.pub
+
+
 class CauseDialog(wx.Dialog):
-    def __init__(self, parent):
+    def __init__(self, parent, _type="CREATE"):
         super().__init__(parent)
         self.SetTitle("Добавить типовую причину")
 
@@ -31,4 +36,15 @@ class CauseDialog(wx.Dialog):
         self.SetSizer(sz)
         self.Layout()
 
-    def on_save(self, event): ...
+    @db_session
+    def on_save(self, event):
+        if not self.Validate():
+            return
+        fields = {
+            "Name": self.field_name.GetValue().strip(),
+            "Comment": self.field_comment.GetValue().strip(),
+        }
+        o = RBTypicalCause(**fields)
+        commit()
+        self.o = o
+        self.EndModal(wx.ID_OK)

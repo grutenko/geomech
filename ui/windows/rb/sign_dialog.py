@@ -1,6 +1,10 @@
 import wx
 
 
+from pony.orm import db_session, commit
+from database import RBTypicalSign
+
+
 class SignDialog(wx.Dialog):
     def __init__(self, parent):
         super().__init__(parent)
@@ -31,4 +35,13 @@ class SignDialog(wx.Dialog):
         self.SetSizer(sz)
         self.Layout()
 
-    def on_save(self, event): ...
+    @db_session
+    def on_save(self, event):
+        if not self.Validate():
+            return
+
+        fields = {"Name": self.field_name.GetValue().strip(), "Comment": self.field_comment.GetValue().strip()}
+        o = RBTypicalSign(**fields)
+        commit()
+        self.o = o
+        self.EndModal(wx.ID_OK)

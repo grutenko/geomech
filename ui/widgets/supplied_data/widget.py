@@ -13,6 +13,7 @@ from ui.delete_object import delete_object
 from ui.icon import get_art, get_icon
 from ui.resourcelocation import resource_path
 from ui.validators import *
+from datetime import datetime
 
 
 class FolderEditor(wx.Dialog):
@@ -261,7 +262,7 @@ class FileEditor(wx.Dialog):
         if os.path.exists(path):
             self.field_name.SetValue(os.path.basename(path))
             ctime = os.path.getctime(path)
-            ctime = datetime.datetime.fromtimestamp(ctime).strftime("%d.%m.%Y")
+            ctime = datetime.fromtimestamp(ctime).strftime("%d.%m.%Y")
             self.field_data_date.SetValue(ctime)
             self.label_file_error.Hide()
         else:

@@ -49,7 +49,7 @@ class MineObject(db.Entity):
             "HORIZON": "Горизонт",
             "EXCAVATION": "Выработка",
         }
-        return "[" + _m[self.Type] + "] " + self.Name
+        return "[%s] %s" % (_m[self.Type], self.Name)
 
 
 class CoordSystem(db.Entity):
@@ -102,7 +102,7 @@ class Station(db.Entity):
     EndDate = Optional(int, column="EndDate", size=64)
 
     def get_tree_name(self):
-        return "[Станция] " + self.Name
+        return "[Станция] %s" % self.Name
 
 
 class BoreHole(db.Entity):
@@ -128,7 +128,7 @@ class BoreHole(db.Entity):
     DestroyDate = Optional(int, column="DestroyDate", size=64)
 
     def get_tree_name(self):
-        return "[Скважина] " + self.Name
+        return "[Скважина] %s" % self.Name
 
 
 class OrigSampleSet(db.Entity):
@@ -154,7 +154,7 @@ class OrigSampleSet(db.Entity):
 
     def get_tree_name(self):
         _m = {"CORE": "Керн", "STUF": "Штуф", "DISPERCE": "Дисперсный материал"}
-        return "[" + _m[self.SampleType] + "] " + self.Name
+        return "[%s] %s" % (_m[self.SampleType], self.Name)
 
 
 class FoundationDocument(db.Entity):
@@ -167,9 +167,10 @@ class FoundationDocument(db.Entity):
     Comment = Optional(str, column="Comment")
     Type = Optional(str, column="Type")
     Number = Optional(str, column="Number")
+    DocDate = Required(int, column="DocDate", size=64)
 
     def get_tree_name(self):
-        return "[Документ] " + self.Name
+        return "[Документ] %s" % self.Name
 
     @property
     def Name(self):
@@ -190,7 +191,7 @@ class DischargeSeries(db.Entity):
     EndMeasure = Optional(int, column="EndMeasure", size=64)
 
     def get_tree_name(self):
-        return "[Набор замеров] " + self.Name
+        return "[Набор замеров] %s" % self.Name
 
 
 class DischargeMeasurement(db.Entity):

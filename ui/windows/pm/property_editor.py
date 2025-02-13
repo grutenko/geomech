@@ -5,6 +5,7 @@ from pubsub import pub
 from database import PmProperty, PmPropertyClass
 from ui.icon import get_icon
 from ui.validators import TextValidator
+from transliterate import translit
 
 
 class PmPropertyEditor(wx.Dialog):
@@ -86,6 +87,7 @@ class PmPropertyEditor(wx.Dialog):
             "pm_property_class": PmPropertyClass[_class.RID],
             "Name": self.field_name.GetValue(),
             "Comment": self.field_comment.GetValue(),
+            "Code": translit(self.field_name.GetValue(), "ru", reversed=True),
         }
         if self._type == "CREATE":
             o = PmProperty(**_fields)

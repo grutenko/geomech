@@ -1,19 +1,24 @@
 import wx
 
 from ui.validators import DateValidator
+from pony.orm import db_session, select, commit
+from database import RBTypicalPreventAction, RBPreventAction
+from ui.datetimeutil import encode_date
 
 
 class PreventActionDialog(wx.Dialog):
-    def __init__(self, parent):
+    def __init__(self, parent, rock_burst):
         super().__init__(parent, title="Добавить мероприятие")
         self.SetSize(300, 250)
         self.CenterOnParent()
+        self.rock_burst = rock_burst
 
         sz = wx.BoxSizer(wx.VERTICAL)
         main_sz = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(self, label="Типовое мероприятие")
         main_sz.Add(label, 0, wx.EXPAND)
         self.field_action = wx.Choice(self)
+        self.load_typical_actions()
         main_sz.Add(self.field_action, 0, wx.EXPAND | wx.BOTTOM, border=10)
         label = wx.StaticText(self, label="Дата проведения")
         main_sz.Add(label, 0, wx.EXPAND)
@@ -34,4 +39,24 @@ class PreventActionDialog(wx.Dialog):
         self.SetSizer(sz)
         self.Layout()
 
-    def on_save(self, event): ...
+    @db_session
+    def load_typical_actions(self):
+        self.actions = []
+        for o in select(o for o in RBTypicalPreventAction):
+            self.actions.append(o)
+            self.field_action.Append(o.Name)
+
+    @db_session
+    def on_save(self, event):
+        if not self.Validate():
+            return
+
+        fields = {
+            "rb_typical_prevent_action": self.actions[self.field_action.GetSelection()],
+            "rock_burst": self.rock_burst,
+            "ActDate": encode_date(self.field_date.GetValue()),
+        }
+        o = RBPreventAction(**fields)
+        commit()
+        self.o = o
+        self.EndModal(wx.ID_OK)

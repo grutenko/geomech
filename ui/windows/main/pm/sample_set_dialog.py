@@ -124,7 +124,7 @@ class SampleSetDialog(wx.Dialog):
 
         self._petrotypes = list(select(o for o in Petrotype))
         for _o in self._petrotypes:
-            self.field_petrotype.Append(_o.Name)
+            self.field_petrotype.Append(_o.Name.strip())
 
         label = wx.StaticText(self, label="Структура петротипа")
         main_sizer.Add(label, 0)
@@ -176,7 +176,7 @@ class SampleSetDialog(wx.Dialog):
             self._petrotype_structs = _petrotype_structs
             self.field_petrotype_struct.Clear()
             for o in _petrotype_structs:
-                self.field_petrotype_struct.Append(o.Name)
+                self.field_petrotype_struct.Append(o.Name.strip())
             if len(_petrotype_structs) > 0:
                 self.field_petrotype_struct.SetSelection(0)
         if event != None:
