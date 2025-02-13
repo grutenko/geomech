@@ -90,7 +90,7 @@ class Properties(wx.Panel, listmix.ColumnSorterMixin):
         _id = self.table.GetItemData(self.table.GetFirstSelected())
         o = select(o for o in PmProperty if o.RID == _id).first()
         if o != None:
-            if delete_object(o):
+            if delete_object(o, ["pm_used_properties", "pm_sample_property_values"]):
                 self.load()
 
     def _on_whitespace_right_click(self, event):
