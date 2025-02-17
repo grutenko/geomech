@@ -30,6 +30,7 @@ class PreventActionsPage(wx.Panel):
         sz.Add(self.list, 1, wx.EXPAND)
         self.SetSizer(sz)
         self.Layout()
+        self.load()
 
     def on_add(self, event):
         dlg = PreventActionDialog(self)

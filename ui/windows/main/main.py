@@ -59,7 +59,7 @@ from .notebook.widget import (
 )
 from .o import EVT_OBJECT_SELECTED, Objects
 from .pm.widget import EVT_PM_SELECTED, PmPanel
-from .rb.widget_new import EVT_RB_SELECTED, RbPanel
+from .rb.widget import EVT_ROCK_BURST_SELECTED, RockBurstWidget
 from .sd import SuppliedData
 from .toolbar import MainToolbar
 
@@ -184,7 +184,7 @@ class MainFrame(wx.Frame):
         i.Hide()
 
         i.Icon(get_icon("book-stack"))
-        self.rb = RbPanel(mgr_panel)
+        self.rb = RockBurstWidget(mgr_panel)
         info = self.rb.get_pane_info()
         if info != None:
             self.mgr.LoadPaneInfo(info, i)
@@ -313,7 +313,7 @@ class MainFrame(wx.Frame):
         self.editors.Bind(EVT_ENB_EDITOR_CLOSED, self._on_editor_closed)
         self.dm.Bind(EVT_Dm_SELECTED, self._on_object_selected)
         self.pm.Bind(EVT_PM_SELECTED, self._on_object_selected)
-        self.rb.Bind(EVT_RB_SELECTED, self._on_object_selected)
+        self.rb.Bind(EVT_ROCK_BURST_SELECTED, self._on_object_selected)
         self.mgr_panel.Bind(wx.aui.EVT_AUI_PANE_BUTTON, self._on_pane_maximized)
         self.Bind(wx.EVT_SIZE, self._on_resize, self)
         self.Bind(wx.EVT_MOVE_END, self._on_move, self)
