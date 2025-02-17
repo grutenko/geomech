@@ -62,3 +62,4 @@ class TypesPage(wx.Panel):
     def update_controls_state(self):
         self.toolbar.EnableTool(wx.ID_EDIT, self.list.GetSelectedItemCount() > 0)
         self.toolbar.EnableTool(wx.ID_DELETE, self.list.GetSelectedItemCount() > 0)
+        self.toolbar.Realize()
