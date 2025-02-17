@@ -4,6 +4,7 @@ from ui.icon import get_icon
 from .causes_page import CausesPage
 from .prevent_actions import PreventActionsPage
 from .signs_page import SignsPage
+from .types_page import TypesPage
 
 
 class RockBursrsProperties(wx.Frame):
@@ -17,6 +18,9 @@ class RockBursrsProperties(wx.Frame):
 
         sz = wx.BoxSizer(wx.VERTICAL)
         self.notebook = wx.Notebook(self)
+
+        self.types_page = TypesPage(self.notebook)
+        self.notebook.AddPage(self.types_page, "ТИпы событий")
 
         self.causes_page = CausesPage(self.notebook)
         self.notebook.AddPage(self.causes_page, "Типовые причины")
