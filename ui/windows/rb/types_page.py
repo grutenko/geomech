@@ -31,6 +31,7 @@ class TypesPage(wx.Panel):
         self.Layout()
         self.list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_selection_changed)
         self.list.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_selection_changed)
+        self.toolbar.Realize()
         self.load()
 
     def on_create(self, event):
