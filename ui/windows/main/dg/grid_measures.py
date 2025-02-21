@@ -93,10 +93,10 @@ class DMModel(Model):
         }
         columns = self._columns
         e = []
-        e.append(str(o.E1))
-        e.append(str(o.E2))
-        e.append(str(o.E3))
-        e.append(str(o.E4))
+        e.append(str(int(o.E1)))
+        e.append(str(int(o.E2)))
+        e.append(str(int(o.E3)))
+        e.append(str(int(o.E4)))
         fields["E"] = ", ".join(e)
         fields["Rotate"] = str(o.Rotate)
         fields["PartNumber"] = o.PartNumber
@@ -167,7 +167,7 @@ class DMModel(Model):
             ),
             "Length": Column(
                 "Length",
-                NumberCellType(),
+                FloatCellType(prec=1),
                 "* Длина\n(см)",
                 "Длина образца керна",
                 self._get_column_width("Length"),
@@ -195,7 +195,7 @@ class DMModel(Model):
             ),
             "E": Column(
                 "E",
-                VecCellType(FloatCellType(), min_count=1, max_count=4),
+                VecCellType(NumberCellType(), min_count=1, max_count=4),
                 "* Относит.\nдеформ. (усл. ед.)",
                 "Относительная деформация образца (усл. ед.)",
                 self._get_column_width("E"),
@@ -316,10 +316,10 @@ class DMModel(Model):
     def insert_row(self, row: int):
         fields = {
             "Diameter": "0.0",
-            "Length": "0",
+            "Length": "0.0",
             "Weight": "0",
             "CoreDepth": "0.0",
-            "E": "0.0 0.0 0.0 0.0",
+            "E": "0 0 0 0",
             "Rotate": "0.0",
             "PartNumber": "",
             "RTens": "0.0",
@@ -449,13 +449,12 @@ class DMModel(Model):
             e0 = [0.0, None, None, None]
             e = columns["E"].cell_type.from_string(f["E"])
             for i, v in enumerate(e):
-                e0[i] = v
+                e0[i] = float(v)
             fields["E1"] = e0[0]
             fields["E2"] = e0[1]
             fields["E3"] = e0[2]
             fields["E4"] = e0[3]
             fields["Rotate"] = columns["Rotate"].cell_type.from_string(f["Rotate"])
-            print(fields)
             if row.o != None:
                 try:
                     o = DischargeMeasurement[row.o.RID]

@@ -30,7 +30,7 @@ class DialogCreateCore(wx.Dialog):
         label = wx.StaticText(self, label="Регистрационный номер*")
         main_sizer.Add(label, 0, wx.EXPAND)
         self.field_number = wx.TextCtrl(self, size=wx.Size(250, -1))
-        self.field_number.SetValidator(TextValidator(lenMin=1, lenMax=32))
+        self.field_number.SetValidator(TextValidator(lenMin=1, lenMax=64))
         main_sizer.Add(self.field_number, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(self, label="Название*")
