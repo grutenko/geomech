@@ -194,19 +194,22 @@ class NumberCellType(CellType):
         try:
             int_value = int(value)
         except ValueError:
-            ret = False
+            try:
+                int_value = int(float(value.replace(",", ".")))
+            except ValueError:
+                ret = False
 
         return ret
 
     def from_string(self, value: str):
         if value == None or len(value.strip()) == 0:
             return None
-        return int(value)
+        return int(float(value))
 
     def to_string(self, value) -> str:
         if value == None:
             return "0"
-        return str(value)
+        return str(int(value))
 
     def get_grid_renderer(self) -> GridCellRenderer:
         return wx.grid.GridCellNumberRenderer()
@@ -322,7 +325,6 @@ class Model(Protocol):
 
 GridEditorStateChangedEvent, EVT_GRID_EDITOR_STATE_CHANGED = wx.lib.newevent.NewEvent()
 GridModelStateChangedEvent, EVT_GRID_MODEL_STATE_CHANGED = wx.lib.newevent.NewEvent()
-
 
 
 class cmdAppendRows(wx.Command):
