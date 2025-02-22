@@ -94,7 +94,8 @@ class RockBurstWidget(wx.Panel, listmix.ColumnSorterMixin):
 
     def on_delete(self, event): ...
 
-    def on_item_selected(self, event): ...
+    def on_item_selected(self, event):
+        self.update_controls_state()
 
     def GetListCtrl(self):
         return self.list
@@ -115,3 +116,8 @@ class RockBurstWidget(wx.Panel, listmix.ColumnSorterMixin):
                 i = self.list.GetNextSelected(i)
         finally:
             self.silence_select = False
+
+    def update_controls_state(self):
+        self.toolbar.EnableTool(wx.ID_EDIT, self.list.GetSelectedItemCount() > 0)
+        self.toolbar.EnableTool(wx.ID_DELETE, self.list.GetSelectedItemCount() > 0)
+        self.toolbar.Realize()

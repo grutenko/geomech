@@ -24,6 +24,8 @@ class RockBurstDialog(wx.Dialog):
         for o in select(o for o in MineObject if o.Type == "FIELD"):
             self.field_field.Append(o.Name)
             self.fields.append(o)
+        if len(self.fields) > 0:
+            self.field_field.SetSelection(0)
         main_sz.Add(self.field_field, 0, wx.EXPAND | wx.BOTTOM, border=10)
         label = wx.StaticText(self, label="Тип")
         main_sz.Add(label, 0, wx.EXPAND)
@@ -32,6 +34,8 @@ class RockBurstDialog(wx.Dialog):
         for o in select(o for o in RBType):
             self.field_type.Append(o.Name)
             self.types.append(o)
+        if len(self.types) > 0:
+            self.field_type.SetSelection(0)
         main_sz.Add(self.field_type, 0, wx.EXPAND | wx.BOTTOM, border=10)
         label = wx.StaticText(self, label="Номер")
         main_sz.Add(label, 0, wx.EXPAND)

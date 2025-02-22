@@ -16,6 +16,7 @@ class StartDialog(wx.Dialog):
             wx.ID_ANY,
             'База данных "Геомеханика".',
             style=wx.DEFAULT_DIALOG_STYLE,
+            size=wx.Size(350, 400)
         )
         self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnScreen()
@@ -71,7 +72,6 @@ class StartDialog(wx.Dialog):
         self.SetSizer(main_sizer)
 
         self.Layout()
-        self.Fit()
 
         self._init()
 
