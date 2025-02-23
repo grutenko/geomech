@@ -3,6 +3,8 @@ import wx
 from pony.orm import select, db_session
 from database import MineObject, OrigSampleSet, BoreHole
 from ui.icon import get_icon
+from ui.delete_object import delete_object
+
 
 class OrigSampleSetList(wx.ListCtrl):
     def __init__(self, parent):
@@ -13,9 +15,17 @@ class OrigSampleSetList(wx.ListCtrl):
         self.AssignImageList(self.image_list, wx.IMAGE_LIST_SMALL)
         self.items = []
         self.load()
-        
+
     @db_session
     def load(self):
+        self.DeleteAllItems()
+        self.items = []
         for index, o in enumerate(select(o for o in OrigSampleSet if o.bore_hole == None or o.bore_hole.station == None)):
             self.items.append(o)
             self.InsertItem(index, o.Name, self.icon)
+
+    def delete(self):
+        index = self.GetFirstSelected()
+        if index != -1:
+            if delete_object(self.items[index], ["pm_samples"]):
+                self.load()

@@ -8,7 +8,7 @@ import wx
 import config
 import database
 import options
-from fms_sample_data_editor_ui.windows.main.main import MainWindow
+from fms_sample_data_editor_ui.main.main import MainWindow
 import ui.icon
 from ui.start import StartDialog
 

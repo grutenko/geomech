@@ -1,10 +1,14 @@
 import wx
 
 from ui.icon import get_icon
-from .tree import PmTestSeriesTree
+from ui.widgets.tree import EVT_WIDGET_TREE_SEL_CHANGED
+from .tree import PmTestSeriesTree, EVT_PM_SAMPLE_ACTIVATE, EVT_PM_SAMPLE_SET_ACTIVATE
 from .menu import MainMenu
-from .toolbar import MainToolBar
+from .actions import ID_ADD_PM_SAMPLE_SET, ID_ADD_PM_SAMPLE
+from .toolbar import MainToolBar, EVT_PM_TEST_SERIES_ADD, EVT_PM_TEST_SERIES_SELECT
 from .orig_sample_set_list import OrigSampleSetList
+from .pm_properties_tab import PmPropertiesTab
+from ui.windows.main.pm.create import DialogCreatePmSeries
 from pony.orm import db_session, select
 from database import PMTestSeries
 from ui.class_config_provider import ClassConfigProvider
@@ -16,13 +20,16 @@ class MainWindow(wx.Frame):
     def __init__(self, config):
         self.config = config
         super().__init__(None, title="Геомеханика: редактор ФМС", size=wx.Size(1280, 720))
-        self.SetIcon(wx.Icon(get_icon('logo')))
+        self.SetIcon(wx.Icon(get_icon("logo")))
         self.CenterOnScreen()
         self.config = ClassConfigProvider(__name__ + "." + self.__class__.__name__, __CONFIG_VERSION__)
         self.menu = MainMenu()
         self.SetMenuBar(self.menu)
         self.toolbar = MainToolBar(self)
         self.SetToolBar(self.toolbar)
+        self.statusbar = wx.StatusBar(self)
+        self.statusbar.SetFieldsCount(6)
+        self.SetStatusBar(self.statusbar)
         sz = wx.BoxSizer(wx.VERTICAL)
         self.splitter = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         self.splitter.SetSashGravity(0)
@@ -33,19 +40,82 @@ class MainWindow(wx.Frame):
         p_sz = wx.BoxSizer(wx.VERTICAL)
         self.tree = PmTestSeriesTree(p)
         p_sz.Add(self.tree, 1, wx.EXPAND)
-        p_main_sz.Add(p_sz, 1, wx.EXPAND | wx.ALL, border=10)
+        p_main_sz.Add(p_sz, 1, wx.EXPAND)
         p.SetSizer(p_main_sz)
         self.notebook.AddPage(p, "Пробы")
         self.orig_sample_set_list = OrigSampleSetList(self.notebook)
         self.notebook.AddPage(self.orig_sample_set_list, "Наборы образцов")
-        self.deputy = wx.Panel(self.splitter)
-        self.splitter.SplitVertically(self.notebook, self.deputy, 300)
+        self.pm_properties_tab = PmPropertiesTab(self.splitter)
+        self.splitter.SplitVertically(self.notebook, self.pm_properties_tab, 300)
         sz.Add(self.splitter, 1, wx.EXPAND | wx.ALL)
         self.SetSizer(sz)
         self.Layout()
         self.Show()
         self.load()
-    
+
+        self.pm_test_series: PMTestSeries = None
+        self.bind_all()
+
+    def bind_all(self):
+        self.tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self.on_controls_state_changed)
+        self.orig_sample_set_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_controls_state_changed)
+        self.orig_sample_set_list.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_controls_state_changed)
+        self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.on_controls_state_changed)
+        self.toolbar.Bind(wx.EVT_TOOL, self.on_delete, id=wx.ID_DELETE)
+        self.toolbar.Bind(wx.EVT_TOOL, self.on_add_sample_set, id=ID_ADD_PM_SAMPLE_SET)
+        self.toolbar.Bind(wx.EVT_TOOL, self.on_add_sample, id=ID_ADD_PM_SAMPLE)
+        self.tree.Bind(EVT_PM_SAMPLE_SET_ACTIVATE, self.on_sample_set_activate)
+        self.tree.Bind(EVT_PM_SAMPLE_ACTIVATE, self.on_sample_activate)
+        self.toolbar.Bind(EVT_PM_TEST_SERIES_ADD, self.on_pm_test_series_add)
+        self.toolbar.Bind(EVT_PM_TEST_SERIES_SELECT, self.on_pm_test_series_select)
+
+    def on_sample_set_activate(self, event): ...
+
+    def on_sample_activate(self, event):
+        self.pm_properties_tab.set_pm_sample(event.pm_sample)
+
+    def on_add_sample_set(self, event):
+        self.tree.on_add_sample_set()
+
+    def on_add_sample(self, event):
+        self.tree.on_add_sample()
+
+    def on_delete(self, event):
+        if self.notebook.GetSelection() == 0:
+            self.tree.delete()
+        else:
+            self.orig_sample_set_list.delete()
+
+    def on_controls_state_changed(self, event):
+        self.update_controls_state()
+
+    def on_pm_test_series_add(self, event):
+        dlg = DialogCreatePmSeries(self, o=None)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.pm_test_series = dlg.o
+            self.tree.set_pm_test_series(self.pm_test_series)
+            self.update_controls_state()
+
+    def on_pm_test_series_select(self, event):
+        self.pm_test_series = event.pm_test_series
+        self.tree.set_pm_test_series(self.pm_test_series)
+        self.update_controls_state()
+
     @db_session
-    def load(self):
-        ...
+    def load(self): ...
+
+    def update_controls_state(self):
+        if self.pm_test_series == None:
+            self.toolbar.pm_test_series_tool.SetLabel("Выбрать договор")
+        else:
+            self.toolbar.pm_test_series_tool.SetLabel("Договор: %s" % self.pm_test_series.Name)
+        self.tree.Enable(self.pm_test_series != None)
+        self.toolbar.EnableTool(ID_ADD_PM_SAMPLE_SET, self.notebook.GetSelection() == 0 and self.pm_test_series != None)
+        self.toolbar.EnableTool(ID_ADD_PM_SAMPLE, self.notebook.GetSelection() == 0 and self.pm_test_series != None and self.tree.can_add_pm_sample())
+        self.toolbar.EnableTool(
+            wx.ID_DELETE,
+            (self.notebook.GetSelection() == 0 and self.pm_test_series != None and self.tree.get_current_node() != None)
+            or self.notebook.GetSelection() == 1
+            and self.orig_sample_set_list.GetSelectedItemCount() > 0,
+        )
+        self.toolbar.Realize()
