@@ -1,5 +1,5 @@
 import wx
-from pony.orm import commit, db_session, desc, select
+from pony.orm import commit, db_session, select
 from pubsub import pub
 
 from database import MineObject, Petrotype, PetrotypeStruct, PMSampleSet, PMTestSeries
@@ -171,7 +171,7 @@ class SampleSetDialog(wx.Dialog):
     def _on_select_petrotype(self, event=None):
         _text = self.field_petrotype.GetValue()
         _petrotype = select(o for o in Petrotype if o.Name.lower() == _text.lower()).first()
-        if _petrotype != None:
+        if _petrotype is not None:
             _petrotype_structs = select(o for o in PetrotypeStruct if o.petrotype == _petrotype)
             self._petrotype_structs = _petrotype_structs
             self.field_petrotype_struct.Clear()
@@ -179,7 +179,9 @@ class SampleSetDialog(wx.Dialog):
                 self.field_petrotype_struct.Append(o.Name.strip())
             if len(_petrotype_structs) > 0:
                 self.field_petrotype_struct.SetSelection(0)
-        if event != None:
+        else:
+            self.field_petrotype_struct.Clear()
+        if event is not None:
             event.Skip()
 
     @db_session
@@ -199,12 +201,12 @@ class SampleSetDialog(wx.Dialog):
         _petrotype_name = self.field_petrotype.GetValue().lower()
         _petrotype_struct_name = self.field_petrotype_struct.GetValue().lower()
         _petrotype = select(o for o in Petrotype if o.Name.lower() == _petrotype_name).first()
-        if _petrotype == None:
-            _petrotype = Petrotype(Name=_petrotype)
+        if _petrotype is None:
+            _petrotype = Petrotype(Name=_petrotype_name)
             _petrotype_struct = PetrotypeStruct(Name=_petrotype_struct_name, petrotype=_petrotype)
         else:
             _petrotype_struct = select(o for o in PetrotypeStruct if o.Name.lower() == _petrotype_struct_name).first()
-            if _petrotype_struct == None:
+            if _petrotype_struct is None:
                 _petrotype_struct = PetrotypeStruct(Name=_petrotype_struct_name, petrotype=_petrotype)
 
         fields["petrotype_struct"] = _petrotype_struct
@@ -227,14 +229,14 @@ class SampleSetDialog(wx.Dialog):
     def _set_fields(self):
         o = self._target
         self.field_name.SetValue(o.Name)
-        self.field_comment.SetValue(o.Comment if o.Comment != None else "")
+        self.field_comment.SetValue(o.Comment if o.Comment is not None else "")
         for index, _o in enumerate(self._mine_objects):
             if _o.RID == o.mine_object.RID:
                 self.field_mine_object.SetSelection(index)
                 break
-        if o.SetDate != None:
+        if o.SetDate is not None:
             self.field_set_date.SetValue(decode_date(o.SetDate))
-        if o.TestDate != None:
+        if o.TestDate is not None:
             self.field_test_date.SetValue(decode_date(o.TestDate))
 
         if o.RealDetails:

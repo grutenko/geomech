@@ -1,7 +1,7 @@
 import wx
 import wx.lib.newevent
 from pony.orm import db_session, select
-from database import PMSampleSet, PMSample, PMTestSeries
+from database import PMSampleSet, PMSample
 from ui.widgets.tree import Tree, TreeNode, EVT_WIDGET_TREE_MENU, EVT_WIDGET_TREE_ACTIVATED, EVT_WIDGET_TREE_SEL_CHANGED
 from ui.windows.main.pm.sample_set_dialog import SampleSetDialog
 from .pm_sample_dialog import PmSampleDialog
@@ -81,6 +81,7 @@ class PmSampleNode(TreeNode):
 class RootNode(TreeNode):
     def __init__(self, pm_test_series):
         self.pm_test_series = pm_test_series
+        self.o = pm_test_series
 
     def is_root(self):
         return False
@@ -103,6 +104,39 @@ class RootNode(TreeNode):
     def __eq__(self, o):
         return isinstance(o, RootNode)
 
+class DeputyNode(TreeNode):
+    def get_name(self):
+        return "[Не выбран договор]"
+
+    def is_name_italic(self):
+        return True
+
+    def is_leaf(self):
+        return True
+
+    def get_icon(self):
+        return "error", get_icon("error")
+
+    def get_icon_open(self):
+        return "error", get_icon("error")
+
+    def __eq__(self, node):
+        return isinstance(node,DeputyNode)
+
+class DeputyRoot(TreeNode):
+    def get_name(self):
+        return "Объекты"
+
+    def get_subnodes(self):
+        return [DeputyNode()]
+
+    def is_root(self):
+        return True
+
+    def __eq__(self, node):
+        return isinstance(node, DeputyRoot)
+        
+
 
 class PmTestSeriesTree(Tree):
     def __init__(self, parent):
@@ -113,6 +147,7 @@ class PmTestSeriesTree(Tree):
         self.Bind(wx.EVT_RIGHT_DOWN, self.on_right_click)
         self.bind_all()
         self.pm_test_series = None
+        self.set_pm_test_series(None)
 
     def on_right_click(self, event):
         a, b = self.HitTest(event.GetPoint())
@@ -124,7 +159,10 @@ class PmTestSeriesTree(Tree):
 
     def set_pm_test_series(self, pm_test_series):
         self.pm_test_series = pm_test_series
-        self.set_root_node(RootNode(pm_test_series))
+        if self.pm_test_series is not None:
+            self.set_root_node(RootNode(pm_test_series))
+        else:
+            self.set_root_node(DeputyRoot())
 
     def on_menu(self, event):
         m = wx.Menu()
@@ -148,15 +186,15 @@ class PmTestSeriesTree(Tree):
     def on_selection_changed(self, event): ...
 
     def can_delete(self):
-        return self.get_current_node() != None
+        return self.get_current_node() is not None
 
     def can_add_pm_sample(self):
         node = self.get_current_node()
-        return node != None and isinstance(node.o, PMSampleSet)
+        return node is not None and isinstance(node.o, PMSampleSet)
 
     def delete(self):
         node = self.get_current_node()
-        if node != None:
+        if node is not None:
             relations = []
             if isinstance(node.o, PMSampleSet):
                 relations = ["pm_samples"]

@@ -4,11 +4,11 @@ from ui.icon import get_icon
 from ui.widgets.tree import EVT_WIDGET_TREE_SEL_CHANGED
 from .tree import PmTestSeriesTree, EVT_PM_SAMPLE_ACTIVATE, EVT_PM_SAMPLE_SET_ACTIVATE
 from .menu import MainMenu
-from .actions import ID_ADD_PM_SAMPLE_SET, ID_ADD_PM_SAMPLE
-from .toolbar import MainToolBar, EVT_PM_TEST_SERIES_ADD, EVT_PM_TEST_SERIES_SELECT
+from .actions import ID_ADD_PM_SAMPLE_SET, ID_ADD_PM_SAMPLE, ID_ADD_ORIG_SAMPLE_SET
+from .toolbar import MainToolBar, EVT_PM_TEST_SERIES_MANAGE, EVT_PM_TEST_SERIES_SELECT
 from .orig_sample_set_list import OrigSampleSetList
 from .pm_properties_tab import PmPropertiesTab
-from ui.windows.main.pm.create import DialogCreatePmSeries
+from .pm_test_series_manage import PmTestSeriesManage
 from pony.orm import db_session, select
 from database import PMTestSeries
 from ui.class_config_provider import ClassConfigProvider
@@ -66,7 +66,7 @@ class MainWindow(wx.Frame):
         self.toolbar.Bind(wx.EVT_TOOL, self.on_add_sample, id=ID_ADD_PM_SAMPLE)
         self.tree.Bind(EVT_PM_SAMPLE_SET_ACTIVATE, self.on_sample_set_activate)
         self.tree.Bind(EVT_PM_SAMPLE_ACTIVATE, self.on_sample_activate)
-        self.toolbar.Bind(EVT_PM_TEST_SERIES_ADD, self.on_pm_test_series_add)
+        self.toolbar.Bind(EVT_PM_TEST_SERIES_MANAGE, self.on_pm_test_series_manage)
         self.toolbar.Bind(EVT_PM_TEST_SERIES_SELECT, self.on_pm_test_series_select)
 
     def on_sample_set_activate(self, event): ...
@@ -85,16 +85,19 @@ class MainWindow(wx.Frame):
             self.tree.delete()
         else:
             self.orig_sample_set_list.delete()
+        self.update_controls_state()
 
     def on_controls_state_changed(self, event):
         self.update_controls_state()
 
-    def on_pm_test_series_add(self, event):
-        dlg = DialogCreatePmSeries(self, o=None)
-        if dlg.ShowModal() == wx.ID_OK:
-            self.pm_test_series = dlg.o
+    @db_session
+    def on_pm_test_series_manage(self, event):
+        dlg = PmTestSeriesManage(self)
+        dlg.ShowModal()
+        if self.pm_test_series is not None and select(o for o in PMTestSeries if o.RID == self.pm_test_series.RID).count() == 0:
+            self.pm_test_series = None
             self.tree.set_pm_test_series(self.pm_test_series)
-            self.update_controls_state()
+        self.update_controls_state()
 
     def on_pm_test_series_select(self, event):
         self.pm_test_series = event.pm_test_series
@@ -105,16 +108,17 @@ class MainWindow(wx.Frame):
     def load(self): ...
 
     def update_controls_state(self):
-        if self.pm_test_series == None:
+        if self.pm_test_series is None:
             self.toolbar.pm_test_series_tool.SetLabel("Выбрать договор")
         else:
             self.toolbar.pm_test_series_tool.SetLabel("Договор: %s" % self.pm_test_series.Name)
-        self.tree.Enable(self.pm_test_series != None)
-        self.toolbar.EnableTool(ID_ADD_PM_SAMPLE_SET, self.notebook.GetSelection() == 0 and self.pm_test_series != None)
-        self.toolbar.EnableTool(ID_ADD_PM_SAMPLE, self.notebook.GetSelection() == 0 and self.pm_test_series != None and self.tree.can_add_pm_sample())
+        self.tree.Enable(self.pm_test_series is not None)
+        self.toolbar.EnableTool(ID_ADD_PM_SAMPLE_SET, self.notebook.GetSelection() == 0 and self.pm_test_series is not None)
+        self.toolbar.EnableTool(ID_ADD_PM_SAMPLE, self.notebook.GetSelection() == 0 and self.pm_test_series is not None and self.tree.can_add_pm_sample())
+        self.toolbar.EnableTool(ID_ADD_ORIG_SAMPLE_SET, self.notebook.GetSelection() == 1)
         self.toolbar.EnableTool(
             wx.ID_DELETE,
-            (self.notebook.GetSelection() == 0 and self.pm_test_series != None and self.tree.get_current_node() != None)
+            (self.notebook.GetSelection() == 0 and self.pm_test_series is not None and self.tree.get_current_node() is not None)
             or self.notebook.GetSelection() == 1
             and self.orig_sample_set_list.GetSelectedItemCount() > 0,
         )
