@@ -64,10 +64,14 @@ class MainWindow(wx.Frame):
         self.toolbar.Bind(wx.EVT_TOOL, self.on_delete, id=wx.ID_DELETE)
         self.toolbar.Bind(wx.EVT_TOOL, self.on_add_sample_set, id=ID_ADD_PM_SAMPLE_SET)
         self.toolbar.Bind(wx.EVT_TOOL, self.on_add_sample, id=ID_ADD_PM_SAMPLE)
+        self.toolbar.Bind(wx.EVT_TOOL, self.on_add_orig_sample_set, id=ID_ADD_ORIG_SAMPLE_SET)
         self.tree.Bind(EVT_PM_SAMPLE_SET_ACTIVATE, self.on_sample_set_activate)
         self.tree.Bind(EVT_PM_SAMPLE_ACTIVATE, self.on_sample_activate)
         self.toolbar.Bind(EVT_PM_TEST_SERIES_MANAGE, self.on_pm_test_series_manage)
         self.toolbar.Bind(EVT_PM_TEST_SERIES_SELECT, self.on_pm_test_series_select)
+
+    def on_add_orig_sample_set(self, event):
+        self.orig_sample_set_list.on_create()
 
     def on_sample_set_activate(self, event): ...
 
@@ -114,7 +118,9 @@ class MainWindow(wx.Frame):
             self.toolbar.pm_test_series_tool.SetLabel("Договор: %s" % self.pm_test_series.Name)
         self.tree.Enable(self.pm_test_series is not None)
         self.toolbar.EnableTool(ID_ADD_PM_SAMPLE_SET, self.notebook.GetSelection() == 0 and self.pm_test_series is not None)
-        self.toolbar.EnableTool(ID_ADD_PM_SAMPLE, self.notebook.GetSelection() == 0 and self.pm_test_series is not None and self.tree.can_add_pm_sample())
+        self.toolbar.EnableTool(
+            ID_ADD_PM_SAMPLE, self.notebook.GetSelection() == 0 and self.pm_test_series is not None and self.tree.can_add_pm_sample()
+        )
         self.toolbar.EnableTool(ID_ADD_ORIG_SAMPLE_SET, self.notebook.GetSelection() == 1)
         self.toolbar.EnableTool(
             wx.ID_DELETE,

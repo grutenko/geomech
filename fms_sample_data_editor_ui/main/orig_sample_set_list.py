@@ -4,6 +4,7 @@ from pony.orm import select, db_session
 from database import MineObject, OrigSampleSet, BoreHole
 from ui.icon import get_icon
 from ui.delete_object import delete_object
+from .orig_sample_set_dialog import OrigSampleSetCoreDialog, OrigSampleSetOtherDialog, OrigSampleSetSelectTypeDialog
 
 
 class OrigSampleSetList(wx.ListCtrl):
@@ -28,4 +29,14 @@ class OrigSampleSetList(wx.ListCtrl):
         index = self.GetFirstSelected()
         if index != -1:
             if delete_object(self.items[index], ["pm_samples"]):
+                self.load()
+
+    def on_create(self):
+        dlg = OrigSampleSetSelectTypeDialog(self)
+        if dlg.ShowModal() == wx.ID_OK:
+            if dlg.type == "CORE":
+                dlg0 = OrigSampleSetCoreDialog(self)
+            else:
+                dlg0 = OrigSampleSetOtherDialog(self)
+            if dlg0.ShowModal() == wx.ID_OK:
                 self.load()
