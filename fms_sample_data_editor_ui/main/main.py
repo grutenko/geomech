@@ -2,15 +2,16 @@ import wx
 
 from ui.icon import get_icon
 from ui.widgets.tree import EVT_WIDGET_TREE_SEL_CHANGED
-from .tree import PmTestSeriesTree, EVT_PM_SAMPLE_ACTIVATE, EVT_PM_SAMPLE_SET_ACTIVATE
+from .tree import PmTestSeriesTree
 from .menu import MainMenu
 from .actions import ID_ADD_PM_SAMPLE_SET, ID_ADD_PM_SAMPLE, ID_ADD_ORIG_SAMPLE_SET
 from .toolbar import MainToolBar, EVT_PM_TEST_SERIES_MANAGE, EVT_PM_TEST_SERIES_SELECT
 from .orig_sample_set_list import OrigSampleSetList
 from .pm_properties_tab import PmPropertiesTab
 from .pm_test_series_manage import PmTestSeriesManage
+from .fastview import FastView
 from pony.orm import db_session, select
-from database import PMTestSeries
+from database import PMTestSeries, PMSample, PMSampleSet
 from ui.class_config_provider import ClassConfigProvider
 
 __CONFIG_VERSION__ = 1
@@ -34,7 +35,8 @@ class MainWindow(wx.Frame):
         self.splitter = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
         self.splitter.SetSashGravity(0)
         self.splitter.SetMinimumPaneSize(300)
-        self.notebook = wx.Notebook(self.splitter, style=wx.NB_LEFT)
+        left = wx.SplitterWindow(self.splitter, style=wx.SP_LIVE_UPDATE)
+        self.notebook = wx.Notebook(left, style=wx.NB_LEFT)
         p = wx.Panel(self.notebook)
         p_main_sz = wx.BoxSizer(wx.VERTICAL)
         p_sz = wx.BoxSizer(wx.VERTICAL)
@@ -43,10 +45,14 @@ class MainWindow(wx.Frame):
         p_main_sz.Add(p_sz, 1, wx.EXPAND)
         p.SetSizer(p_main_sz)
         self.notebook.AddPage(p, "Пробы")
+        self.fastview = FastView(left)
+        left.SplitHorizontally(self.notebook, self.fastview, 300)
+        left.SetSashGravity(0.5)
+        left.SetMinimumPaneSize(250)
         self.orig_sample_set_list = OrigSampleSetList(self.notebook)
         self.notebook.AddPage(self.orig_sample_set_list, "Наборы образцов")
         self.pm_properties_tab = PmPropertiesTab(self.splitter)
-        self.splitter.SplitVertically(self.notebook, self.pm_properties_tab, 300)
+        self.splitter.SplitVertically(left, self.pm_properties_tab, 300)
         sz.Add(self.splitter, 1, wx.EXPAND | wx.ALL)
         self.SetSizer(sz)
         self.Layout()
@@ -55,28 +61,44 @@ class MainWindow(wx.Frame):
 
         self.pm_test_series: PMTestSeries = None
         self.bind_all()
+        self.update_controls_state()
 
     def bind_all(self):
-        self.tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self.on_controls_state_changed)
-        self.orig_sample_set_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_controls_state_changed)
-        self.orig_sample_set_list.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_controls_state_changed)
-        self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.on_controls_state_changed)
+        self.tree.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self.on_selection_changed)
+        self.orig_sample_set_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_selection_changed)
+        self.orig_sample_set_list.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_selection_changed)
+        self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.on_selection_changed)
         self.toolbar.Bind(wx.EVT_TOOL, self.on_delete, id=wx.ID_DELETE)
         self.toolbar.Bind(wx.EVT_TOOL, self.on_add_sample_set, id=ID_ADD_PM_SAMPLE_SET)
         self.toolbar.Bind(wx.EVT_TOOL, self.on_add_sample, id=ID_ADD_PM_SAMPLE)
         self.toolbar.Bind(wx.EVT_TOOL, self.on_add_orig_sample_set, id=ID_ADD_ORIG_SAMPLE_SET)
-        self.tree.Bind(EVT_PM_SAMPLE_SET_ACTIVATE, self.on_sample_set_activate)
-        self.tree.Bind(EVT_PM_SAMPLE_ACTIVATE, self.on_sample_activate)
         self.toolbar.Bind(EVT_PM_TEST_SERIES_MANAGE, self.on_pm_test_series_manage)
         self.toolbar.Bind(EVT_PM_TEST_SERIES_SELECT, self.on_pm_test_series_select)
+
+    def on_selection_changed(self, event):
+        o = None
+        if self.notebook.GetSelection() == 0:
+            if self.tree.get_current_node() is not None:
+                o = self.tree.get_current_node().o
+            else:
+                o = None
+        elif self.notebook.GetSelection() == 1:
+            o = self.orig_sample_set_list.get_selected_orig_sample_set()
+        self.fastview.start(o)
+        if o is not None:
+            self.statusbar.SetStatusText(o.get_tree_name(), 0)
+        else:
+            self.statusbar.SetStatusText("", 0)
+        if isinstance(o, PMSample):
+            self.pm_properties_tab.set_pm_sample(o)
+        else:
+            self.pm_properties_tab.end()
+        self.on_controls_state_changed(event)
 
     def on_add_orig_sample_set(self, event):
         self.orig_sample_set_list.on_create()
 
     def on_sample_set_activate(self, event): ...
-
-    def on_sample_activate(self, event):
-        self.pm_properties_tab.set_pm_sample(event.pm_sample)
 
     def on_add_sample_set(self, event):
         self.tree.on_add_sample_set()
@@ -106,6 +128,7 @@ class MainWindow(wx.Frame):
     def on_pm_test_series_select(self, event):
         self.pm_test_series = event.pm_test_series
         self.tree.set_pm_test_series(self.pm_test_series)
+        self.on_selection_changed(event)
         self.update_controls_state()
 
     @db_session

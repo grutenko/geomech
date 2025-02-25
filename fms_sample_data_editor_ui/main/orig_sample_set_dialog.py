@@ -281,14 +281,123 @@ class OrigSampleSetCoreDialog(wx.Dialog):
 
 
 class OrigSampleSetOtherDialog(wx.Dialog):
-    def __init__(self, parent, o=None):
+    @db_session
+    def __init__(self, parent, o=None, sample_type="STUF"):
         super().__init__(parent)
         self.o = o
+        self.sample_type = sample_type
         self.type = type
         sz = wx.BoxSizer(wx.VERTICAL)
         main_sz = wx.BoxSizer(wx.VERTICAL)
 
+        super().__init__(parent, title="Добавить керн", size=wx.Size(300, 550))
+        _type = "CREATE"
+        self._type = _type
+        self._target = o
+        sz = wx.BoxSizer(wx.VERTICAL)
+        main_sz = wx.BoxSizer(wx.VERTICAL)
+
         sz.Add(main_sz, 1, wx.EXPAND | wx.ALL, border=10)
+
+        label = wx.StaticText(self, label="Месторождение")
+        main_sz.Add(label, 0, wx.EXPAND)
+        self.field_field = wx.Choice(self)
+        main_sz.Add(self.field_field, 0, wx.EXPAND | wx.BOTTOM, border=10)
+        self.fields = []
+        for o in select(o for o in MineObject if o.Type == "FIELD"):
+            self.fields.append(o)
+            self.field_field.Append(o.Name)
+        if len(self.fields) > 0:
+            self.field_field.SetSelection(0)
+
+        if _type == "CREATE":
+            autofill_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Поля для автозаполнения")
+            label = wx.StaticText(self, label="Числовой № набора")
+            autofill_sizer.Add(label, 0)
+            self.field_orig_no = wx.TextCtrl(self, size=wx.Size(250, -1))
+            self.field_orig_no.Bind(wx.EVT_KEY_UP, self.on_orig_no_updated)
+            autofill_sizer.Add(self.field_orig_no, 0, wx.EXPAND)
+            main_sz.Add(autofill_sizer, 0, wx.EXPAND)
+
+        label = wx.StaticText(
+            self,
+            label="Регистрационный номер " + ("(автом. из Числового №)*" if _type == "CREATE" else "*"),
+        )
+        main_sz.Add(label, 0, wx.EXPAND | wx.TOP, border=10)
+        self.field_number = wx.TextCtrl(self, size=wx.Size(250, -1))
+        self.field_number.SetValidator(TextValidator(lenMin=1, lenMax=32))
+        main_sz.Add(self.field_number, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        label = wx.StaticText(
+            self,
+            label="Название " + ("(автом. из Числового №)*" if _type == "CREATE" else "*"),
+        )
+        main_sz.Add(label, 0)
+        self.field_name = wx.TextCtrl(self, size=wx.Size(250, -1))
+        self.field_name.SetValidator(TextValidator(lenMin=1, lenMax=256))
+        main_sz.Add(self.field_name, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        collpane = wx.CollapsiblePane(self, wx.ID_ANY, "Комментарий")
+        main_sz.Add(collpane, 0, wx.GROW)
+
+        comment_pane = collpane.GetPane()
+        comment_sizer = wx.BoxSizer(wx.VERTICAL)
+        comment_pane.SetSizer(comment_sizer)
+
+        label = wx.StaticText(comment_pane, label="Комментарий")
+        comment_sizer.Add(label, 0)
+        self.field_comment = wx.TextCtrl(comment_pane, size=wx.Size(250, 100), style=wx.TE_MULTILINE)
+        self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
+        comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        collpane = wx.CollapsiblePane(self, wx.ID_ANY, "Координаты")
+        main_sz.Add(collpane, 0, wx.GROW)
+
+        coords_pane = collpane.GetPane()
+        coords_sizer = wx.BoxSizer(wx.VERTICAL)
+        coords_pane.SetSizer(coords_sizer)
+
+        cs_name = MineObject[self.fields[self.field_field.GetSelection()].RID].coord_system.Name
+        self.coords_label = wx.StaticText(
+            coords_pane,
+            label="Система координат: " + (cs_name if len(cs_name) < 24 else cs_name[:24] + "..."),
+        )
+        coords_sizer.Add(self.coords_label, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        self.open_cs_transf = wx.Button(coords_pane, label="Открыть утилиту перевода координат")
+        coords_sizer.Add(self.open_cs_transf, 0, wx.EXPAND)
+        self.open_cs_transf.Bind(wx.EVT_BUTTON, self.on_open_cs_transf)
+
+        label = wx.StaticText(coords_pane, label="X (м)")
+        coords_sizer.Add(label, 0)
+        self.field_x = wx.SpinCtrlDouble(coords_pane, min=-100000000.0, max=10000000000.0)
+        self.field_x.SetDigits(2)
+        coords_sizer.Add(self.field_x, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        label = wx.StaticText(coords_pane, label="Y (м)")
+        coords_sizer.Add(label, 0)
+        self.field_y = wx.SpinCtrlDouble(coords_pane, min=-100000000.0, max=10000000000.0)
+        self.field_y.SetDigits(2)
+        coords_sizer.Add(self.field_y, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        label = wx.StaticText(coords_pane, label="Z (м)")
+        coords_sizer.Add(label, 0)
+        self.field_z = wx.SpinCtrlDouble(coords_pane, min=-100000000.0, max=10000000000.0)
+        self.field_z.SetDigits(2)
+        coords_sizer.Add(self.field_z, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        label = wx.StaticText(self, label="Дата начала отбора*")
+        main_sz.Add(label, 0)
+        self.field_start_date = wx.TextCtrl(self)
+        self.field_start_date.SetValidator(DateValidator())
+
+        main_sz.Add(self.field_start_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
+
+        label = wx.StaticText(self, label="Дата завершения отбора")
+        main_sz.Add(label, 0)
+        self.field_end_date = wx.TextCtrl(self)
+        self.field_end_date.SetValidator(DateValidator(allow_empty=True))
+        main_sz.Add(self.field_end_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         line = wx.StaticLine(self)
         main_sz.Add(line, 0, wx.EXPAND | wx.TOP, border=10)
@@ -301,5 +410,29 @@ class OrigSampleSetOtherDialog(wx.Dialog):
         sz.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, border=10)
         self.SetSizer(sz)
         self.Layout()
+
+        self.field_field.Bind(wx.EVT_CHOICE, self.on_orig_no_updated)
+
+    def on_open_cs_transf(self, event): ...
+
+    @db_session
+    def on_orig_no_updated(self, event):
+        event.Skip()
+        parent = MineObject[self.fields[self.field_field.GetSelection()].RID]
+        cs_name = parent.coord_system.Name
+        self.coords_label.SetLabel("Система координат: " + (cs_name if len(cs_name) < 24 else cs_name[:24] + "..."))
+        name = str(self.field_orig_no.GetValue()) + " на"
+        number = str(self.field_orig_no.GetValue())
+        while parent.Level > 0:
+            name += " " + parent.Name
+            number += "@" + (parent.Name if len(parent.Name) < 4 else parent.Name[:4])
+            parent = parent.parent
+
+        if self.sample_type == "STUF":
+            typname = "Штуф"
+        else:
+            typname = "Дисперс:"
+        self.field_name.SetValue(typname + ":" + name)
+        self.field_number.SetValue(typname + ":" + number)
 
     def on_save(self, event): ...

@@ -487,6 +487,13 @@ class PMSample(db.Entity):
     Height = Optional(float, column="Height")
     MassAirDry = Optional(float, column="MassAirDry")
 
+    @property
+    def Name(self):
+        return self.Number
+
+    def get_tree_name(self):
+        return "[Образец] " + self.Name
+
 
 class PmTestMethod(db.Entity):
     _table_ = "PMTestMethods"

@@ -2,10 +2,11 @@ import wx
 
 from ui.icon import get_icon
 from ui.validators import TextValidator
-from pony.orm import db_session, select, raw_sql
-from database import OrigSampleSet, PMSample
+from pony.orm import db_session, select, raw_sql, commit
+from database import OrigSampleSet, PMSample, PMSampleSet
 from ui.validators import DateValidator, ChoiceValidator
 from ui.custom_datetime import date
+from ui.datetimeutil import encode_date
 
 
 class PmSampleDialog(wx.Dialog):
@@ -98,9 +99,9 @@ class PmSampleDialog(wx.Dialog):
 
         label = wx.StaticText(self, label="Дата завершения испытаний")
         main_sz.Add(label, 0, wx.EXPAND)
-        self.field_set_date = wx.TextCtrl(self)
-        self.field_set_date.SetValidator(DateValidator(allow_empty=True))
-        main_sz.Add(self.field_set_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
+        self.field_end_set_date = wx.TextCtrl(self)
+        self.field_end_set_date.SetValidator(DateValidator(allow_empty=True))
+        main_sz.Add(self.field_end_set_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         sz.Add(main_sz, 1, wx.EXPAND | wx.ALL, border=10)
 
@@ -126,6 +127,28 @@ class PmSampleDialog(wx.Dialog):
         self.core_sz.Hide(0)
         self.Layout()
 
+    @db_session
     def on_save(self, event):
         if not self.Validate():
             return
+
+        orig_sample_set = self.orig_sample_sets[self.field_orig_sample_set.GetSelection()]
+        fields = {}
+        fields["Number"] = self.field_number.GetValue()
+        fields["SetDate"] = encode_date(self.field_set_date.GetValue())
+        fields["orig_sample_set"] = OrigSampleSet[orig_sample_set.RID]
+        fields["pm_sample_set"] = PMSampleSet[self.pm_sample_set.RID]
+        if orig_sample_set.SampleType == "CORE":
+            fields["StartPosition"] = self.field_start_position.GetValue()
+            fields["EndPosition"] = self.field_end_position.GetValue()
+            fields["BoxNumber"] = self.field_box_number.GetValue()
+        else:
+            fields["StartPosition"] = self.field_sample_depth.GetValue()
+        date = self.field_end_set_date.GetValue()
+        if len(date.strip()) > 0:
+            fields["EndTestDate"] = encode_date(date)
+
+        o = PMSample(**fields)
+        commit()
+        self.o = o
+        self.EndModal(wx.ID_OK)

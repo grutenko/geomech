@@ -1,15 +1,12 @@
 import wx
 import wx.lib.newevent
-from pony.orm import db_session, select
+from pony.orm import db_session, select, raw_sql
 from database import PMSampleSet, PMSample
 from ui.widgets.tree import Tree, TreeNode, EVT_WIDGET_TREE_MENU, EVT_WIDGET_TREE_ACTIVATED, EVT_WIDGET_TREE_SEL_CHANGED
 from ui.windows.main.pm.sample_set_dialog import SampleSetDialog
 from .pm_sample_dialog import PmSampleDialog
 from ui.icon import get_icon
 from ui.delete_object import delete_object
-
-PmSampleSetActivate, EVT_PM_SAMPLE_SET_ACTIVATE = wx.lib.newevent.NewEvent()
-PmSampleActivate, EVT_PM_SAMPLE_ACTIVATE = wx.lib.newevent.NewEvent()
 
 
 class PmSampleSetNode(TreeNode):
@@ -35,7 +32,7 @@ class PmSampleSetNode(TreeNode):
     @db_session
     def get_subnodes(self):
         nodes = []
-        for o in select(o for o in PMSample if o.pm_sample_set == self.o):
+        for o in select(o for o in PMSample if o.pm_sample_set == self.o).order_by(raw_sql('"Number"::INTEGER')):
             nodes.append(PmSampleNode(o))
         return nodes
 
@@ -97,12 +94,13 @@ class RootNode(TreeNode):
     @db_session
     def get_subnodes(self):
         nodes = []
-        for o in select(o for o in PMSampleSet if o.pm_test_series == self.pm_test_series):
+        for o in select(o for o in PMSampleSet if o.pm_test_series == self.pm_test_series).order_by(raw_sql('"Number"::INTEGER')):
             nodes.append(PmSampleSetNode(o))
         return nodes
 
     def __eq__(self, o):
         return isinstance(o, RootNode)
+
 
 class DeputyNode(TreeNode):
     def get_name(self):
@@ -121,9 +119,13 @@ class DeputyNode(TreeNode):
         return "error", get_icon("error")
 
     def __eq__(self, node):
-        return isinstance(node,DeputyNode)
+        return isinstance(node, DeputyNode)
+
 
 class DeputyRoot(TreeNode):
+    def __init__(self):
+        self.o = None
+
     def get_name(self):
         return "Объекты"
 
@@ -135,27 +137,26 @@ class DeputyRoot(TreeNode):
 
     def __eq__(self, node):
         return isinstance(node, DeputyRoot)
-        
 
 
 class PmTestSeriesTree(Tree):
     def __init__(self, parent):
         super().__init__(parent)
-        self.Bind(EVT_WIDGET_TREE_MENU, self.on_menu)
-        self.Bind(EVT_WIDGET_TREE_ACTIVATED, self.on_node_activated)
-        self.Bind(EVT_WIDGET_TREE_SEL_CHANGED, self.on_selection_changed)
-        self.Bind(wx.EVT_RIGHT_DOWN, self.on_right_click)
+        self._tree.Bind(wx.EVT_RIGHT_DOWN, self.on_right_click)
         self.bind_all()
         self.pm_test_series = None
         self.set_pm_test_series(None)
+        self.Bind(EVT_WIDGET_TREE_MENU, self.on_menu)
 
     def on_right_click(self, event):
-        a, b = self.HitTest(event.GetPoint())
-        m = wx.Menu()
-        if a == -1:
-            m.Append(wx.ID_ADD, "Добавить пробу")
-            m.SetBitmap(get_icon("file-add"))
-        self.PopupMenu(m, event.GetPoint())
+        item, a = self._tree.HitTest(event.GetPosition())
+        if not item.IsOk():
+            m = wx.Menu()
+            i = m.Append(wx.ID_ADD, "Добавить пробу")
+            i.SetBitmap(get_icon("file-add"))
+            m.Bind(wx.EVT_MENU, self.on_add_sample_set, i)
+            self.PopupMenu(m, event.GetPosition())
+        event.Skip()
 
     def set_pm_test_series(self, pm_test_series):
         self.pm_test_series = pm_test_series
@@ -169,6 +170,7 @@ class PmTestSeriesTree(Tree):
         if isinstance(event.node.o, PMSampleSet):
             i = m.Append(wx.ID_ADD, "Добавить образец")
             i.SetBitmap(get_icon("file-add"))
+            m.Bind(wx.EVT_MENU, self.on_add_sample, i)
             m.AppendSeparator()
             i = m.Append(wx.ID_EDIT, "Изменить пробу")
             i.SetBitmap(get_icon("edit"))
@@ -176,14 +178,6 @@ class PmTestSeriesTree(Tree):
             i.SetBitmap(get_icon("delete"))
 
         self.PopupMenu(m, event.point)
-
-    def on_node_activated(self, event):
-        if isinstance(event.node, PMSampleSet):
-            wx.PostEvent(self, PmSampleSetActivate(pm_sample_set=event.node))
-        elif isinstance(event.node, PMSample):
-            wx.PostEvent(self, PmSampleActivate(pm_sample=event.node))
-
-    def on_selection_changed(self, event): ...
 
     def can_delete(self):
         return self.get_current_node() is not None
@@ -203,14 +197,14 @@ class PmTestSeriesTree(Tree):
             if delete_object(node.o, relations):
                 self.soft_reload_childrens(node.get_parent())
 
-    def on_add_sample_set(self):
+    def on_add_sample_set(self, event=None):
         dlg = SampleSetDialog(self, self.pm_test_series)
         if dlg.ShowModal() == wx.ID_OK:
             self.soft_reload_childrens(RootNode(self.pm_test_series))
 
-    def on_add_sample(self):
+    def on_add_sample(self, event=None):
         node = self.get_current_node()
         if isinstance(node.o, PMSampleSet):
             dlg = PmSampleDialog(self, node.o)
             if dlg.ShowModal() == wx.ID_OK:
-                ...
+                self.soft_reload_childrens(node)

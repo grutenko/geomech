@@ -16,6 +16,16 @@ class OrigSampleSetList(wx.ListCtrl):
         self.AssignImageList(self.image_list, wx.IMAGE_LIST_SMALL)
         self.items = []
         self.load()
+        self.Bind(wx.EVT_RIGHT_DOWN, self.on_right_click)
+
+    def on_right_click(self, event):
+        item, a = self.HitTest(event.GetPosition())
+        if item == -1:
+            m = wx.Menu()
+            i = m.Append(wx.ID_ADD, "Добавить набор")
+            i.SetBitmap(get_icon("file-add"))
+            m.Bind(wx.EVT_MENU, self.on_create, i)
+            self.PopupMenu(m, event.GetPosition())
 
     @db_session
     def load(self):
@@ -31,7 +41,7 @@ class OrigSampleSetList(wx.ListCtrl):
             if delete_object(self.items[index], ["pm_samples"]):
                 self.load()
 
-    def on_create(self):
+    def on_create(self, event=None):
         dlg = OrigSampleSetSelectTypeDialog(self)
         if dlg.ShowModal() == wx.ID_OK:
             if dlg.type == "CORE":
@@ -40,3 +50,9 @@ class OrigSampleSetList(wx.ListCtrl):
                 dlg0 = OrigSampleSetOtherDialog(self)
             if dlg0.ShowModal() == wx.ID_OK:
                 self.load()
+
+    def get_selected_orig_sample_set(self):
+        index = self.GetFirstSelected()
+        if index != -1:
+            return self.items[index]
+        return None
