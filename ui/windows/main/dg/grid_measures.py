@@ -42,7 +42,7 @@ class VecCellType(CellType):
         return "[Список] %s" % self._item_type.get_type_descr()
 
     def test_repr(self, value) -> bool:
-        for item in re.split(",?\\s+", value.strip()):
+        for item in re.split("[,;]?\s+", value.strip()):
             if self._item_type.test_repr(item) == False:
                 return False
         return True
@@ -50,14 +50,14 @@ class VecCellType(CellType):
     def to_string(self, value) -> str:
         if value == None:
             return ""
-        return ", ".join(map(lambda x: self._item_type.to_string(x), value))
+        return "; ".join(map(lambda x: self._item_type.to_string(x), value))
 
     def from_string(self, value: str):
         value = value.strip()
         if value == None or value.strip() == "":
             return []
         values = []
-        for item in re.split(",?\\s+", value.strip()):
+        for item in re.split("[,;]?\s+", value.strip()):
             values.append(self._item_type.from_string(item))
         return values
 
@@ -97,7 +97,7 @@ class DMModel(Model):
         e.append(str(int(o.E2)))
         e.append(str(int(o.E3)))
         e.append(str(int(o.E4)))
-        fields["E"] = ", ".join(e)
+        fields["E"] = "; ".join(e)
         fields["Rotate"] = str(o.Rotate)
         fields["PartNumber"] = o.PartNumber
         fields["RTens"] = str(o.RTens)
@@ -108,25 +108,25 @@ class DMModel(Model):
             tp1.append(str(int(o.TP1_1)))
         if o.TP1_2 != None:
             tp1.append(str(int(o.TP1_2)))
-        fields["TP1"] = ", ".join(tp1)
+        fields["TP1"] = "; ".join(tp1)
         tp2 = []
         if o.TP2_1 != None:
             tp2.append(str(int(o.TP2_1)))
         if o.TP2_2 != None:
             tp2.append(str(int(o.TP2_2)))
-        fields["TP2"] = ", ".join(tp2)
+        fields["TP2"] = "; ".join(tp2)
         tr = []
         if o.TR_1 != None:
             tr.append(str(int(o.TR_1)))
         if o.TR_2 != None:
             tr.append(str(int(o.TR_2)))
-        fields["TR"] = ", ".join(tr)
+        fields["TR"] = "; ".join(tr)
         ts = []
         if o.TS_1 != None:
             ts.append(str(int(o.TS_1)))
         if o.TS_2 != None:
             ts.append(str(int(o.TS_2)))
-        fields["TS"] = ", ".join(ts)
+        fields["TS"] = "; ".join(ts)
         fields["PWSpeed"] = str(int(o.PWSpeed)) if o.PWSpeed != None else ""
         fields["RWSpeed"] = str(int(o.RWSpeed)) if o.RWSpeed != None else ""
         fields["SWSpeed"] = str(int(o.SWSpeed)) if o.SWSpeed != None else ""
