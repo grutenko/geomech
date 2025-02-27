@@ -431,7 +431,7 @@ class OrigSampleSetOtherDialog(wx.Dialog):
         if self.sample_type == "STUF":
             typname = "Штуф"
         else:
-            typname = "Дисперс:"
+            typname = "Дисперс"
         self.field_name.SetValue(typname + ":" + name)
         self.field_number.SetValue(typname + ":" + number)
 

@@ -193,7 +193,7 @@ class PmTestSeriesTree(Tree):
             if isinstance(node.o, PMSampleSet):
                 relations = ["pm_samples"]
             elif isinstance(node.o, PMSample):
-                relations = [""]
+                relations = []
             if delete_object(node.o, relations):
                 self.soft_reload_childrens(node.get_parent())
 
