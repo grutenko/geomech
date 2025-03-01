@@ -1,5 +1,6 @@
 import wx
 import wx.propgrid
+from ui.datetimeutil import decode_date
 
 
 class FastviewOrigOther(wx.propgrid.PropertyGrid):
@@ -23,4 +24,13 @@ class FastviewOrigOther(wx.propgrid.PropertyGrid):
         self.Hide()
 
     def start(self, o):
+        fields = {
+            "RID": o.RID,
+            "Number": o.Number,
+            "Name": o.Name,
+            "Comment": o.Comment if o.Comment is not None else "",
+            "StartDate": decode_date(o.StartSetDate),
+            "EndDate": decode_date(o.EndSetDate) if o.EndSetDate is not None else None,
+        }
+        self.SetPropertyValues(fields)
         self.Show()

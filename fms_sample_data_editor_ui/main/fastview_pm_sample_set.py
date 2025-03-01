@@ -9,6 +9,10 @@ class FastviewPmSampleSet(wx.propgrid.PropertyGrid):
         self.SetSplitterPosition(150)
         prop = self.Append(wx.propgrid.IntProperty("ID", "RID"))
         self.SetPropertyReadOnly(prop)
+        prop = self.Append(wx.propgrid.StringProperty("№", "Number"))
+        self.SetPropertyReadOnly(prop)
+        prop = self.Append(wx.propgrid.LongStringProperty("Комментарий", "Comment"))
+        self.SetPropertyReadOnly(prop)
         self.Hide()
 
     def start(self, o):

@@ -24,6 +24,8 @@ class MainToolBar(wx.ToolBar):
         self.AddSeparator()
         self.AddTool(wx.ID_DELETE, "Удалить", get_icon("delete"))
         self.EnableTool(wx.ID_DELETE, False)
+        self.AddStretchableSpace()
+        self.AddTool(wx.ID_MORE, "Обновить", get_icon("update"))
         self.Bind(wx.EVT_TOOL_DROPDOWN, self.on_dropdown, id=ID_TEST_SERIES)
         self.Bind(wx.EVT_TOOL, self.on_dropdown, id=ID_TEST_SERIES)
         self.Realize()

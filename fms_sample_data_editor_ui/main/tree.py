@@ -184,7 +184,7 @@ class PmTestSeriesTree(Tree):
 
     def can_add_pm_sample(self):
         node = self.get_current_node()
-        return node is not None and isinstance(node.o, PMSampleSet)
+        return node is not None and isinstance(node.o, PMSampleSet) or isinstance(node.o, PMSample)
 
     def delete(self):
         node = self.get_current_node()
@@ -193,7 +193,7 @@ class PmTestSeriesTree(Tree):
             if isinstance(node.o, PMSampleSet):
                 relations = ["pm_samples"]
             elif isinstance(node.o, PMSample):
-                relations = [""]
+                relations = []
             if delete_object(node.o, relations):
                 self.soft_reload_childrens(node.get_parent())
 
@@ -202,9 +202,14 @@ class PmTestSeriesTree(Tree):
         if dlg.ShowModal() == wx.ID_OK:
             self.soft_reload_childrens(RootNode(self.pm_test_series))
 
+    @db_session
     def on_add_sample(self, event=None):
         node = self.get_current_node()
-        if isinstance(node.o, PMSampleSet):
-            dlg = PmSampleDialog(self, node.o)
+        if isinstance(node.o, PMSampleSet) or isinstance(node.o, PMSample):
+            if isinstance(node.o, PMSample):
+                o = PMSampleSet[node.o.pm_sample_set.RID]
+            else:
+                o = node.o
+            dlg = PmSampleDialog(self, o)
             if dlg.ShowModal() == wx.ID_OK:
                 self.soft_reload_childrens(node)

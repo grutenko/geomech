@@ -45,11 +45,11 @@ class PmSampleDialog(wx.Dialog):
         self.orig_sample_sets = []
         self.field_orig_sample_set = wx.Choice(self)
         self.field_orig_sample_set.SetValidator(ChoiceValidator())
-        for o in select(
-            o for o in OrigSampleSet if o.bore_hole == None or o.bore_hole.station == None and o.mine_object == pm_sample_set.mine_object
-        ):
-            self.orig_sample_sets.append(o)
-            self.field_orig_sample_set.Append(o.Name)
+        self.field_orig_sample_set.Bind(wx.EVT_CHOICE, self.on_orig_sample_set_updated)
+        for o in select(o for o in OrigSampleSet if o.mine_object == pm_sample_set.mine_object):
+            if o.bore_hole is None or o.bore_hole.station is None:
+                self.orig_sample_sets.append(o)
+                self.field_orig_sample_set.Append(o.Name)
         if len(self.orig_sample_sets) > 0:
             self.field_orig_sample_set.SetSelection(0)
         main_sz.Add(self.field_orig_sample_set, 0, wx.EXPAND | wx.BOTTOM, border=10)
@@ -91,12 +91,6 @@ class PmSampleDialog(wx.Dialog):
         self.core_sz.Hide(0)
         self.other_sz.Hide(0)
 
-        if len(self.orig_sample_sets) > 0:
-            if self.orig_sample_sets[0].SampleType == "CORE":
-                self.use_core()
-            else:
-                self.use_other()
-
         label = wx.StaticText(self, label="Дата завершения испытаний")
         main_sz.Add(label, 0, wx.EXPAND)
         self.field_end_set_date = wx.TextCtrl(self)
@@ -116,6 +110,14 @@ class PmSampleDialog(wx.Dialog):
         sz.Add(btn_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, border=10)
         self.SetSizer(sz)
         self.Layout()
+        self.on_orig_sample_set_updated()
+
+    def on_orig_sample_set_updated(self, event=None):
+        if len(self.orig_sample_sets) > 0:
+            if self.orig_sample_sets[self.field_orig_sample_set.GetSelection()].SampleType == "CORE":
+                self.use_core()
+            else:
+                self.use_other()
 
     def use_core(self):
         self.other_sz.Hide(0)

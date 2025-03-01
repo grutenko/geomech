@@ -11,7 +11,7 @@ from .pm_properties_tab import PmPropertiesTab
 from .pm_test_series_manage import PmTestSeriesManage
 from .fastview import FastView
 from pony.orm import db_session, select
-from database import PMTestSeries, PMSample, PMSampleSet
+from database import PMTestSeries, PMSample
 from ui.class_config_provider import ClassConfigProvider
 
 __CONFIG_VERSION__ = 1
