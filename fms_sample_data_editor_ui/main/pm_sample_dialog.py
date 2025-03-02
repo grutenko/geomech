@@ -2,7 +2,7 @@ import wx
 
 from ui.icon import get_icon
 from ui.validators import TextValidator
-from pony.orm import db_session, select, raw_sql, commit
+from pony.orm import db_session, select, commit, desc
 from database import OrigSampleSet, PMSample, PMSampleSet
 from ui.validators import DateValidator, ChoiceValidator
 from ui.custom_datetime import date
@@ -23,7 +23,7 @@ class PmSampleDialog(wx.Dialog):
         main_sz.Add(label, 0)
         self.field_number = wx.TextCtrl(self, size=wx.Size(250, -1))
         self.field_number.SetValidator(TextValidator(lenMin=1, lenMax=256))
-        max_pm_sample_number = select(o for o in PMSample if o.pm_sample_set == pm_sample_set).order_by(raw_sql('"Number"::INTEGER')).first()
+        max_pm_sample_number = select(o for o in PMSample if o.pm_sample_set == pm_sample_set).order_by(lambda x: desc(x.Number)).first()
         number = "1"
         if max_pm_sample_number is not None:
             try:

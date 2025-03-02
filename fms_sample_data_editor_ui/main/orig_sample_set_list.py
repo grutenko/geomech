@@ -16,7 +16,6 @@ class OrigSampleSetList(wx.ListCtrl):
         self.AssignImageList(self.image_list, wx.IMAGE_LIST_SMALL)
         self.items = []
         self.load()
-        sql_debug(True)
         self.Bind(wx.EVT_RIGHT_DOWN, self.on_right_click)
 
     def on_right_click(self, event):
@@ -42,13 +41,16 @@ class OrigSampleSetList(wx.ListCtrl):
         index = self.GetFirstSelected()
         if index != -1:
             o = self.items[index]
-            bore_hole = BoreHole[o.bore_hole.RID] if o.bore_hole.RID is not None else None
-            print(bore_hole)
-            if delete_object(o, ["pm_samples"]):
-                if bore_hole:
-                    bore_hole.delete()
-                    commit()
-                self.load()
+            if o.SampleType == "CORE":
+                bore_hole = BoreHole[o.bore_hole.RID] if o.bore_hole.RID is not None else None
+                if delete_object(o, ["pm_samples"]):
+                    if bore_hole:
+                        bore_hole.delete()
+                        commit()
+                    self.load()
+            else:
+                if delete_object(o, ["pm_samples"]):
+                    self.load()
 
     def on_create(self, event=None):
         dlg = OrigSampleSetSelectTypeDialog(self)

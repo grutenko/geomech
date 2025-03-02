@@ -32,7 +32,7 @@ class PmSampleSetNode(TreeNode):
     @db_session
     def get_subnodes(self):
         nodes = []
-        for o in select(o for o in PMSample if o.pm_sample_set == self.o).order_by(raw_sql('"Number"::INTEGER')):
+        for o in select(o for o in PMSample if o.pm_sample_set == self.o).order_by(lambda x: x.Number):
             nodes.append(PmSampleNode(o))
         return nodes
 
@@ -212,4 +212,7 @@ class PmTestSeriesTree(Tree):
                 o = node.o
             dlg = PmSampleDialog(self, o)
             if dlg.ShowModal() == wx.ID_OK:
-                self.soft_reload_childrens(node)
+                if isinstance(node.o, PMSample):
+                    self.soft_reload_childrens(node.get_parent())
+                else:
+                    self.soft_reload_childrens(node)
