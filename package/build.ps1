@@ -11,7 +11,7 @@ pyinstaller --onefile `
             --windowed `
             --noconfirm `
             --clean `
-            --strip `
+            --splash=$PSScriptRoot/../icons/logo.png `
             --specpath=$WorkPath `
             --distpath=$DistPath `
             --workpath=$WorkPath `

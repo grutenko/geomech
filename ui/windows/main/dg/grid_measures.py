@@ -42,7 +42,7 @@ class VecCellType(CellType):
         return "[Список] %s" % self._item_type.get_type_descr()
 
     def test_repr(self, value) -> bool:
-        for item in re.split("[,;]?\s+", value.strip()):
+        for item in re.split("[,;]\s*", value.strip()):
             if self._item_type.test_repr(item) == False:
                 return False
         return True
@@ -57,7 +57,7 @@ class VecCellType(CellType):
         if value == None or value.strip() == "":
             return []
         values = []
-        for item in re.split("[,;]?\s+", value.strip()):
+        for item in re.split("[,;]\s*", value.strip()):
             values.append(self._item_type.from_string(item))
         return values
 
@@ -87,7 +87,7 @@ class DMModel(Model):
         fields = {
             "SampleNumber": str(o.SampleNumber),
             "Diameter": str(o.Diameter),
-            "Length": str(int(o.Length)),
+            "Length": str(o.Length),
             "Weight": str(int(o.Weight)),
             "CoreDepth": str(o.CoreDepth),
         }
@@ -105,9 +105,9 @@ class DMModel(Model):
         fields["RockType"] = str(o.RockType) if o.RockType != None else ""
         tp1 = []
         if o.TP1_1 != None:
-            tp1.append(str(int(o.TP1_1)))
+            tp1.append(str(float(o.TP1_1)))
         if o.TP1_2 != None:
-            tp1.append(str(int(o.TP1_2)))
+            tp1.append(str(float(o.TP1_2)))
         fields["TP1"] = "; ".join(tp1)
         tp2 = []
         if o.TP2_1 != None:
@@ -117,9 +117,9 @@ class DMModel(Model):
         fields["TP2"] = "; ".join(tp2)
         tr = []
         if o.TR_1 != None:
-            tr.append(str(int(o.TR_1)))
+            tr.append(str(float(o.TR_1)))
         if o.TR_2 != None:
-            tr.append(str(int(o.TR_2)))
+            tr.append(str(float(o.TR_2)))
         fields["TR"] = "; ".join(tr)
         ts = []
         if o.TS_1 != None:
@@ -216,7 +216,7 @@ class DMModel(Model):
             ),
             "RTens": Column(
                 "RTens",
-                FloatCellType(),
+                FloatCellType(prec=1),
                 "* Сопрот.\nТезодат. (Ом)",
                 "Сопротивление тензодатчиков",
                 self._get_column_width("RTens"),
@@ -230,7 +230,7 @@ class DMModel(Model):
             ),
             "TP1": Column(
                 "TP1",
-                VecCellType(NumberCellType(), 0, 2),
+                VecCellType(FloatCellType(prec=1), 0, 2),
                 "Время\nпродоль.\n(мс)",
                 "Замер времени прохождения продольных волн (ультразвуковое профилирование или др.)",
                 self._get_column_width("TP1"),
@@ -254,7 +254,7 @@ class DMModel(Model):
             ),
             "TR": Column(
                 "TR",
-                VecCellType(NumberCellType(), 0, 2),
+                VecCellType(FloatCellType(prec=2), 0, 2),
                 "Время\nповерхност.\n(мс)",
                 "Замер времени прохождения поверхностных волн",
                 self._get_column_width("TR"),
@@ -456,25 +456,17 @@ class DMModel(Model):
             fields["E4"] = e0[3]
             fields["Rotate"] = columns["Rotate"].cell_type.from_string(f["Rotate"])
             if row.o != None:
-                try:
-                    o = DischargeMeasurement[row.o.RID]
-                    o.set(**fields)
-                except:
-                    rollback()
-                    raise
-                else:
-                    new_rows.append(self._prepare_o(o))
+                o = DischargeMeasurement[row.o.RID]
+                o.set(**fields)
+                new_rows.append(self._prepare_o(o))
             else:
                 max_dsch_number += 1
-                try:
-                    fields["DschNumber"] = str(max_dsch_number)
-                    o = DischargeMeasurement(**fields)
-                except:
-                    rollback()
-                    raise
-                else:
-                    new_rows.append(self._prepare_o(o))
+                fields["DschNumber"] = str(max_dsch_number)
+                o = DischargeMeasurement(**fields)
+                commit()
+                new_rows.append(self._prepare_o(o))
         self._rows = new_rows
+        commit()
         return True
 
 
