@@ -13,6 +13,15 @@ import ui.icon
 from ui.start import StartDialog
 
 
+try:
+    import pyi_splash  # type: ignore
+
+    pyi_splash.update_text("UI Loaded ...")
+    pyi_splash.close()
+except:
+    pass
+
+
 class MyApp(wx.App):
 
     def OnInit(self):
