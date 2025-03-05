@@ -111,9 +111,9 @@ class DMModel(Model):
         fields["TP1"] = "; ".join(tp1)
         tp2 = []
         if o.TP2_1 != None:
-            tp2.append(str(int(o.TP2_1)))
+            tp2.append(str(float(o.TP2_1)))
         if o.TP2_2 != None:
-            tp2.append(str(int(o.TP2_2)))
+            tp2.append(str(float(o.TP2_2)))
         fields["TP2"] = "; ".join(tp2)
         tr = []
         if o.TR_1 != None:
@@ -123,9 +123,9 @@ class DMModel(Model):
         fields["TR"] = "; ".join(tr)
         ts = []
         if o.TS_1 != None:
-            ts.append(str(int(o.TS_1)))
+            ts.append(str(float(o.TS_1)))
         if o.TS_2 != None:
-            ts.append(str(int(o.TS_2)))
+            ts.append(str(float(o.TS_2)))
         fields["TS"] = "; ".join(ts)
         fields["PWSpeed"] = str(int(o.PWSpeed)) if o.PWSpeed != None else ""
         fields["RWSpeed"] = str(int(o.RWSpeed)) if o.RWSpeed != None else ""
@@ -238,7 +238,7 @@ class DMModel(Model):
             ),
             "TP2": Column(
                 "TP2",
-                VecCellType(NumberCellType(), 0, 2),
+                VecCellType(FloatCellType(prec=1), 0, 2),
                 "Время продоль.\n(торц.) (мс)",
                 "Замер времени прохождения продольных волн (торц.)",
                 self._get_column_width("TP2"),
@@ -319,7 +319,7 @@ class DMModel(Model):
             "Length": "0.0",
             "Weight": "0",
             "CoreDepth": "0.0",
-            "E": "0 0 0 0",
+            "E": "0, 0, 0, 0",
             "Rotate": "0.0",
             "PartNumber": "",
             "RTens": "0.0",
@@ -399,12 +399,9 @@ class DMModel(Model):
             wx.MessageBox("В таблице обнаружены ошибки. Сохранение невозможно.", "Ошибка сохранения.", style=wx.OK | wx.ICON_ERROR)
             return False
 
-        try:
-            for _id in self._deleted_rows:
-                DischargeMeasurement[_id].delete()
-        except:
-            rollback()
-            raise
+        for _id in self._deleted_rows:
+            DischargeMeasurement[_id].delete()
+
         self._deleted_rows = []
         columns = self._columns
         sample_set = OrigSampleSet[self._core.RID]
@@ -430,6 +427,11 @@ class DMModel(Model):
             tp[: len(d)] = d
             fields["TP1_1"] = tp[0]
             fields["TP1_2"] = tp[1]
+            tp = [None, None]
+            d = columns["TP2"].cell_type.from_string(f["TP2"])
+            tp[: len(d)] = d
+            fields["TP2_1"] = tp[0]
+            fields["TP2_2"] = tp[1]
             tr = [None, None]
             d = columns["TR"].cell_type.from_string(f["TR"])
             tr[: len(d)] = d
@@ -463,7 +465,6 @@ class DMModel(Model):
                 max_dsch_number += 1
                 fields["DschNumber"] = str(max_dsch_number)
                 o = DischargeMeasurement(**fields)
-                commit()
                 new_rows.append(self._prepare_o(o))
         self._rows = new_rows
         commit()
