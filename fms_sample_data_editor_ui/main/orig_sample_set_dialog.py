@@ -3,7 +3,7 @@ import wx
 from pony.orm import db_session, select, commit
 from database import MineObject, Station, BoreHole, OrigSampleSet
 from ui.validators import TextValidator, DateValidator
-import ui.datetimeutil
+from ui.datetimeutil import encode_date, decode_date
 
 
 class OrigSampleSetSelectTypeDialog(wx.Dialog):
@@ -32,12 +32,13 @@ class OrigSampleSetSelectTypeDialog(wx.Dialog):
         self.SetSizer(sz)
         self.Layout()
         self.type = "CORE"
+        self.Fit()
 
     def on_save(self, event):
         if self.field_type.GetSelection() == 0:
             self.type = "CORE"
         elif self.field_type.GetSelection() == 1:
-            self.type = "STUF"
+            self.type = "STUFF"
         elif self.field_type.GetSelection() == 2:
             self.type = "DISPERCE"
         self.EndModal(wx.ID_OK)
@@ -243,15 +244,15 @@ class OrigSampleSetCoreDialog(wx.Dialog):
             fields["mine_object"] = MineObject[self.fields[self.field_field.GetSelection()].RID]
             fields["station"] = None
 
-        fields["StartDate"] = ui.datetimeutil.encode_date(self.field_start_date.GetValue())
+        fields["StartDate"] = encode_date(self.field_start_date.GetValue())
 
         date = self.field_end_date.GetValue()
         if len(date.strip()) > 0:
-            fields["EndDate"] = ui.datetimeutil.encode_date(date)
+            fields["EndDate"] = encode_date(date)
 
         date = self.field_destroy_date.GetValue()
         if len(date.strip()) > 0:
-            fields["DestroyDate"] = ui.datetimeutil.encode_date(date)
+            fields["DestroyDate"] = encode_date(date)
 
         core_fields = {
             "Number": "Керн:%s" % fields["Number"],
@@ -282,15 +283,18 @@ class OrigSampleSetCoreDialog(wx.Dialog):
 
 class OrigSampleSetOtherDialog(wx.Dialog):
     @db_session
-    def __init__(self, parent, o=None, sample_type="STUF"):
+    def __init__(self, parent, o=None, sample_type="STUFF"):
         super().__init__(parent)
         self.o = o
         self.sample_type = sample_type
         self.type = type
         sz = wx.BoxSizer(wx.VERTICAL)
         main_sz = wx.BoxSizer(wx.VERTICAL)
-
-        super().__init__(parent, title="Добавить керн", size=wx.Size(300, 550))
+        if sample_type == "STUFF":
+            sample_name = "Штуф"
+        else:
+            sample_type = "Дисперсный матриал"
+        super().__init__(parent, title="Добавить %s" % sample_name, size=wx.Size(300, 550))
         _type = "CREATE"
         self._type = _type
         self._target = o
@@ -428,11 +432,37 @@ class OrigSampleSetOtherDialog(wx.Dialog):
             number += "@" + (parent.Name if len(parent.Name) < 4 else parent.Name[:4])
             parent = parent.parent
 
-        if self.sample_type == "STUF":
+        if self.sample_type == "STUFF":
             typname = "Штуф"
         else:
             typname = "Дисперс"
         self.field_name.SetValue(typname + ":" + name)
         self.field_number.SetValue(typname + ":" + number)
 
-    def on_save(self, event): ...
+    @db_session
+    def on_save(self, event):
+        if not self.Validate():
+            return
+
+        fields = {}
+        fields["mine_object"] = MineObject[self.fields[self.field_field.GetSelection()].RID]
+        fields["Number"] = self.field_number.GetValue()
+        fields["Name"] = self.field_name.GetValue()
+        fields["Comment"] = self.field_comment.GetValue()
+        fields["X"] = self.field_x.GetValue()
+        fields["Y"] = self.field_y.GetValue()
+        fields["Z"] = self.field_z.GetValue()
+        fields["SampleType"] = self.sample_type
+        fields["StartSetDate"] = encode_date(self.field_start_date.GetValue())
+        if len(self.field_end_date.GetValue().strip()) > 0:
+            fields["EndSetDate"] = encode_date(self.field_end_date.GetValue())
+
+        if self._type == "CREATE":
+            core = OrigSampleSet(**fields)
+        else:
+            core = OrigSampleSet[self._target.RID]
+            core.set(**fields)
+
+        commit()
+        self.o = core
+        self.EndModal(wx.ID_OK)

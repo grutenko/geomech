@@ -5,19 +5,21 @@ from ui.widgets.tree import EVT_WIDGET_TREE_SEL_CHANGED
 from .tree import PmTestSeriesTree
 from .menu import MainMenu
 from .actions import ID_ADD_PM_SAMPLE_SET, ID_ADD_PM_SAMPLE, ID_ADD_ORIG_SAMPLE_SET
-from .toolbar import MainToolBar, EVT_PM_TEST_SERIES_MANAGE, EVT_PM_TEST_SERIES_SELECT
+from .toolbar import MainToolBar, EVT_PM_TEST_SERIES_MANAGE, EVT_PM_TEST_SERIES_SELECT, PmTestSeriesSelect
 from .orig_sample_set_list import OrigSampleSetList
 from .pm_properties_tab import PmPropertiesTab
 from .pm_test_series_manage import PmTestSeriesManage
 from .fastview import FastView
 from pony.orm import db_session, select
-from database import PMTestSeries, PMSample, PMSampleSet
+from database import PMTestSeries, PMSample
 from ui.class_config_provider import ClassConfigProvider
+import logging
 
 __CONFIG_VERSION__ = 1
 
 
 class MainWindow(wx.Frame):
+    @db_session
     def __init__(self, config):
         self.config = config
         super().__init__(None, title="Геомеханика: редактор ФМС", size=wx.Size(1280, 720))
@@ -60,6 +62,14 @@ class MainWindow(wx.Frame):
         self.load()
 
         self.pm_test_series: PMTestSeries = None
+        if self.config["pm_test_series"] is not None:
+            try:
+                pm_test_series = select(o for o in PMTestSeries if o.RID == int(self.config["pm_test_series"])).first()
+            except Exception as e:
+                logging.exception(e)
+            else:
+                if pm_test_series is not None:
+                    self.on_pm_test_series_select(PmTestSeriesSelect(pm_test_series=pm_test_series))
         self.bind_all()
         self.update_controls_state()
 
@@ -129,6 +139,8 @@ class MainWindow(wx.Frame):
         self.pm_test_series = event.pm_test_series
         self.tree.set_pm_test_series(self.pm_test_series)
         self.on_selection_changed(event)
+        self.config["pm_test_series"] = self.pm_test_series.RID
+        self.config.flush()
         self.update_controls_state()
 
     @db_session

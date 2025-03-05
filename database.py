@@ -153,7 +153,7 @@ class OrigSampleSet(db.Entity):
     EndSetDate = Optional(int, column="EndSetDate", size=64)
 
     def get_tree_name(self):
-        _m = {"CORE": "Керн", "STUF": "Штуф", "DISPERCE": "Дисперсный материал"}
+        _m = {"CORE": "Керн", "STUFF": "Штуф", "DISPERCE": "Дисперсный материал"}
         return "[%s] %s" % (_m[self.SampleType], self.Name)
 
 

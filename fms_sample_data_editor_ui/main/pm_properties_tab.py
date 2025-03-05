@@ -18,23 +18,29 @@ class PmPropertiesTab(wx.Panel):
         self.toolbar.EnableTool(wx.ID_DELETE, False)
         self.toolbar.Realize()
         sz.Add(self.toolbar, 0, wx.EXPAND)
-        self.propgrid = wx.propgrid.PropertyGrid(self)
+        self.propgrid = wx.propgrid.PropertyGridManager(self, style=wx.propgrid.PG_DEFAULT_STYLE | wx.propgrid.PG_SPLITTER_AUTO_CENTER)
+        self.propgrid.SetColumnCount(4)
+        self.propgrid.SetColumnProportion(0, 25)
+        self.propgrid.SetColumnProportion(1, 10)
+        self.propgrid.SetColumnProportion(2, 25)
+        self.propgrid.SetColumnProportion(3, 25)
+        self.propgrid.Refresh()
         sz.Add(self.propgrid, 1, wx.EXPAND)
         self.SetSizer(sz)
         self.Layout()
         self.pm_sample: PMSample = None
+        self.prop_ids = []
         self.propgrid.Bind(wx.propgrid.EVT_PG_SELECTED, self.on_selection_changed)
         self.toolbar.Bind(wx.EVT_TOOL, self.on_add_property, id=wx.ID_ADD)
         self.toolbar.Bind(wx.EVT_TOOL, self.on_delete_property, id=wx.ID_DELETE)
 
     @db_session
-    def on_add_property(self, event):
+    def on_add_property(self, event=None):
         dlg = PmPropertyDialog(self, self.pm_sample)
         if dlg.ShowModal() == wx.ID_OK:
             self.pm_sample = PMSample[self.pm_sample.RID]
             self.remove_properties()
-            self.load_properties()
-            self.update_controls_state()
+            wx.CallAfter(self.load_properties)
 
     @db_session
     def on_delete_property(self, event):
@@ -61,30 +67,55 @@ class PmPropertiesTab(wx.Panel):
     def on_selection_changed(self, event):
         self.update_controls_state()
 
+    @db_session
     def set_pm_sample(self, pm_sample):
-        self.pm_sample = pm_sample
+        self.pm_sample = PMSample[pm_sample.RID]
         self.remove_properties()
         self.load_properties()
         self.update_controls_state()
 
     @db_session
     def load_properties(self):
+        self.prop_ids = []
+        header = self.propgrid.Append(wx.propgrid.PropertyCategory("Свойство", name="@header"))
+        self.propgrid.SetPropertyCell(header, 1, "Значение")
+        self.propgrid.SetPropertyCell(header, 2, "Метод испытаний")
+        self.propgrid.SetPropertyCell(header, 3, "Оборудование")
+        self.prop_ids.append(header)
         if self.pm_sample.Length1 is not None:
-            self.propgrid.Append(wx.propgrid.FloatProperty("Сторона 1 (мм)", "Length1", self.pm_sample.Length1))
+            p = self.propgrid.Append(wx.propgrid.FloatProperty("Сторона 1 (мм)", "Length1", self.pm_sample.Length1))
+            self.propgrid.SetPropertyCell(p, 2, "-")
+            self.propgrid.SetPropertyCell(p, 3, "-")
+            self.prop_ids.append(p)
         if self.pm_sample.Length2 is not None:
-            self.propgrid.Append(wx.propgrid.FloatProperty("Сторона 2 (мм)", "Length2", self.pm_sample.Length2))
+            p = self.propgrid.Append(wx.propgrid.FloatProperty("Сторона 2 (мм)", "Length2", self.pm_sample.Length2))
+            self.propgrid.SetPropertyCell(p, 2, "-")
+            self.propgrid.SetPropertyCell(p, 3, "-")
+            self.prop_ids.append(p)
         if self.pm_sample.Height is not None:
-            self.propgrid.Append(wx.propgrid.FloatProperty("Высота (мм)", "Height", self.pm_sample.Height))
+            p = self.propgrid.Append(wx.propgrid.FloatProperty("Высота (мм)", "Height", self.pm_sample.Height))
+            self.propgrid.SetPropertyCell(p, 2, "-")
+            self.propgrid.SetPropertyCell(p, 3, "-")
+            self.prop_ids.append(p)
         if self.pm_sample.MassAirDry is not None:
-            self.propgrid.Append(wx.propgrid.FloatProperty("Масса в воздушно сухом состоянии (г)", "MassAirDry", self.pm_sample.MassAirDry))
+            p = self.propgrid.Append(wx.propgrid.FloatProperty("Масса в воздушно сухом состоянии (г)", "MassAirDry", self.pm_sample.MassAirDry))
+            self.propgrid.SetPropertyCell(p, 2, "-")
+            self.propgrid.SetPropertyCell(p, 3, "-")
+            self.prop_ids.append(p)
         for o in select(o for o in PmSamplePropertyValue if o.pm_sample == self.pm_sample):
             prop = o.pm_property
-            self.propgrid.Append(wx.propgrid.FloatProperty("%s (%s)" % (prop.Name, prop.Unit), prop.Code, o.Value))
+            p = self.propgrid.Append(wx.propgrid.FloatProperty("%s (%s)" % (prop.Name, prop.Unit), prop.Code, o.Value))
+            self.propgrid.SetPropertyCell(p, 2, prop.pm_test_method.Name)
+            self.propgrid.SetPropertyCell(p, 3, prop.pm_test_equipment.Name)
+            self.prop_ids.append(p)
         self.propgrid.Update()
+        self.update_controls_state()
 
     def remove_properties(self):
-        self.propgrid.Clear()
-        self.propgrid.Update()
+        if len(self.prop_ids) > 0:
+            self.propgrid.DeleteProperty(self.prop_ids[0])
+        self.prop_ids = []
+        self.propgrid.Refresh()
 
     def end(self):
         self.pm_sample = None

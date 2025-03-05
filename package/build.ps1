@@ -11,6 +11,7 @@ pyinstaller --onefile `
             --windowed `
             --noconfirm `
             --clean `
+            --strip `
             --specpath=$WorkPath `
             --distpath=$DistPath `
             --workpath=$WorkPath `
@@ -19,8 +20,6 @@ pyinstaller --onefile `
             --icon=$PSScriptRoot/../icons/logo.ico `
             --version-file=$WorkPath/win32_versionfile.txt `
             --runtime-hook=$PSScriptRoot/hooks/env.py `
-            --hidden-import=cairo `
-            --hidden-import=cairoffi `
             --hidden-import=wx._xml `
             --hidden-import=pony.orm.dbproviders `
             --hidden-import=pony.orm.dbproviders.postgres `

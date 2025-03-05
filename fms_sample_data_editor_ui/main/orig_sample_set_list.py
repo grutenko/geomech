@@ -1,6 +1,6 @@
 import wx
 
-from pony.orm import select, db_session
+from pony.orm import select, db_session, commit, sql_debug
 from database import MineObject, OrigSampleSet, BoreHole
 from ui.icon import get_icon
 from ui.delete_object import delete_object
@@ -31,15 +31,26 @@ class OrigSampleSetList(wx.ListCtrl):
     def load(self):
         self.DeleteAllItems()
         self.items = []
-        for index, o in enumerate(select(o for o in OrigSampleSet if o.bore_hole == None or o.bore_hole.station == None)):
-            self.items.append(o)
-            self.InsertItem(index, o.Name, self.icon)
+        for index, o in enumerate(select(o for o in OrigSampleSet)):
+            if o.bore_hole is None or o.bore_hole.station is None:
+                self.items.append(o)
+                self.InsertItem(index, o.Name, self.icon)
 
+    @db_session
     def delete(self):
         index = self.GetFirstSelected()
         if index != -1:
-            if delete_object(self.items[index], ["pm_samples"]):
-                self.load()
+            o = self.items[index]
+            if o.SampleType == "CORE":
+                bore_hole = BoreHole[o.bore_hole.RID] if o.bore_hole.RID is not None else None
+                if delete_object(o, ["pm_samples"]):
+                    if bore_hole:
+                        bore_hole.delete()
+                        commit()
+                    self.load()
+            else:
+                if delete_object(o, ["pm_samples"]):
+                    self.load()
 
     def on_create(self, event=None):
         dlg = OrigSampleSetSelectTypeDialog(self)
