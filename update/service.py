@@ -47,7 +47,7 @@ def update_check_status():
     except Exception as e:
         logging.error("Update: %s" % e.__str__())
         print("Update: %s" % e.__str__())
-        raise e
+        return "ERROR"
     if cmp_version(latest, __ctx__.version) == 1:
         return "AVAILABLE"
 

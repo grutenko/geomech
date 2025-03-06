@@ -42,11 +42,7 @@ class VecCellType(CellType):
         return "[Список] %s" % self._item_type.get_type_descr()
 
     def test_repr(self, value) -> bool:
-<<<<<<< HEAD
-        for item in re.split("\s*[,;]\s*", value.strip()):
-=======
         for item in re.split("[,;]\s*", value.strip()):
->>>>>>> fc7bd36979d19f10674e0e9692a789d725874920
             if self._item_type.test_repr(item) == False:
                 return False
         return True
