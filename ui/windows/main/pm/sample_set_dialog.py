@@ -88,7 +88,7 @@ class SampleSetDialog(wx.Dialog):
         self.field_comment.SetValidator(TextValidator(lenMin=0, lenMax=512))
         comment_sizer.Add(self.field_comment, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
-        label = wx.StaticText(self, label="Горный объект")
+        label = wx.StaticText(self, label="Месторождение")
         main_sizer.Add(label, 0)
         self.field_mine_object = wx.Choice(self)
         main_sizer.Add(self.field_mine_object, 0, wx.EXPAND | wx.BOTTOM, border=10)
@@ -113,6 +113,7 @@ class SampleSetDialog(wx.Dialog):
         main_sizer.Add(self.field_test_date, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         self.field_real_details = wx.CheckBox(self, label="Реальные данные?")
+        self.field_real_details.SetValue(True)
         main_sizer.Add(self.field_real_details, 0, wx.EXPAND | wx.BOTTOM, border=10)
 
         label = wx.StaticText(self, label="Петротип")

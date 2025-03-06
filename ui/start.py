@@ -11,7 +11,7 @@ from .validators import TextValidator
 
 class StartDialog(wx.Dialog):
     def __init__(self):
-        super().__init__(None, wx.ID_ANY, 'База данных "Геомеханика".', style=wx.DEFAULT_DIALOG_STYLE, size=wx.Size(350, 220))
+        super().__init__(None, wx.ID_ANY, 'База данных "Геомеханика".', style=wx.DEFAULT_DIALOG_STYLE, size=wx.Size(350, 250))
         self.SetIcon(wx.Icon(get_icon("logo@16")))
         self.CenterOnScreen()
 

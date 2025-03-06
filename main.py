@@ -14,6 +14,14 @@ import update.service
 import version
 from ui.start import StartDialog
 
+try:
+    import pyi_splash  # type: ignore
+
+    pyi_splash.update_text("UI Loaded ...")
+    pyi_splash.close()
+except:
+    pass
+
 
 # Сообщаем PyInstaller, что загрузка завершена
 if os.getenv("_PYI_SPLASH_IPC"):

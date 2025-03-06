@@ -4,14 +4,14 @@ $WorkPath = "$PSScriptRoot/../build"
 $DistPath = "$PSScriptRoot/../dist"
 Write-Output $Version
 (Get-Content $PSScriptRoot/versionfile.yml.in).Replace('#VERSION#', $Version) | Set-Content $WorkPath/versionfile.yml
-$Name = "geomech." + $Version
+$Name = "geomech-fms-sample-data-editor." + $Version
 create-version-file $WorkPath/versionfile.yml --outfile $WorkPath/win32_versionfile.txt
 
 pyinstaller --onefile `
             --windowed `
             --noconfirm `
             --clean `
-            --strip `
+            --splash=$PSScriptRoot/../icons/logo.png `
             --specpath=$WorkPath `
             --distpath=$DistPath `
             --workpath=$WorkPath `

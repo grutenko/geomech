@@ -42,7 +42,11 @@ class VecCellType(CellType):
         return "[Список] %s" % self._item_type.get_type_descr()
 
     def test_repr(self, value) -> bool:
+<<<<<<< HEAD
         for item in re.split("\s*[,;]\s*", value.strip()):
+=======
+        for item in re.split("[,;]\s*", value.strip()):
+>>>>>>> fc7bd36979d19f10674e0e9692a789d725874920
             if self._item_type.test_repr(item) == False:
                 return False
         return True
@@ -50,14 +54,14 @@ class VecCellType(CellType):
     def to_string(self, value) -> str:
         if value == None:
             return ""
-        return ", ".join(map(lambda x: self._item_type.to_string(x), value))
+        return "; ".join(map(lambda x: self._item_type.to_string(x), value))
 
     def from_string(self, value: str):
         value = value.strip()
         if value == None or value.strip() == "":
             return []
         values = []
-        for item in re.split(",?\\s+", value.strip()):
+        for item in re.split("[,;]\s*", value.strip()):
             values.append(self._item_type.from_string(item))
         return values
 
@@ -87,7 +91,7 @@ class DMModel(Model):
         fields = {
             "SampleNumber": str(o.SampleNumber),
             "Diameter": str(o.Diameter),
-            "Length": str(int(o.Length)),
+            "Length": str(o.Length),
             "Weight": str(int(o.Weight)),
             "CoreDepth": str(o.CoreDepth),
         }
@@ -97,7 +101,7 @@ class DMModel(Model):
         e.append(str(int(o.E2)))
         e.append(str(int(o.E3)))
         e.append(str(int(o.E4)))
-        fields["E"] = ", ".join(e)
+        fields["E"] = "; ".join(e)
         fields["Rotate"] = str(o.Rotate)
         fields["PartNumber"] = o.PartNumber
         fields["RTens"] = str(o.RTens)
@@ -105,28 +109,28 @@ class DMModel(Model):
         fields["RockType"] = str(o.RockType) if o.RockType != None else ""
         tp1 = []
         if o.TP1_1 != None:
-            tp1.append(str(int(o.TP1_1)))
+            tp1.append(str(float(o.TP1_1)))
         if o.TP1_2 != None:
-            tp1.append(str(int(o.TP1_2)))
-        fields["TP1"] = ", ".join(tp1)
+            tp1.append(str(float(o.TP1_2)))
+        fields["TP1"] = "; ".join(tp1)
         tp2 = []
         if o.TP2_1 != None:
-            tp2.append(str(int(o.TP2_1)))
+            tp2.append(str(float(o.TP2_1)))
         if o.TP2_2 != None:
-            tp2.append(str(int(o.TP2_2)))
-        fields["TP2"] = ", ".join(tp2)
+            tp2.append(str(float(o.TP2_2)))
+        fields["TP2"] = "; ".join(tp2)
         tr = []
         if o.TR_1 != None:
-            tr.append(str(int(o.TR_1)))
+            tr.append(str(float(o.TR_1)))
         if o.TR_2 != None:
-            tr.append(str(int(o.TR_2)))
-        fields["TR"] = ", ".join(tr)
+            tr.append(str(float(o.TR_2)))
+        fields["TR"] = "; ".join(tr)
         ts = []
         if o.TS_1 != None:
-            ts.append(str(int(o.TS_1)))
+            ts.append(str(float(o.TS_1)))
         if o.TS_2 != None:
-            ts.append(str(int(o.TS_2)))
-        fields["TS"] = ", ".join(ts)
+            ts.append(str(float(o.TS_2)))
+        fields["TS"] = "; ".join(ts)
         fields["PWSpeed"] = str(int(o.PWSpeed)) if o.PWSpeed != None else ""
         fields["RWSpeed"] = str(int(o.RWSpeed)) if o.RWSpeed != None else ""
         fields["SWSpeed"] = str(int(o.SWSpeed)) if o.SWSpeed != None else ""
@@ -216,7 +220,7 @@ class DMModel(Model):
             ),
             "RTens": Column(
                 "RTens",
-                FloatCellType(),
+                FloatCellType(prec=1),
                 "* Сопрот.\nТезодат. (Ом)",
                 "Сопротивление тензодатчиков",
                 self._get_column_width("RTens"),
@@ -230,7 +234,7 @@ class DMModel(Model):
             ),
             "TP1": Column(
                 "TP1",
-                VecCellType(NumberCellType(), 0, 2),
+                VecCellType(FloatCellType(prec=1), 0, 2),
                 "Время\nпродоль.\n(мс)",
                 "Замер времени прохождения продольных волн (ультразвуковое профилирование или др.)",
                 self._get_column_width("TP1"),
@@ -238,7 +242,7 @@ class DMModel(Model):
             ),
             "TP2": Column(
                 "TP2",
-                VecCellType(NumberCellType(), 0, 2),
+                VecCellType(FloatCellType(prec=1), 0, 2),
                 "Время продоль.\n(торц.) (мс)",
                 "Замер времени прохождения продольных волн (торц.)",
                 self._get_column_width("TP2"),
@@ -254,7 +258,7 @@ class DMModel(Model):
             ),
             "TR": Column(
                 "TR",
-                VecCellType(NumberCellType(), 0, 2),
+                VecCellType(FloatCellType(prec=2), 0, 2),
                 "Время\nповерхност.\n(мс)",
                 "Замер времени прохождения поверхностных волн",
                 self._get_column_width("TR"),
@@ -399,12 +403,9 @@ class DMModel(Model):
             wx.MessageBox("В таблице обнаружены ошибки. Сохранение невозможно.", "Ошибка сохранения.", style=wx.OK | wx.ICON_ERROR)
             return False
 
-        try:
-            for _id in self._deleted_rows:
-                DischargeMeasurement[_id].delete()
-        except:
-            rollback()
-            raise
+        for _id in self._deleted_rows:
+            DischargeMeasurement[_id].delete()
+
         self._deleted_rows = []
         columns = self._columns
         sample_set = OrigSampleSet[self._core.RID]
@@ -430,6 +431,11 @@ class DMModel(Model):
             tp[: len(d)] = d
             fields["TP1_1"] = tp[0]
             fields["TP1_2"] = tp[1]
+            tp = [None, None]
+            d = columns["TP2"].cell_type.from_string(f["TP2"])
+            tp[: len(d)] = d
+            fields["TP2_1"] = tp[0]
+            fields["TP2_2"] = tp[1]
             tr = [None, None]
             d = columns["TR"].cell_type.from_string(f["TR"])
             tr[: len(d)] = d
@@ -456,25 +462,16 @@ class DMModel(Model):
             fields["E4"] = e0[3]
             fields["Rotate"] = columns["Rotate"].cell_type.from_string(f["Rotate"])
             if row.o != None:
-                try:
-                    o = DischargeMeasurement[row.o.RID]
-                    o.set(**fields)
-                except:
-                    rollback()
-                    raise
-                else:
-                    new_rows.append(self._prepare_o(o))
+                o = DischargeMeasurement[row.o.RID]
+                o.set(**fields)
+                new_rows.append(self._prepare_o(o))
             else:
                 max_dsch_number += 1
-                try:
-                    fields["DschNumber"] = str(max_dsch_number)
-                    o = DischargeMeasurement(**fields)
-                except:
-                    rollback()
-                    raise
-                else:
-                    new_rows.append(self._prepare_o(o))
+                fields["DschNumber"] = str(max_dsch_number)
+                o = DischargeMeasurement(**fields)
+                new_rows.append(self._prepare_o(o))
         self._rows = new_rows
+        commit()
         return True
 
 
