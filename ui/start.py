@@ -5,7 +5,7 @@ from pony.orm import Database
 
 import config
 from ui.icon import get_icon
-
+from attrdict2 import AttrDict
 from .validators import TextValidator
 
 
@@ -135,7 +135,7 @@ class StartDialog(wx.Dialog):
                 style=wx.ICON_ERROR | wx.OK | wx.OK_DEFAULT,
             )
         else:
-            config.set("database", data, flush_now=True)
+            config.set("database", AttrDict(data), flush_now=True)
             self.EndModal(wx.ID_OK)
         finally:
             self.btn_login.Enable()

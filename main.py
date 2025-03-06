@@ -39,17 +39,7 @@ class MyApp(wx.App):
         return True
 
 
-def start():
-    dlg = StartDialog()
-    if dlg.ShowModal() != wx.ID_OK:
-        sys.exit(1)
-
-    _conf = config.get("database")
-    database.init(_conf)
-
-    main_frame = ui.windows.main.main.MainFrame(_conf)
-    app.SetTopWindow(main_frame)
-
+from sys import platform
 
 if __name__ == "__main__":
 
@@ -89,7 +79,22 @@ if __name__ == "__main__":
 
     config.configure()
 
-    update.service.update_init("http://127.0.0.1:8000/", "geomech", version.__GEOMECH_VERSION__, sys.executable)
+    def start():
+        dlg = StartDialog()
+        if dlg.ShowModal() != wx.ID_OK:
+            sys.exit(1)
+        _conf = config.get("database")
+        database.init(_conf)
+
+        main_frame = ui.windows.main.main.MainFrame(_conf)
+        app.SetTopWindow(main_frame)
+        dlg.Destroy()
+
+    if platform == "linux" or platform == "linux2":
+        appname = "geomech-linux"
+    else:
+        appname = "geomech-win32"
+    update.service.update_init("http://194.135.20.59/geomech/", appname, version.__GEOMECH_VERSION__, sys.executable)
     if update.service.update_check_status() == "AVAILABLE":
         rc = wx.MessageBox(
             "Доступно обновление для этой программы. Установить?",

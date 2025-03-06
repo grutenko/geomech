@@ -68,6 +68,7 @@ class Task(wx.Frame):
                 elif self.ctx.status == "success":
                     self.cb(True, self.ctx.was_cancelled.is_set(), self.ctx.retval)
                 self._close_silence = True
+                self.timer.Stop()
                 self.Destroy()
 
     def cancel(self):

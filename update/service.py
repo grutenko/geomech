@@ -40,13 +40,13 @@ def update_check_status():
         if resp.getcode() != 200:
             raise Exception("Invalid http response code for %s - %d" % (url, resp.getcode()))
         latest = resp.read().decode("utf-8")
-        if re.match(r"^\d.\d.\d.\d\s*$", __ctx__.version) is not None:
+        if re.match(r"^\d.\d.\d.\d\s*$", __ctx__.version) is None:
             raise Exception("Update invalid target version string: %s" % __ctx__.version)
-        if re.match(r"^\d.\d.\d.\d\s*$", latest) is not None:
+        if re.match(r"^\d.\d.\d.\d\s*$", latest) is None:
             raise Exception("Update invalid latest version string: %s" % latest)
     except Exception as e:
         logging.error("Update: %s" % e.__str__())
-        print("Update: %s" % e.__str__())
+        print("Update: %s %s" % (url, e.__str__()))
         return "ERROR"
     if cmp_version(latest, __ctx__.version) == 1:
         return "AVAILABLE"
@@ -97,7 +97,7 @@ def _job(ctx: TaskContext):
         if cur_ver_pos == -1:
             raise Exception("Cannot find position for current version.")
         for i, ver in enumerate(_list[cur_ver_pos + 1 :]):
-            url = "%s/%s-%s.patch" % (__ctx__.url, ver)
+            url = "%s/%s-%s.patch" % (__ctx__.url, __ctx__.appname, ver)
             ctx.progress = i
             ctx.total = len(_list) - cur_ver_pos
             resp = urllib.request.urlopen(url)
