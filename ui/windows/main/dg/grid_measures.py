@@ -42,7 +42,7 @@ class VecCellType(CellType):
         return "[Список] %s" % self._item_type.get_type_descr()
 
     def test_repr(self, value) -> bool:
-        for item in re.split(",?\\s+", value.strip()):
+        for item in re.split("\s*[,;]\s*", value.strip()):
             if self._item_type.test_repr(item) == False:
                 return False
         return True
@@ -319,7 +319,7 @@ class DMModel(Model):
             "Length": "0.0",
             "Weight": "0",
             "CoreDepth": "0.0",
-            "E": "0 0 0 0",
+            "E": "0, 0, 0, 0",
             "Rotate": "0.0",
             "PartNumber": "",
             "RTens": "0.0",

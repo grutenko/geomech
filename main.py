@@ -10,13 +10,37 @@ import database
 import options
 import ui.windows.main.main
 import ui.icon
+import update.service
+import version
 from ui.start import StartDialog
+
+
+# Сообщаем PyInstaller, что загрузка завершена
+if os.getenv("_PYI_SPLASH_IPC"):
+    try:
+        from pyi_splash import close  # type: ignore
+
+        close()
+    except:
+        ...
 
 
 class MyApp(wx.App):
 
     def OnInit(self):
         return True
+
+
+def start():
+    dlg = StartDialog()
+    if dlg.ShowModal() != wx.ID_OK:
+        sys.exit(1)
+
+    _conf = config.get("database")
+    database.init(_conf)
+
+    main_frame = ui.windows.main.main.MainFrame(_conf)
+    app.SetTopWindow(main_frame)
 
 
 if __name__ == "__main__":
@@ -57,14 +81,25 @@ if __name__ == "__main__":
 
     config.configure()
 
-    dlg = StartDialog()
-    if dlg.ShowModal() != wx.ID_OK:
-        sys.exit(1)
+    update.service.update_init("http://127.0.0.1:8000/", "geomech", version.__GEOMECH_VERSION__, sys.executable)
+    if update.service.update_check_status() == "AVAILABLE":
+        rc = wx.MessageBox(
+            "Доступно обновление для этой программы. Установить?",
+            "Доступно обновление",
+            style=wx.YES | wx.NO | wx.YES_DEFAULT | wx.ICON_INFORMATION,
+        )
+        if rc == wx.YES:
 
-    _conf = config.get("database")
-    database.init(_conf)
+            def cb(success, is_cancel, exe_filename_or_exception):
+                if not success or is_cancel:
+                    if not success:
+                        wx.MessageBox(exe_filename_or_exception.__str__(), "Ошибка обновления", style=wx.OK | wx.ICON_WARNING)
+                    start()
 
-    main_frame = ui.windows.main.main.MainFrame(_conf)
-    app.SetTopWindow(main_frame)
+            update.service.update_patch_current_exe(None, cb)
+        else:
+            start()
+    else:
+        start()
 
     app.MainLoop()

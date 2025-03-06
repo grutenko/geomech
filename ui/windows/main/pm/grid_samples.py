@@ -65,6 +65,7 @@ class ColumnCollection:
         data = select(core for core in OrigSampleSet if len(core.discharge_series) == 0 and core.mine_object.Type == "FIELD").order_by(
             lambda x: x.Name
         )
+        self.orig_sample_sets = list(data)
 
         fields = []
         for o in data:
@@ -302,6 +303,38 @@ class GridSamplesModel(Model):
                 errors.append((col, indexes[0], "Номер должен быть уникален"))
 
         return errors
+
+    def have_changes(self) -> bool:
+        for row in self.rows:
+            if row.changed_fields:
+                return True
+        return len(self._deleted_rows) > 0
+
+    @db_session
+    def save(self):
+        if len(self.validate()) > 0:
+            wx.MessageBox("В таблице обнаружены ошибки. Сохранение невозможно.", "Ошибка сохранения.", style=wx.OK | wx.ICON_ERROR)
+            return False
+
+        for row in self._deleted_rows:
+            PMSample[row.o.RID].delete()
+        self._deleted_rows = []
+        for index, row in enumerate(self.rows):
+            fields = {}
+            for key, value in row.changed_fields.items():
+                cell_type = self.columns.get_column(key).cell_type
+                if key == "@orig_sample_set":
+                    orig_sample_set = self.columns.orig_sample_sets[cell_type.index_of(value)]
+                    fields["orig_sample_set"] = OrigSampleSet[orig_sample_set.RID]
+                else:
+                    fields[key] = cell_type.from_string(value)
+            if row.o is not None:
+                o = PMSample[row.o.RID]
+                o.set(**fields)
+            else:
+                o = PMSample(**fields)
+                self.rows[index].o = o
+        commit()
 
 
 ID_APPLEND_COLUMN = wx.ID_HIGHEST + 384

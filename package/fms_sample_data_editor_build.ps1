@@ -16,6 +16,7 @@ pyinstaller --onefile `
             --distpath=$DistPath `
             --workpath=$WorkPath `
             --name=$Name `
+            --splash=../icons/logo.png `
             --add-data=$PSScriptRoot/../icons:icons `
             --icon=$PSScriptRoot/../icons/logo.ico `
             --version-file=$WorkPath/win32_versionfile.txt `
@@ -26,4 +27,4 @@ pyinstaller --onefile `
             --hidden-import=psycopg2 `
             --hidden-import=transliterate `
             --optimize=2 `
-            $PSScriptRoot/../main.py
+            $PSScriptRoot/../fms_sample_data_editor_main.py

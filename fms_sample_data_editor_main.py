@@ -8,9 +8,23 @@ import wx
 import config
 import database
 import options
+
+import update.service
+import version
 from fms_sample_data_editor_ui.main.main import MainWindow
 import ui.icon
 from ui.start import StartDialog
+import os
+
+
+# Сообщаем PyInstaller, что загрузка завершена
+if os.getenv("_PYI_SPLASH_IPC"):
+    try:
+        from pyi_splash import close  # type: ignore
+
+        close()
+    except:
+        ...
 
 
 class MyApp(wx.App):
@@ -56,6 +70,16 @@ if __name__ == "__main__":
     )
 
     config.configure()
+
+    update.service.update_init("http://127.0.0.1:8000/", "geomech-fms-sample-data-editor", version.__GEOMECH_VERSION__, sys.executable)
+    if update.service.update_check_status() == "AVAILABLE":
+        rc = wx.MessageBox(
+            "Доступно обновление для этой программы. Установить?",
+            "Доступно обновление",
+            style=wx.YES | wx.NO | wx.YES_DEFAULT | wx.ICON_INFORMATION,
+        )
+        if rc == wx.YES:
+            update.service.update_patch_current_exe(None)
 
     dlg = StartDialog()
     if dlg.ShowModal() != wx.ID_OK:

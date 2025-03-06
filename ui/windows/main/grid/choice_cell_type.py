@@ -1,4 +1,3 @@
-
 from wx.grid import (
     GridCellChoiceEditor,
     GridCellEditor,
@@ -40,3 +39,6 @@ class ChoiceCellType(CellType):
 
     def get_grid_editor(self) -> GridCellEditor:
         return GridCellChoiceEditor(self.choices, allowOthers=self.allow_other)
+
+    def index_of(self, value):
+        return self.choices.index(value)

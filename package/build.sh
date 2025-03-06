@@ -25,6 +25,7 @@ pyinstaller --onefile \
             --workpath="$WorkPath" \
             --name="$Name" \
             --strip \
+            --splash=../icons/logo.png \
             --add-data="$(dirname "$0")/../icons:icons" \
             --icon="$(dirname "$0")/../icons/logo.png" \
             --version-file="$WorkPath/win32_versionfile.txt" \

@@ -95,12 +95,12 @@ class StringCellType(CellType):
         return True
 
     def from_string(self, value: str):
-        if value == None:
+        if value is None:
             return ""
         return value
 
     def to_string(self, value) -> str:
-        if value == None:
+        if len(value.strip()) == 0:
             return ""
         return value
 

@@ -34,10 +34,14 @@ class DateCellType(CellType):
         return self._test_repr_fmt0(value) or self._test_repr_fmt1(value)
 
     def to_string(self, value) -> str:
+        if value is None:
+            return ""
         _date = datetime(value.year, value.month, value.day)
         return _date.strftime("%d.%m.%Y")
 
     def from_string(self, value: str):
+        if len(value.strip(0)) == 0:
+            return None
         try:
             _date = datetime.strptime(value, "%d.%m.%Y")
         except:

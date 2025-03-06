@@ -10,6 +10,7 @@ from .orig_sample_set_list import OrigSampleSetList
 from .pm_properties_tab import PmPropertiesTab
 from .pm_test_series_manage import PmTestSeriesManage
 from .fastview import FastView
+from .core_map import CoreMap
 from pony.orm import db_session, select
 from database import PMTestSeries, PMSample
 from ui.class_config_provider import ClassConfigProvider
@@ -53,8 +54,14 @@ class MainWindow(wx.Frame):
         left.SetMinimumPaneSize(250)
         self.orig_sample_set_list = OrigSampleSetList(self.notebook)
         self.notebook.AddPage(self.orig_sample_set_list, "Наборы образцов")
-        self.pm_properties_tab = PmPropertiesTab(self.splitter)
-        self.splitter.SplitVertically(left, self.pm_properties_tab, 300)
+        self.center_splitter = wx.SplitterWindow(self.splitter, style=wx.SP_LIVE_UPDATE)
+        self.pm_properties_tab = PmPropertiesTab(self.center_splitter)
+        self.bore_hole_map = CoreMap(self.center_splitter)
+        self.bore_hole_map.Hide()
+        self.center_splitter.SetSashGravity(1)
+        self.center_splitter.SetMinimumPaneSize(200)
+        self.center_splitter.Initialize(self.pm_properties_tab)
+        self.splitter.SplitVertically(left, self.center_splitter, 300)
         sz.Add(self.splitter, 1, wx.EXPAND | wx.ALL)
         self.SetSizer(sz)
         self.Layout()
