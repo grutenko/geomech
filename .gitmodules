@@ -1,0 +1,3 @@
+[submodule "update/bsdiff4"]
+	path = update/bsdiff4
+	url = https://github.com/ilanschnell/bsdiff4.git
